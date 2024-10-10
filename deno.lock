@@ -1,0 +1,46 @@
+{
+  "version": "3",
+  "packages": {
+    "specifiers": {
+      "jsr:@std/bytes@^1.0.2": "jsr:@std/bytes@1.0.2",
+      "jsr:@std/crypto@^1.0.3": "jsr:@std/crypto@1.0.3",
+      "jsr:@std/uuid": "jsr:@std/uuid@1.0.4",
+      "npm:ssh-keygen@^0.5.0": "npm:ssh-keygen@0.5.0"
+    },
+    "jsr": {
+      "@std/bytes@1.0.2": {
+        "integrity": "fbdee322bbd8c599a6af186a1603b3355e59a5fb1baa139f8f4c3c9a1b3e3d57"
+      },
+      "@std/crypto@1.0.3": {
+        "integrity": "a2a32f51ddef632d299e3879cd027c630dcd4d1d9a5285d6e6788072f4e51e7f"
+      },
+      "@std/uuid@1.0.4": {
+        "integrity": "f4233149cc8b4753cc3763fd83a7c4101699491f55c7be78dc7b30281946d7a0",
+        "dependencies": [
+          "jsr:@std/bytes@^1.0.2",
+          "jsr:@std/crypto@^1.0.3"
+        ]
+      }
+    },
+    "npm": {
+      "ssh-keygen@0.5.0": {
+        "integrity": "sha512-TZmhcpeZTkEnIZF0aItjXz0zIIkHnJyti4bIFiO4Ir0tqwsKDPtC7nFnvjPAy/diGXNy7m5ZcGg44QfUNA9y5g==",
+        "dependencies": {
+          "underscore": "underscore@1.4.4"
+        }
+      },
+      "underscore@1.4.4": {
+        "integrity": "sha512-ZqGrAgaqqZM7LGRzNjLnw5elevWb5M8LEoDMadxIW3OWbcv72wMMgKdwOKpd5Fqxe8choLD8HN3iSj3TUh/giQ==",
+        "dependencies": {}
+      }
+    }
+  },
+  "remote": {},
+  "workspace": {
+    "packageJson": {
+      "dependencies": [
+        "npm:ssh-keygen@^0.5.0"
+      ]
+    }
+  }
+}
