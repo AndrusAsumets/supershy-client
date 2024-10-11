@@ -92,11 +92,11 @@ while (true) {
         .map(region => region.slug)
         .sort(() => (Math.random() > 0.5) ? 1 : -1);
     const dropletRegion = slugs[0];
-
     const dropletName = `proxy-${uuid.v1.generate()}`;
-    const keyPath = `/home/me/.ssh/proxy-looper-key-${dropletName}`;
 
-    const createSshKeyCommand = `ssh-keygen -t ed25519 -a 100 -b 8192 -f ${keyPath} -N foobar`;
+    const keyPath = `/home/me/.ssh/proxy-looper-key-${dropletName}`;
+    const sshPassword = uuid.v1.generate();
+    const createSshKeyCommand = `ssh-keygen -t ed25519 -a 100 -b 8192 -f ${keyPath} -N ${sshPassword}`;
     const createSshKeyProcess = Deno.run({ cmd: createSshKeyCommand.split(' ') });
     await createSshKeyProcess.status();
 
@@ -108,7 +108,7 @@ while (true) {
 
     const createdDroplet = await createDroplet(dropletRegion, dropletName, dropletSize, publicKeyId, userData);
     console.log('Created droplet.');
-
+``
     let ip = null;
     while (!ip) {
         const list = await listDroplets();
@@ -152,7 +152,7 @@ while (true) {
 
     await sleep(1000);
 
-    const openSshProxyTunnelCommand = `./ssh-tunnel.exp foobar ${ip} root ${keyPath}`;
+    const openSshProxyTunnelCommand = `./ssh-tunnel.exp ${sshPassword} ${ip} root ${keyPath}`;
     console.log({ openSshProxyTunnelCommand });
     const openSshProxyTunnelProcess = Deno.run({
         cmd: openSshProxyTunnelCommand.split(' '),
