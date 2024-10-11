@@ -1,9 +1,11 @@
 import * as uuid from 'jsr:@std/uuid';
-
+import { parse } from "https://deno.land/std/flags/mod.ts";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-const TOKEN = Deno.args[0].split('TOKEN=')[1];
+const args = parse(Deno.args);
+const TOKEN = args.t;
+const REFRESH_INTERVAL = args.r;
 const baseUrl = 'https://api.digitalocean.com/v2';
 const userData = `
 #cloud-config
@@ -170,5 +172,6 @@ while (true) {
         .map(droplet => droplet.id);
     await deleteDroplets(deletableDropletIds);
     console.log('Deleted droplets.');
-    //await sleep(60 * 1000);
+
+    await sleep(REFRESH_INTERVAL * 60 * 1000);
 }
