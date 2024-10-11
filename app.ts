@@ -98,13 +98,10 @@ while (true) {
 
     const createSshKeyCommand = `ssh-keygen -t ed25519 -a 100 -b 8192 -f ${keyPath} -N foobar`;
     const createSshKeyProcess = Deno.run({ cmd: createSshKeyCommand.split(' ') });
-    console.log(await createSshKeyProcess.status());
+    await createSshKeyProcess.status();
 
     const publicKey = await Deno.readTextFile(`${keyPath}.pub`);
-    console.log({ publicKey });
-
     const publicKeyId = await addPublicKey(publicKey, dropletName);
-    console.log({ publicKeyId });
 
     // Store for deleting later on in the process.
     const previousDroplets = await listDroplets();
@@ -112,7 +109,7 @@ while (true) {
     const createdDroplet = await createDroplet(dropletRegion, dropletName, dropletSize, publicKeyId, userData);
     console.log('Created droplet.');
 
-    let ip = false;
+    let ip = null;
     while (!ip) {
         const list = await listDroplets();
         const droplets = list.droplets;
@@ -125,7 +122,7 @@ while (true) {
             }
         }
     }
-    console.log('Found network', ip);
+    console.log('Found network at', ip);
 
     let isConnectable = false;
     while(!isConnectable) {
@@ -171,7 +168,7 @@ while (true) {
         .filter(droplet => droplet.name.includes('proxy'))
         .map(droplet => droplet.id);
     await deleteDroplets(deletableDropletIds);
-    console.log('Deleted droplets.');
+    console.log('Deleted all previous droplets.');
 
     await sleep(REFRESH_INTERVAL * 60 * 1000);
 }

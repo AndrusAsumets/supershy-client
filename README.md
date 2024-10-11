@@ -23,4 +23,4 @@ curl -X DELETE "https://api.digitalocean.com/v2/droplets/$DROPLET_ID" \
 
 
 # run app
-deno run --allow-all app.ts -t {DIGITAL_OCEAN_API_KEY} -r 9
+deno run --allow-all app.ts -t {DIGITAL_OCEAN_API_KEY} -r 10
