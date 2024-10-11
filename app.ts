@@ -16,6 +16,15 @@ runcmd:
     - tinyproxy -d -c tinyproxy.conf
 `;
 
+const listRegions = async () => {
+    const headers = {
+        Authorization: `Bearer ${TOKEN}`
+    };
+    const res = await fetch(`${baseUrl}/regions`, { method: 'GET', headers });
+    const json: any = await res.json();
+    return json;
+};
+
 const listDroplets = async () => {
     const headers = {
         Authorization: `Bearer ${TOKEN}`
@@ -25,15 +34,15 @@ const listDroplets = async () => {
     return json;
 };
 
-const createDroplet = async (name, publicKey, userData) => {
+const createDroplet = async (region, name, size, publicKey, userData) => {
     const headers = {
         Authorization: `Bearer ${TOKEN}`,
         'Content-Type': 'application/json'
     };
     const body = {
         name,
-        region: 'ams3',
-        size: 's-1vcpu-512mb-10gb',
+        region,
+        size,
         image: 'debian-12-x64',
         ssh_keys: [publicKey],
         user_data: userData
@@ -74,14 +83,20 @@ const addPublicKey = async (publicKey, name) => {
 };
 
 while (true) {
+    const dropletSize = 's-1vcpu-512mb-10gb';
+    const regions = (await listRegions())
+        .regions.filter(region => region.sizes.includes(dropletSize));
+    const slugs = regions
+        .map(region => region.slug)
+        .sort(() => (Math.random() > 0.5) ? 1 : -1);
+    const dropletRegion = slugs[0];
+
     const dropletName = `proxy-${uuid.v1.generate()}`;
     const keyPath = `/home/me/.ssh/proxy-looper-key-${dropletName}`;
 
     const createSshKeyCommand = `ssh-keygen -t ed25519 -a 100 -b 8192 -f ${keyPath} -N foobar`;
     const createSshKeyProcess = Deno.run({ cmd: createSshKeyCommand.split(' ') });
     console.log(await createSshKeyProcess.status());
-
-    await sleep(5000);
 
     const publicKey = await Deno.readTextFile(`${keyPath}.pub`);
     console.log({ publicKey });
@@ -92,7 +107,7 @@ while (true) {
     // Store for deleting later on in the process.
     const previousDroplets = await listDroplets();
 
-    const createdDroplet = await createDroplet(dropletName, publicKeyId, userData);
+    const createdDroplet = await createDroplet(dropletRegion, dropletName, dropletSize, publicKeyId, userData);
     console.log('Created droplet.');
 
     let ip = false;
