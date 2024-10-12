@@ -1,15 +1,14 @@
 #!/usr/bin/expect -f
 
-set pass [lrange $argv 0 0]
+set passphrase [lrange $argv 0 0]
 set server [lrange $argv 1 1]
 set name [lrange $argv 2 2]
-set key [lrange $argv 3 3]
+set local_port [lrange $argv 3 3]
+set key [lrange $argv 4 4]
 
-spawn -ignore HUP ssh $name@$server -o StrictHostKeyChecking=yes -f -N -L 8888:localhost:8888 -i $key
+spawn -ignore HUP ssh $name@$server -o StrictHostKeyChecking=yes -f -N -L $local_port:localhost:8888 -i $key
 expect "*?assphrase:*"
-send -- "$pass\r"
+send -- "$passphrase\r"
 interact
 expect_background
-
-send_user ">>> spawned process backgrounding successful\n"
 exit 0

@@ -3,11 +3,11 @@ import { parse } from 'https://deno.land/std/flags/mod.ts';
 import * as crypto from 'node:crypto';
 
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
 const args = parse(Deno.args);
 const TOKEN = args.t;
-const REFRESH_INTERVAL = args.r;
+const INTERVAL_MIN = args.i;
+const LOCAL_TEST_PORT = 8887
+const LOCAL_PORT = 8888;
 const baseUrl = 'https://api.digitalocean.com/v2';
 const userData = `
 #cloud-config
@@ -19,6 +19,8 @@ runcmd:
     - echo "Allow 127.0.0.1" > nano tinyproxy.conf
     - tinyproxy -d -c tinyproxy.conf
 `;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const listRegions = async () => {
     const headers = {
@@ -86,6 +88,18 @@ const addPublicKey = async (publicKey, name) => {
     return json['ssh_key']['id'];
 };
 
+const connectSshProxyTunnel = async (passphrase, ip, port, keyPath) => {
+    const connectSshProxyTunnelCommand = `./connect-ssh-tunnel.exp ${passphrase} ${ip} root ${port} ${keyPath}`;
+    console.log({ connectSshProxyTunnelCommand });
+    const connectSshProxyTunnelProcess = Deno.run({
+        cmd: connectSshProxyTunnelCommand.split(' '),
+        stdout: 'piped',
+        stderr: 'piped',
+        stdin: 'null'
+    });
+    new TextDecoder().decode(await connectSshProxyTunnelProcess.stderrOutput());
+};
+
 while (true) {
     const startTime = performance.now();
 
@@ -98,7 +112,7 @@ while (true) {
         .map(region => region.slug)
         .sort(() => (Math.random() > 0.5) ? 1 : -1);
     const dropletRegion = slugs[0];
-    const dropletId = 'proxy-looper';
+    const dropletId = 'proxy-loop';
     const dropletName = `${dropletId}-${uuid.v1.generate()}`;
 
     const passphrase = crypto.randomBytes(64).toString('hex');
@@ -129,9 +143,9 @@ while (true) {
             }
         }
     }
-    console.log('Found network at', ip);
+    console.log(`Found network at ${ip}.`);
 
-    console.log('Starting SSH connection test.');
+    console.log('Starting SSH tunnel connection test (1).');
     let isConnectable = false;
     while(!isConnectable) {
         const openSshProxyTunnelTestCommand = `ssh -o StrictHostKeyChecking=accept-new root@${ip}`;
@@ -148,7 +162,13 @@ while (true) {
             await sleep(1000);
         }
     }
-    console.log('Successfully finished SSH connection test.');
+    console.log('Successfully finished SSH tunnel connection test (1).');
+
+    // httping -x localhost:8888 -g http://google.com
+
+    console.log('Starting SSH tunnel connection test (2).');
+    await connectSshProxyTunnel(passphrase, ip, LOCAL_TEST_PORT, keyPath);
+    console.log('Successfully finished SSH tunnel connection test (2).');
 
     const killAllSshTunnelsCommand = `pkill -f ${dropletId}`;
     Deno.run({
@@ -160,16 +180,8 @@ while (true) {
 
     await sleep(1000);
 
-    const openSshProxyTunnelCommand = `./connect-ssh-tunnel.exp ${passphrase} ${ip} root ${keyPath}`;
-    console.log({ openSshProxyTunnelCommand });
-    const openSshProxyTunnelProcess = Deno.run({
-        cmd: openSshProxyTunnelCommand.split(' '),
-        stdout: 'piped',
-        stderr: 'piped',
-        stdin: 'null'
-    });
-    const output = new TextDecoder().decode(await openSshProxyTunnelProcess.stderrOutput());
-    console.log({ output });
+    console.log('Starting SSH tunnel connection.');
+    await connectSshProxyTunnel(passphrase, ip, LOCAL_PORT, keyPath);
     console.log('SSH tunnel connected.');
 
     const deletableDropletIds = previousDroplets.droplets
@@ -181,7 +193,7 @@ while (true) {
     const endTime = performance.now();
     console.log(`Proxy loop finished in ${Number((endTime - startTime) / 1000).toFixed(0)} seconds.`);
 
-    console.log(`Waiting for ${REFRESH_INTERVAL} minutes to start again.`);
+    console.log(`Waiting for ${INTERVAL_MIN} minutes to start again.`);
 
-    await sleep(REFRESH_INTERVAL * 60 * 1000);
+    await sleep(INTERVAL_MIN * 60 * 1000);
 }
