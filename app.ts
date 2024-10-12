@@ -1,5 +1,7 @@
 import * as uuid from 'jsr:@std/uuid';
-import { parse } from "https://deno.land/std/flags/mod.ts";
+import { parse } from 'https://deno.land/std/flags/mod.ts';
+import * as crypto from 'node:crypto';
+
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -92,10 +94,12 @@ while (true) {
         .map(region => region.slug)
         .sort(() => (Math.random() > 0.5) ? 1 : -1);
     const dropletRegion = slugs[0];
-    const dropletName = `proxy-${uuid.v1.generate()}`;
+    const dropletId = 'proxy-looper';
+    const dropletName = `${dropletId}-${uuid.v1.generate()}`;
 
-    const keyPath = `/home/me/.ssh/proxy-looper-key-${dropletName}`;
-    const createSshKeyCommand = `./generate-ssh-key.exp ${keyPath}`;
+    const passphrase = crypto.randomBytes(64).toString('hex');
+    const keyPath = `/home/me/.ssh/${dropletName}`;
+    const createSshKeyCommand = `./generate-ssh-key.exp ${passphrase} ${keyPath}`;
     const createSshKeyProcess = Deno.run({ cmd: createSshKeyCommand.split(' ') });
     await createSshKeyProcess.status();
 
@@ -141,7 +145,7 @@ while (true) {
         }
     }
 
-    const killAllSshTunnelsCommand = `pkill -f proxy-looper`;
+    const killAllSshTunnelsCommand = `pkill -f ${dropletId}`;
     Deno.run({
         cmd: killAllSshTunnelsCommand.split(' '),
         stdout: 'null',
@@ -151,7 +155,7 @@ while (true) {
 
     await sleep(1000);
 
-    const openSshProxyTunnelCommand = `./connect-ssh-tunnel.exp ${ip} root ${keyPath}`;
+    const openSshProxyTunnelCommand = `./connect-ssh-tunnel.exp ${passphrase} ${ip} root ${keyPath}`;
     console.log({ openSshProxyTunnelCommand });
     const openSshProxyTunnelProcess = Deno.run({
         cmd: openSshProxyTunnelCommand.split(' '),

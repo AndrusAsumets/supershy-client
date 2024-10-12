@@ -1,11 +1,12 @@
 #!/usr/bin/expect -f
 
-set path [lrange $argv 0 0]
+set pass [lrange $argv 0 0]
+set path [lrange $argv 1 1]
 
 spawn ssh-keygen -t ed25519 -a 100 -b 16384 -f $path
 expect "*?assphrase:*"
-send -- "\r"
+send -- "$pass\r"
 expect "*?again:*"
-send -- "\r"
+send -- "$pass\r"
 interact
 exit 0
