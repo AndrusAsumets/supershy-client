@@ -89,6 +89,8 @@ const addPublicKey = async (publicKey, name) => {
 while (true) {
     const startTime = performance.now();
 
+    console.log(`Proxy loop started.`);
+
     const dropletSize = 's-1vcpu-512mb-10gb';
     const regions = (await listRegions())
         .regions.filter(region => region.sizes.includes(dropletSize));
@@ -177,7 +179,7 @@ while (true) {
     console.log('Deleted all previous droplets.');
 
     const endTime = performance.now();
-    console.log(`Proxy loop took ${Number((endTime - startTime) / 1000).toFixed(0)} seconds.`);
+    console.log(`Proxy loop finished in ${Number((endTime - startTime) / 1000).toFixed(0)} seconds.`);
 
     console.log(`Waiting for ${REFRESH_INTERVAL} minutes to start again.`);
 
