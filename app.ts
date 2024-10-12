@@ -87,6 +87,8 @@ const addPublicKey = async (publicKey, name) => {
 };
 
 while (true) {
+    const startTime = performance.now();
+
     const dropletSize = 's-1vcpu-512mb-10gb';
     const regions = (await listRegions())
         .regions.filter(region => region.sizes.includes(dropletSize));
@@ -111,7 +113,7 @@ while (true) {
 
     const createdDroplet = await createDroplet(dropletRegion, dropletName, dropletSize, publicKeyId, userData);
     console.log('Created droplet.', { dropletSize, dropletRegion, dropletName });
-``
+
     let ip = null;
     while (!ip) {
         const list = await listDroplets();
@@ -127,6 +129,7 @@ while (true) {
     }
     console.log('Found network at', ip);
 
+    console.log('Starting SSH connection test.');
     let isConnectable = false;
     while(!isConnectable) {
         const openSshProxyTunnelTestCommand = `ssh -o StrictHostKeyChecking=accept-new root@${ip}`;
@@ -137,13 +140,13 @@ while (true) {
             stdin: 'null'
         });
         const output = new TextDecoder().decode(await openSshProxyTunnelProcess.stderrOutput());
-        console.log('SSH connection test: ', output);
 
         isConnectable = output.includes('Permission denied');
         if (!isConnectable) {
-            await sleep(5 * 1000);
+            await sleep(1000);
         }
     }
+    console.log('Successfully finished SSH connection test.');
 
     const killAllSshTunnelsCommand = `pkill -f ${dropletId}`;
     Deno.run({
@@ -172,6 +175,11 @@ while (true) {
         .map(droplet => droplet.id);
     await deleteDroplets(deletableDropletIds);
     console.log('Deleted all previous droplets.');
+
+    const endTime = performance.now();
+    console.log(`Proxy loop took ${Number((endTime - startTime) / 1000).toFixed(0)} seconds.`);
+
+    console.log(`Waiting for ${REFRESH_INTERVAL} minutes to start again.`);
 
     await sleep(REFRESH_INTERVAL * 60 * 1000);
 }
