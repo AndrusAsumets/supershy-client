@@ -67,7 +67,7 @@ const deleteDroplets = async (ids) => {
             'Content-Type': 'application/json'
         };
         await fetch(`${baseUrl}/droplets/${id}`, { method: 'DELETE', headers });
-        console.log(`Deleted droplet: ${id}`);
+        console.log(`Deleted droplet: ${id}.`);
         index = index + 1;
     }
 };
