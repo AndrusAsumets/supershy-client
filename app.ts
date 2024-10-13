@@ -125,7 +125,6 @@ const errorSleep = async() => {
 
 while (true) {
     try {
-        asd
         const startTime = performance.now();
 
         await createFolderIfNeed(tmpPath);
