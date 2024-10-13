@@ -239,7 +239,6 @@ while (true) {
         console.log('Starting SSH tunnel connection.');
         const connectSshProxyTunnelCommand = await connectSshProxyTunnel(passphrase, ip, LOCAL_PORT, keyPath);
         Deno.writeTextFileSync(`${tmpPath}${dropletName}-connect-ssh-proxy-tunnel-command`, connectSshProxyTunnelCommand);
-        Deno.writeTextFileSync(`${tmpPath}${dropletName}-passphrase`, passphrase);
 
         console.log('SSH tunnel connected.');
 
