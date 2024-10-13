@@ -179,6 +179,12 @@ while (true) {
         const createdDroplet = await createDroplet(dropletRegion, dropletName, dropletSize, publicKeyId, userData);
         console.log('Created droplet.', { dropletSize, dropletRegion, dropletName });
 
+        const keys = await listKeys();
+        const deletableKeyIds = keys['ssh_keys']
+            .filter(key => key.name.includes(appId))
+            .map(key => key.id);
+        await deleteKeys(deletableKeyIds);
+
         let ip = null;
         while (!ip) {
             const list = await listDroplets();
@@ -236,12 +242,6 @@ while (true) {
         console.log('SSH tunnel connected.');
 
         await Deno.remove(tmpPath, { recursive: true });
-
-        const keys = await listKeys();
-        const deletableKeyIds = keys['ssh_keys']
-            .filter(key => key.name.includes(appId))
-            .map(key => key.id);
-        await deleteKeys(deletableKeyIds);
 
         const deletableDropletIds = previousDroplets.droplets
             .filter(droplet => droplet.name.includes(appId))
