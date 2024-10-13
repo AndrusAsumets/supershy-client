@@ -133,6 +133,7 @@ const connectSshProxyTunnel = async (passphrase, ip, port, keyPath) => {
         stdin: 'null'
     });
     new TextDecoder().decode(await connectSshProxyTunnelProcess.stderrOutput());
+    return connectSshProxyTunnelCommand;
 };
 
 const retrySleep = async() => {
@@ -219,8 +220,6 @@ while (true) {
         }
         console.log('Successfully finished SSH tunnel connection test (1).');
 
-        // httping -x localhost:8888 -g http://google.com
-
         /*
         console.log('Starting SSH tunnel connection test (2).');
         await connectSshProxyTunnel(passphrase, ip, LOCAL_TEST_PORT, keyPath);
@@ -238,10 +237,11 @@ while (true) {
         await sleep(1000);
 
         console.log('Starting SSH tunnel connection.');
-        await connectSshProxyTunnel(passphrase, ip, LOCAL_PORT, keyPath);
-        console.log('SSH tunnel connected.');
+        const connectSshProxyTunnelCommand = await connectSshProxyTunnel(passphrase, ip, LOCAL_PORT, keyPath);
+        Deno.writeTextFileSync(`${tmpPath}${dropletName}-connect-ssh-proxy-tunnel-command`, connectSshProxyTunnelCommand);
+        Deno.writeTextFileSync(`${tmpPath}${dropletName}-passphrase`, passphrase);
 
-        await Deno.remove(tmpPath, { recursive: true });
+        console.log('SSH tunnel connected.');
 
         const deletableDropletIds = previousDroplets.droplets
             .filter(droplet => droplet.name.includes(appId))

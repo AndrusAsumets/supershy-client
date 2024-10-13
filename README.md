@@ -35,3 +35,6 @@ ssh_key / droplet
 2 scopes
 Total Custom Scopes
 7 scopes
+
+// httping -x localhost:8888 -g http://google.com
+// /etc/profile.d/proxy.sh
