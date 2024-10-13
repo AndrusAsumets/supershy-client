@@ -52,6 +52,15 @@ const listDroplets = async () => {
     return json;
 };
 
+const listKeys = async () => {
+    const headers = {
+        Authorization: `Bearer ${TOKEN}`
+    };
+    const res = await fetch(`${baseUrl}/account/keys`, { method: 'GET', headers });
+    const json: any = await res.json();
+    return json;
+};
+
 const createDroplet = async (region, name, size, publicKey, userData) => {
     const headers = {
         Authorization: `Bearer ${TOKEN}`,
@@ -86,7 +95,22 @@ const deleteDroplets = async (ids) => {
     }
 };
 
-const addPublicKey = async (publicKey, name) => {
+const deleteKeys = async (ids) => {
+    let index = 0;
+
+    while(index < ids.length) {
+        const id = ids[index];
+        const headers = {
+            Authorization: `Bearer ${TOKEN}`,
+            'Content-Type': 'application/json'
+        };
+        await fetch(`${baseUrl}/account/keys/${id}`, { method: 'DELETE', headers });
+        console.log(`Deleted key: ${id}.`);
+        index = index + 1;
+    }
+};
+
+const addKey = async (publicKey, name) => {
     const headers = {
         Authorization: `Bearer ${TOKEN}`,
         'Content-Type': 'application/json'
@@ -147,7 +171,7 @@ while (true) {
         await createSshKeyProcess.status();
 
         const publicKey = await Deno.readTextFile(`${keyPath}.pub`);
-        const publicKeyId = await addPublicKey(publicKey, dropletName);
+        const publicKeyId = await addKey(publicKey, dropletName);
 
         // Store for deleting later on in the process.
         const previousDroplets = await listDroplets();
@@ -211,11 +235,18 @@ while (true) {
         await connectSshProxyTunnel(passphrase, ip, LOCAL_PORT, keyPath);
         console.log('SSH tunnel connected.');
 
+        await Deno.remove(tmpPath, { recursive: true });
+
+        const keys = await listKeys();
+        const deletableKeyIds = keys['ssh_keys']
+            .filter(key => key.name.includes(appId))
+            .map(key => key.id);
+        await deleteKeys(deletableKeyIds);
+
         const deletableDropletIds = previousDroplets.droplets
-            .filter(droplet => droplet.name.includes('proxy'))
+            .filter(droplet => droplet.name.includes(appId))
             .map(droplet => droplet.id);
         await deleteDroplets(deletableDropletIds);
-        console.log('Deleted all previous droplets.');
 
         const endTime = performance.now();
         console.log(`Proxy loop finished in ${Number((endTime - startTime) / 1000).toFixed(0)} seconds.`);

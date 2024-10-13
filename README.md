@@ -5,13 +5,9 @@ curl -X POST "https://api.digitalocean.com/v2/droplets" \
 	-H "Content-Type: application/json"
 
 
-
-
 # read all droplets
 curl -X GET "https://api.digitalocean.com/v2/droplets" \
         -H "Authorization: Bearer $TOKEN"
-
-
 
 
 # delete droplet
@@ -20,7 +16,22 @@ curl -X DELETE "https://api.digitalocean.com/v2/droplets/$DROPLET_ID" \
 	-H "Content-Type: application/json"
 
 
-
-
 # run app
 deno run --allow-all app.ts -t {DIGITAL_OCEAN_API_KEY} -r 10
+
+
+# Digital Ocean token scopes
+Fully Scoped Access
+regions (1): read
+1 scope
+Create Access
+ssh_key / droplet
+2 scopes
+Read Access
+ssh_key / droplet
+2 scopes
+Delete Access
+ssh_key / droplet
+2 scopes
+Total Custom Scopes
+7 scopes
