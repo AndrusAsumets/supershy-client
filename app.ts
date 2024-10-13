@@ -1,3 +1,4 @@
+import { exists } from 'https://deno.land/std/fs/mod.ts';
 import * as uuid from 'jsr:@std/uuid';
 import { parse } from 'https://deno.land/std/flags/mod.ts';
 import * as crypto from 'node:crypto';
@@ -19,8 +20,17 @@ runcmd:
     - echo "Allow 127.0.0.1" > nano tinyproxy.conf
     - tinyproxy -d -c tinyproxy.conf
 `;
+const appId = 'proxy-loop';
+const tmpPath = `./tmp/`;
+const srcPath = `./src/`;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+const createFolderIfNeed = async (path) => {
+    if (!await exists(path)) {
+        await Deno.mkdir(path);
+    }
+};
 
 const listRegions = async () => {
     const headers = {
@@ -89,7 +99,7 @@ const addPublicKey = async (publicKey, name) => {
 };
 
 const connectSshProxyTunnel = async (passphrase, ip, port, keyPath) => {
-    const connectSshProxyTunnelCommand = `./connect-ssh-tunnel.exp ${passphrase} ${ip} root ${port} ${keyPath}`;
+    const connectSshProxyTunnelCommand = `${srcPath}connect-ssh-tunnel.exp ${passphrase} ${ip} root ${port} ${keyPath}`;
     console.log({ connectSshProxyTunnelCommand });
     const connectSshProxyTunnelProcess = Deno.run({
         cmd: connectSshProxyTunnelCommand.split(' '),
@@ -103,6 +113,8 @@ const connectSshProxyTunnel = async (passphrase, ip, port, keyPath) => {
 while (true) {
     const startTime = performance.now();
 
+    await createFolderIfNeed(tmpPath);
+
     console.log(`Proxy loop started.`);
 
     const dropletSize = 's-1vcpu-512mb-10gb';
@@ -112,12 +124,11 @@ while (true) {
         .map(region => region.slug)
         .sort(() => (Math.random() > 0.5) ? 1 : -1);
     const dropletRegion = slugs[0];
-    const dropletId = 'proxy-loop';
-    const dropletName = `${dropletId}-${uuid.v1.generate()}`;
+    const dropletName = `${appId}-${uuid.v1.generate()}`;
 
     const passphrase = crypto.randomBytes(64).toString('hex');
-    const keyPath = `/home/me/.ssh/${dropletName}`;
-    const createSshKeyCommand = `./generate-ssh-key.exp ${passphrase} ${keyPath}`;
+    const keyPath = `${tmpPath}${dropletName}`;
+    const createSshKeyCommand = `${srcPath}generate-ssh-key.exp ${passphrase} ${keyPath}`;
     const createSshKeyProcess = Deno.run({ cmd: createSshKeyCommand.split(' ') });
     await createSshKeyProcess.status();
 
@@ -166,11 +177,13 @@ while (true) {
 
     // httping -x localhost:8888 -g http://google.com
 
+    /*
     console.log('Starting SSH tunnel connection test (2).');
     await connectSshProxyTunnel(passphrase, ip, LOCAL_TEST_PORT, keyPath);
     console.log('Successfully finished SSH tunnel connection test (2).');
+    */
 
-    const killAllSshTunnelsCommand = `pkill -f ${dropletId}`;
+    const killAllSshTunnelsCommand = `pkill -f ${appId}`;
     Deno.run({
         cmd: killAllSshTunnelsCommand.split(' '),
         stdout: 'null',
