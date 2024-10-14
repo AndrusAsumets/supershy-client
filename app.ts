@@ -190,9 +190,9 @@ const connectionFileId = 'connect-ssh-proxy-tunnel-command';
 
 const availableProxyEpochs = tmpFiles
     .filter(file => file.includes(appId))
-    .filter(file => file.endsWith(`-b-${connectionFileId}`))
+    .filter(file => file.includes('-b-'))
     .map(file => file.split(`${appId}-`)[1])
-    .map(file => file.split(`-b-${connectionFileId}`)[0])
+    .map(file => file.split('-b-')[0])
     .map(file => Number(file))
     .sort()
     .reverse();
@@ -235,7 +235,7 @@ while (true) {
                 .map(region => region.slug)
                 .sort(() => (Math.random() > 0.5) ? 1 : -1);
             const dropletRegion = slugs[0];
-            const dropletName = `${appId}-${epoch}-${type}`;
+            const dropletName = `${appId}-${type}-${epoch}`;
 
             const passphrase = crypto.randomBytes(64).toString('hex');
             const keyPath = `${tmpPath}${dropletName}`;
