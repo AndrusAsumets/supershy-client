@@ -6,7 +6,7 @@ set name [lrange $argv 2 2]
 set local_port [lrange $argv 3 3]
 set key [lrange $argv 4 4]
 
-spawn -ignore HUP ssh $name@$server -o StrictHostKeyChecking=yes -f -N -L $local_port:localhost:8888 -i $key
+spawn -ignore HUP ssh $name@$server -o StrictHostKeyChecking=accept-new -f -N -L $local_port:localhost:8888 -i $key
 expect "*?assphrase:*"
 send -- "$passphrase\r"
 interact
