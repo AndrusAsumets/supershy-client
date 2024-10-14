@@ -188,24 +188,25 @@ const tmpFiles = await getFiles(tmpPath);
 
 const connectionFileId = 'connect-ssh-proxy-tunnel-command';
 
-const availableProxyEpochs = tmpFiles
+const connectSshProxyTunnelFiles = tmpFiles
     .filter(file => file.includes(appId))
     .filter(file => file.includes('-b-'))
-    .map(file => file.split(`${appId}-`)[1])
-    .map(file => file.split('-b-')[0])
-    .map(file => Number(file))
+    .filter(file => file.endsWith(connectionFileId));
+
+const connectSshProxyTunnelEpochs = connectSshProxyTunnelFiles
+    .filter(file => file.endsWith(connectionFileId))
+    .map(file => file.split('-')[3])
     .sort()
     .reverse();
 
-if (availableProxyEpochs.length) {
+if (connectSshProxyTunnelEpochs.length) {
     killAllSshTunnels(killAllSshTunnelsCommand);
 
     await sleep(1000);
 
-    const epoch = availableProxyEpochs[0];
-    const connectSshProxyTunnelCommandFile = `${appId}-${epoch}-b-${connectionFileId}`;
-
     console.log('Starting SSH tunnel connection B.');
+    const connectSshProxyTunnelCommandFile = connectSshProxyTunnelFiles
+        .find(connectSshProxyTunnelFile => connectSshProxyTunnelFile.includes(connectSshProxyTunnelEpochs[0]))
     const connectSshProxyTunnelCommand = await Deno.readTextFile(`${tmpPath}${connectSshProxyTunnelCommandFile}`);
     await connectSshProxyTunnel(connectSshProxyTunnelCommand);
     await curlTest();
