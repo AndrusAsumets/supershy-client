@@ -21,11 +21,13 @@ runcmd:
     - echo "Timeout 600" > nano tinyproxy.conf
     - echo "Allow 127.0.0.1" > nano tinyproxy.conf
     - tinyproxy -d -c tinyproxy.conf
+
+    - echo "PasswordAuthentication no" > sudo nano /etc/ssh/sshd_config
 `;
 const appId = 'proxy-loop';
 const tmpPath = `${__dirname}/.tmp/`;
 const srcPath = `${__dirname}/src/`;
-const killAllSshTunnelsCommand = `pkill -f ${tmpPath}${appId}`;
+const killAllSshTunnelsCmd = `pkill -f ${tmpPath}${appId}`;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -200,15 +202,15 @@ const connectSshProxyTunnelEpochs = connectSshProxyTunnelFiles
     .reverse();
 
 if (connectSshProxyTunnelEpochs.length) {
-    killAllSshTunnels(killAllSshTunnelsCommand);
+    killAllSshTunnels(killAllSshTunnelsCmd);
 
     await sleep(1000);
 
     console.log('Starting SSH tunnel connection B.');
-    const connectSshProxyTunnelCommandFile = connectSshProxyTunnelFiles
+    const connectSshProxyTunnelCmdFile = connectSshProxyTunnelFiles
         .find(connectSshProxyTunnelFile => connectSshProxyTunnelFile.includes(connectSshProxyTunnelEpochs[0]))
-    const connectSshProxyTunnelCommand = await Deno.readTextFile(`${tmpPath}${connectSshProxyTunnelCommandFile}`);
-    await connectSshProxyTunnel(connectSshProxyTunnelCommand);
+    const connectSshProxyTunnelCmd = await Deno.readTextFile(`${tmpPath}${connectSshProxyTunnelCmdFile}`);
+    await connectSshProxyTunnel(connectSshProxyTunnelCmd);
     await curlTest();
     console.log('SSH tunnel connection B connected .');
 }
@@ -240,8 +242,8 @@ while (true) {
 
             const passphrase = crypto.randomBytes(64).toString('hex');
             const keyPath = `${tmpPath}${dropletName}`;
-            const createSshKeyCommand = `${srcPath}generate-ssh-key.exp ${passphrase} ${keyPath}`;
-            const createSshKeyProcess = Deno.run({ cmd: createSshKeyCommand.split(' ') });
+            const createSshKeyCmd = `${srcPath}generate-ssh-key.exp ${passphrase} ${keyPath}`;
+            const createSshKeyProcess = Deno.run({ cmd: createSshKeyCmd.split(' ') });
             await createSshKeyProcess.status();
 
             const publicKey = await Deno.readTextFile(`${keyPath}.pub`);
@@ -265,16 +267,16 @@ while (true) {
             }
             console.log(`Found network at ${ip}.`);
 
-            const connectSshProxyTunnelCommand = `${srcPath}connect-ssh-tunnel.exp ${passphrase} ${ip} root ${LOCAL_PORT} ${keyPath}`;
-            Deno.writeTextFileSync(`${tmpPath}${dropletName}-connect-ssh-proxy-tunnel-command`, connectSshProxyTunnelCommand);
+            const connectSshProxyTunnelCmd = `${srcPath}connect-ssh-tunnel.exp ${passphrase} ${ip} root ${LOCAL_PORT} ${keyPath}`;
+            Deno.writeTextFileSync(`${tmpPath}${dropletName}-connect-ssh-proxy-tunnel-command`, connectSshProxyTunnelCmd);
 
             if (type === 'a') {
                 console.log('Starting SSH tunnel connection test.');
                 let isConnectable = false;
                 while(!isConnectable) {
-                    const openSshProxyTunnelTestCommand = `ssh -o StrictHostKeyChecking=accept-new root@${ip}`;
+                    const openSshProxyTunnelTestCmd = `ssh -o StrictHostKeyChecking=accept-new root@${ip}`;
                     const openSshProxyTunnelTestProcess = Deno.run({
-                        cmd: openSshProxyTunnelTestCommand.split(' '),
+                        cmd: openSshProxyTunnelTestCmd.split(' '),
                         stdout: 'piped',
                         stderr: 'piped',
                         stdin: 'null'
@@ -288,12 +290,12 @@ while (true) {
                 }
                 console.log('Successfully finished SSH tunnel connection test.');
 
-                killAllSshTunnels(killAllSshTunnelsCommand);
+                killAllSshTunnels(killAllSshTunnelsCmd);
 
                 await sleep(1000);
 
                 console.log('Starting SSH tunnel connection A.');
-                await connectSshProxyTunnel(connectSshProxyTunnelCommand);
+                await connectSshProxyTunnel(connectSshProxyTunnelCmd);
                 console.log('SSH tunnel connection A connected .');
 
                 console.log('Starting curl test.');
