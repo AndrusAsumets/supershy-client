@@ -49,12 +49,12 @@ const createFolderIfNeed = async (path) => {
     }
 };
 
-const curlTest = async () => {
+const curlTest = async (proxyUrl = '') => {
     let canGet = false;
 
     while(!canGet) {
         try {
-            canGet = await listRegions();
+            canGet = await listRegions(proxyUrl);
         }
         catch(err) {
             await sleep(1000);
@@ -62,11 +62,20 @@ const curlTest = async () => {
     }
 };
 
-const listRegions = async () => {
+const listRegions = async (proxyUrl) => {
     const headers = {
         Authorization: `Bearer ${TOKEN}`
     };
-    const res = await fetch(`${baseUrl}/regions`, { method: 'GET', headers });
+    const options: any = { method: 'GET', headers };
+
+    if (proxyUrl) {
+        options.client = Deno.createHttpClient({
+            proxy: {
+              url: proxyUrl
+            }
+        });
+    }
+    const res = await fetch(`${baseUrl}/regions`, options);
     const json: any = await res.json();
     return json;
 };
@@ -274,7 +283,7 @@ while (true) {
                 console.log('Starting SSH tunnel connection test.');
                 let isConnectable = false;
                 while(!isConnectable) {
-                    const openSshProxyTunnelTestCmd = `ssh -o StrictHostKeyChecking=accept-new root@${ip}`;
+                    const openSshProxyTunnelTestCmd = `${srcPath}connect-ssh-tunnel.exp ${passphrase} ${ip} root ${LOCAL_TEST_PORT} ${keyPath}`;
                     const openSshProxyTunnelTestProcess = Deno.run({
                         cmd: openSshProxyTunnelTestCmd.split(' '),
                         stdout: 'piped',
@@ -282,13 +291,13 @@ while (true) {
                         stdin: 'null'
                     });
                     const output = new TextDecoder().decode(await openSshProxyTunnelTestProcess.stderrOutput());
-
-                    isConnectable = output.includes('Permission denied');
-                    if (!isConnectable) {
-                        await sleep(1000);
-                    }
+                    isConnectable = !output;
                 }
                 console.log('Successfully finished SSH tunnel connection test.');
+
+                console.log('Starting curl test (1).');
+                await curlTest(`http://localhost:${LOCAL_TEST_PORT}`);
+                console.log('Successfully finished curl test (1).');
 
                 killAllSshTunnels(killAllSshTunnelsCmd);
 
@@ -298,9 +307,9 @@ while (true) {
                 await connectSshProxyTunnel(connectSshProxyTunnelCmd);
                 console.log('SSH tunnel connection A connected .');
 
-                console.log('Starting curl test.');
+                console.log('Starting curl test (2).');
                 await curlTest();
-                console.log('Successfully finished curl test.');
+                console.log('Successfully finished curl test (2).');
             }
 
             typeIndex = typeIndex + 1;
