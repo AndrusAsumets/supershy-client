@@ -49,7 +49,7 @@ const createFolderIfNeed = async (path) => {
     }
 };
 
-const curlTest = async (proxyUrl = '') => {
+const apiTest = async (proxyUrl = '') => {
     let canGet = false;
 
     while(!canGet) {
@@ -220,7 +220,7 @@ if (connectSshProxyTunnelEpochs.length) {
         .find(connectSshProxyTunnelFile => connectSshProxyTunnelFile.includes(connectSshProxyTunnelEpochs[0]))
     const connectSshProxyTunnelCmd = await Deno.readTextFile(`${tmpPath}${connectSshProxyTunnelCmdFile}`);
     await connectSshProxyTunnel(connectSshProxyTunnelCmd);
-    await curlTest();
+    await apiTest();
     console.log('SSH tunnel connection B connected .');
 }
 
@@ -283,9 +283,8 @@ while (true) {
                 console.log('Starting SSH tunnel connection test.');
                 let isConnectable = false;
                 while(!isConnectable) {
-                    const openSshProxyTunnelTestCmd = `${srcPath}connect-ssh-tunnel.exp ${passphrase} ${ip} root ${LOCAL_TEST_PORT} ${keyPath}`;
                     const openSshProxyTunnelTestProcess = Deno.run({
-                        cmd: openSshProxyTunnelTestCmd.split(' '),
+                        cmd: connectSshProxyTunnelCmd.replace(String(LOCAL_PORT), String(LOCAL_TEST_PORT)).split(' '),
                         stdout: 'piped',
                         stderr: 'piped',
                         stdin: 'null'
@@ -295,9 +294,9 @@ while (true) {
                 }
                 console.log('Successfully finished SSH tunnel connection test.');
 
-                console.log('Starting curl test (1).');
-                await curlTest(`http://localhost:${LOCAL_TEST_PORT}`);
-                console.log('Successfully finished curl test (1).');
+                console.log('Starting API test (1).');
+                await apiTest(`http://localhost:${LOCAL_TEST_PORT}`);
+                console.log('Successfully finished API test (1).');
 
                 killAllSshTunnels(killAllSshTunnelsCmd);
 
@@ -307,9 +306,9 @@ while (true) {
                 await connectSshProxyTunnel(connectSshProxyTunnelCmd);
                 console.log('SSH tunnel connection A connected .');
 
-                console.log('Starting curl test (2).');
-                await curlTest();
-                console.log('Successfully finished curl test (2).');
+                console.log('Starting API test (2).');
+                await apiTest();
+                console.log('Successfully finished API test (2).');
             }
 
             typeIndex = typeIndex + 1;
