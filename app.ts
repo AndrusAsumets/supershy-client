@@ -1,14 +1,19 @@
+import 'jsr:@std/dotenv/load';
 import * as path from 'https://deno.land/std/path/mod.ts';
 import { exists } from 'https://deno.land/std/fs/mod.ts';
 import { parse } from 'https://deno.land/std/flags/mod.ts';
 import * as crypto from 'node:crypto';
 
+
 const __dirname = path.dirname(path.fromFileUrl(import.meta.url));
 const args = parse(Deno.args);
-const TOKEN = args.t;
+const DIGITAL_OCEAN_API_KEY = Deno.env.get('DIGITAL_OCEAN_API_KEY');
+const CLOUDFLARE_ACCOUNT_ID = Deno.env.get('CLOUDFLARE_ACCOUNT_ID');
+const CLOUDFLARE_API_KEY = Deno.env.get('CLOUDFLARE_API_KEY');
+const CLOUDFLARE_KV_NAMESPACE = Deno.env.get('CLOUDFLARE_KV_NAMESPACE');
 const INTERVAL_MIN = args.i;
 const ERROR_INTERVAL_MIN = 1;
-const LOCAL_TEST_PORT = 8887
+const LOCAL_TEST_PORT = 8887;
 const LOCAL_PORT = 8888;
 const baseUrl = 'https://api.digitalocean.com/v2';
 const userData = `
@@ -25,12 +30,11 @@ runcmd:
 
     - DROPLET_ID=$(echo \`curl http://169.254.169.254/metadata/v1/id\`)
     - HOST_KEY=$(echo \`ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub\` | cut -d " " -f 2)
-    - curl https://proxy-loop.requestcatcher.com/$DROPLET_ID/$HOST_KEY
+    - curl --request PUT -H 'Content-Type=*\/*' --data $HOST_KEY --url https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${CLOUDFLARE_KV_NAMESPACE}/values/$DROPLET_ID --oauth2-bearer ${CLOUDFLARE_API_KEY}
 `;
 const appId = 'proxy-loop';
 const tmpPath = `${__dirname}/.tmp/`;
 const srcPath = `${__dirname}/src/`;
-const killAllSshTunnelsCmd = `pkill -f ${tmpPath}${appId}`;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -65,9 +69,9 @@ const apiTest = async (proxyUrl = '') => {
     }
 };
 
-const listRegions = async (proxyUrl) => {
+const listRegions = async (proxyUrl = '') => {
     const headers = {
-        Authorization: `Bearer ${TOKEN}`
+        Authorization: `Bearer ${DIGITAL_OCEAN_API_KEY}`
     };
     const options: any = { method: 'GET', headers };
 
@@ -85,7 +89,7 @@ const listRegions = async (proxyUrl) => {
 
 const listDroplets = async () => {
     const headers = {
-        Authorization: `Bearer ${TOKEN}`
+        Authorization: `Bearer ${DIGITAL_OCEAN_API_KEY}`
     };
     const res = await fetch(`${baseUrl}/droplets`, { method: 'GET', headers });
     const json: any = await res.json();
@@ -94,7 +98,7 @@ const listDroplets = async () => {
 
 const listKeys = async () => {
     const headers = {
-        Authorization: `Bearer ${TOKEN}`
+        Authorization: `Bearer ${DIGITAL_OCEAN_API_KEY}`
     };
     const res = await fetch(`${baseUrl}/account/keys`, { method: 'GET', headers });
     const json: any = await res.json();
@@ -103,7 +107,7 @@ const listKeys = async () => {
 
 const createDroplet = async (region, name, size, publicKey, userData) => {
     const headers = {
-        Authorization: `Bearer ${TOKEN}`,
+        Authorization: `Bearer ${DIGITAL_OCEAN_API_KEY}`,
         'Content-Type': 'application/json'
     };
     const body = {
@@ -126,7 +130,7 @@ const deleteDroplets = async (ids) => {
     while(index < ids.length) {
         const id = ids[index];
         const headers = {
-            Authorization: `Bearer ${TOKEN}`,
+            Authorization: `Bearer ${DIGITAL_OCEAN_API_KEY}`,
             'Content-Type': 'application/json'
         };
         await fetch(`${baseUrl}/droplets/${id}`, { method: 'DELETE', headers });
@@ -141,7 +145,7 @@ const deleteKeys = async (ids) => {
     while(index < ids.length) {
         const id = ids[index];
         const headers = {
-            Authorization: `Bearer ${TOKEN}`,
+            Authorization: `Bearer ${DIGITAL_OCEAN_API_KEY}`,
             'Content-Type': 'application/json'
         };
         await fetch(`${baseUrl}/account/keys/${id}`, { method: 'DELETE', headers });
@@ -152,7 +156,7 @@ const deleteKeys = async (ids) => {
 
 const addKey = async (publicKey, name) => {
     const headers = {
-        Authorization: `Bearer ${TOKEN}`,
+        Authorization: `Bearer ${DIGITAL_OCEAN_API_KEY}`,
         'Content-Type': 'application/json'
     };
     const body = {
@@ -174,7 +178,8 @@ const connectSshProxyTunnel = async (cmd) => {
     new TextDecoder().decode(await connectSshProxyTunnelProcess.stderrOutput());
 };
 
-const killAllSshTunnels = (cmd) => {
+const killAllSshTunnelsByPort = (port) => {
+    const cmd = `pkill -f ${port}`;
     Deno.run({
         cmd: cmd.split(' '),
         stdout: 'null',
@@ -195,7 +200,6 @@ const errorSleep = async() => {
     await sleep(ERROR_INTERVAL_MIN * 60 * 1000);
 };
 
-
 await createFolderIfNeed(tmpPath);
 
 const tmpFiles = await getFiles(tmpPath);
@@ -213,8 +217,11 @@ const connectSshProxyTunnelEpochs = connectSshProxyTunnelFiles
     .sort()
     .reverse();
 
+
+killAllSshTunnelsByPort(LOCAL_TEST_PORT);
+
 if (connectSshProxyTunnelEpochs.length) {
-    killAllSshTunnels(killAllSshTunnelsCmd);
+    killAllSshTunnelsByPort(LOCAL_PORT);
 
     await sleep(1000);
 
@@ -224,13 +231,12 @@ if (connectSshProxyTunnelEpochs.length) {
     const connectSshProxyTunnelCmd = await Deno.readTextFile(`${tmpPath}${connectSshProxyTunnelCmdFile}`);
     await connectSshProxyTunnel(connectSshProxyTunnelCmd);
     await apiTest();
+
     console.log('SSH tunnel connection B connected .');
 }
 
 while (true) {
     try {
-        console.log(`Proxy loop started.`);
-
         const startTime = performance.now();
 
         // Store for deleting later on in the process.
@@ -262,7 +268,8 @@ while (true) {
             const publicKeyId = await addKey(publicKey, dropletName);
 
             const createdDroplet = await createDroplet(dropletRegion, dropletName, dropletSize, publicKeyId, userData);
-            console.log('Created droplet.', { dropletSize, dropletRegion, dropletName });
+            const dropletId = createdDroplet.droplet.id;
+            console.log('Created droplet.', { dropletSize, dropletRegion, dropletName, dropletId });
 
             let ip = null;
             while (!ip) {
@@ -301,7 +308,8 @@ while (true) {
                 await apiTest(`http://localhost:${LOCAL_TEST_PORT}`);
                 console.log('Successfully finished API test (1).');
 
-                killAllSshTunnels(killAllSshTunnelsCmd);
+                killAllSshTunnelsByPort(LOCAL_TEST_PORT);
+                killAllSshTunnelsByPort(LOCAL_PORT);
 
                 await sleep(1000);
 
