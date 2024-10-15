@@ -1,6 +1,5 @@
 import * as path from 'https://deno.land/std/path/mod.ts';
 import { exists } from 'https://deno.land/std/fs/mod.ts';
-import * as uuid from 'jsr:@std/uuid';
 import { parse } from 'https://deno.land/std/flags/mod.ts';
 import * as crypto from 'node:crypto';
 
@@ -23,6 +22,10 @@ runcmd:
     - tinyproxy -d -c tinyproxy.conf
 
     - echo "PasswordAuthentication no" > sudo nano /etc/ssh/sshd_config
+
+    - DROPLET_ID=$(echo \`curl http://169.254.169.254/metadata/v1/id\`)
+    - HOST_KEY=$(echo \`ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub\` | cut -d " " -f 2)
+    - curl https://proxy-loop.requestcatcher.com/$DROPLET_ID/$HOST_KEY
 `;
 const appId = 'proxy-loop';
 const tmpPath = `${__dirname}/.tmp/`;
