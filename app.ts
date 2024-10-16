@@ -3,6 +3,7 @@ import * as path from 'https://deno.land/std/path/mod.ts';
 import { exists } from 'https://deno.land/std/fs/mod.ts';
 import { parse } from 'https://deno.land/std/flags/mod.ts';
 import * as crypto from 'node:crypto';
+import { homedir } from 'node:os';
 
 
 const __dirname = path.dirname(path.fromFileUrl(import.meta.url));
@@ -15,12 +16,15 @@ const INTERVAL_MIN = args.i;
 const ERROR_INTERVAL_MIN = 1;
 const LOCAL_TEST_PORT = 8887;
 const LOCAL_PORT = 8888;
+const REMOTE_TEST_PORT = 8888;
+const REMOTE_PORT = 8888
 const baseUrl = 'https://api.digitalocean.com/v2';
+const keyAlgorithm = 'ed25519';
 const userData = `
 #cloud-config
 runcmd:
     - sudo apt install tinyproxy -y
-    - echo "Port 8888" > nano tinyproxy.conf
+    - echo "Port ${REMOTE_PORT}" > nano tinyproxy.conf
     - echo "Listen 127.0.0.1" > nano tinyproxy.conf
     - echo "Timeout 600" > nano tinyproxy.conf
     - echo "Allow 127.0.0.1" > nano tinyproxy.conf
@@ -29,12 +33,13 @@ runcmd:
     - echo "PasswordAuthentication no" > sudo nano /etc/ssh/sshd_config
 
     - DROPLET_ID=$(echo \`curl http://169.254.169.254/metadata/v1/id\`)
-    - HOST_KEY=$(echo \`ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub\` | cut -d " " -f 2)
+    - HOST_KEY=$(cat /etc/ssh/ssh_host_${keyAlgorithm}_key.pub | cut -d " " -f 2)
     - curl --request PUT -H 'Content-Type=*\/*' --data $HOST_KEY --url https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${CLOUDFLARE_KV_NAMESPACE}/values/$DROPLET_ID --oauth2-bearer ${CLOUDFLARE_API_KEY}
 `;
 const appId = 'proxy-loop';
 const tmpPath = `${__dirname}/.tmp/`;
 const srcPath = `${__dirname}/src/`;
+const knownHostsPath = `${homedir()}/.ssh/known_hosts`;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -54,6 +59,29 @@ const createFolderIfNeed = async (path) => {
     if (!await exists(path)) {
         await Deno.mkdir(path);
     }
+};
+
+const getHostKey = async (dropletId) => {
+    let hostKey: any = '';
+
+    while(!hostKey) {
+        try {
+            const headers = {
+                Authorization: `Bearer ${CLOUDFLARE_API_KEY}`
+            };
+            const res = await fetch(`https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${CLOUDFLARE_KV_NAMESPACE}/values/${dropletId}`, { method: 'GET', headers });
+            const text = await res.text();
+
+            if (!text.includes('key not found')) {
+                hostKey = text
+            }
+        }
+        catch(err) {
+            await sleep(1000);
+        }
+    }
+
+    return hostKey;
 };
 
 const apiTest = async (proxyUrl = '') => {
@@ -179,7 +207,7 @@ const connectSshProxyTunnel = async (cmd) => {
 };
 
 const killAllSshTunnelsByPort = (port) => {
-    const cmd = `pkill -f ${port}`;
+    const cmd = `pkill -f ${port}:`;
     Deno.run({
         cmd: cmd.split(' '),
         stdout: 'null',
@@ -246,6 +274,9 @@ while (true) {
         const epoch = Number(new Date());
 
         const types = ['b', 'a'];
+        const dropletIds: number[] = [];
+        const dropletIps: number[] = [];
+
         let typeIndex = 0;
         while (typeIndex < types.length) {
             const type = types[typeIndex];
@@ -260,7 +291,7 @@ while (true) {
 
             const passphrase = crypto.randomBytes(64).toString('hex');
             const keyPath = `${tmpPath}${dropletName}`;
-            const createSshKeyCmd = `${srcPath}generate-ssh-key.exp ${passphrase} ${keyPath}`;
+            const createSshKeyCmd = `${srcPath}generate-ssh-key.exp ${passphrase} ${keyPath} ${keyAlgorithm}`;
             const createSshKeyProcess = Deno.run({ cmd: createSshKeyCmd.split(' ') });
             await createSshKeyProcess.status();
 
@@ -269,10 +300,11 @@ while (true) {
 
             const createdDroplet = await createDroplet(dropletRegion, dropletName, dropletSize, publicKeyId, userData);
             const dropletId = createdDroplet.droplet.id;
+            dropletIds.push(dropletId);
             console.log('Created droplet.', { dropletSize, dropletRegion, dropletName, dropletId });
 
-            let ip = null;
-            while (!ip) {
+            let dropletIp = null;
+            while (!dropletIp) {
                 const list = await listDroplets();
                 const droplets = list.droplets;
 
@@ -280,21 +312,32 @@ while (true) {
                     const droplet = droplets.find(droplet => droplet.id == createdDroplet.droplet.id);
 
                     if (droplet && droplet.networks.v4.length) {
-                        ip = droplet.networks.v4.filter(network => network.type == 'public')[0]['ip_address'];
+                        dropletIp = droplet.networks.v4.filter(network => network.type == 'public')[0]['ip_address'];
                     }
                 }
             }
-            console.log(`Found network at ${ip}.`);
+            dropletIps.push(dropletIp);
+            console.log(`Found network at ${dropletIp}.`);
 
-            const connectSshProxyTunnelCmd = `${srcPath}connect-ssh-tunnel.exp ${passphrase} ${ip} root ${LOCAL_PORT} ${keyPath}`;
+            const connectSshProxyTunnelCmd = `${srcPath}connect-ssh-tunnel.exp ${passphrase} ${dropletIp} root ${LOCAL_PORT} ${REMOTE_PORT} ${keyPath}`;
             Deno.writeTextFileSync(`${tmpPath}${dropletName}-connect-ssh-proxy-tunnel-command`, connectSshProxyTunnelCmd);
 
             if (type === 'a') {
+                console.log('Starting to get host keys.');
+                const hostKeyB = await getHostKey(dropletIds[0]);
+                const hostKeyA = await getHostKey(dropletIds[1]);
+                console.log('Successfully got host keys.');
+
+                console.log('Starting to add host keys to known hosts.');
+                Deno.writeTextFileSync(knownHostsPath, `${dropletIps[0]} ssh-${keyAlgorithm} ${hostKeyB}\n`, { append: true });
+                Deno.writeTextFileSync(knownHostsPath, `${dropletIps[1]} ssh-${keyAlgorithm} ${hostKeyA}\n`, { append: true });
+                console.log('Successfully added host keys to known hosts.');
+
                 console.log('Starting SSH tunnel connection test.');
                 let isConnectable = false;
                 while(!isConnectable) {
                     const openSshProxyTunnelTestProcess = Deno.run({
-                        cmd: connectSshProxyTunnelCmd.replace(String(LOCAL_PORT), String(LOCAL_TEST_PORT)).split(' '),
+                        cmd: connectSshProxyTunnelCmd.replace(`${LOCAL_PORT}`, `${LOCAL_TEST_PORT}`).split(' '),
                         stdout: 'piped',
                         stderr: 'piped',
                         stdin: 'null'
