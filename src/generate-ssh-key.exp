@@ -4,7 +4,7 @@ set passphrase [lrange $argv 0 0]
 set path [lrange $argv 1 1]
 set key_algorithm [lrange $argv 2 2]
 
-spawn ssh-keygen -t $key_algorithm -f $path
+spawn ssh-keygen -t $key_algorithm -a 100 -b 32768 -f $path
 expect "*passphrase*"
 send -- "$passphrase\r"
 expect "*?again:*"

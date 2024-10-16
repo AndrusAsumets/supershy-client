@@ -7,7 +7,7 @@ set local_port [lrange $argv 3 3]
 set remote_port [lrange $argv 4 4]
 set key [lrange $argv 5 5]
 
-spawn -ignore HUP ssh -v $name@$server -o StrictHostKeyChecking=yes -f -N -L $local_port:localhost:$remote_port -i $key
+spawn -ignore HUP ssh -v $name@$server -o StrictHostKeyChecking=yes -f -N -L $local_port:0.0.0.0:$remote_port -i $key
 expect "*passphrase*"
 send -- "$passphrase\r"
 interact
