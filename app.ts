@@ -1,11 +1,12 @@
+// deno-lint-ignore-file ban-unused-ignore no-explicit-any no-deprecated-deno-api
+
 import 'jsr:@std/dotenv/load';
-import * as path from 'https://deno.land/std/path/mod.ts';
-import { exists } from 'https://deno.land/std/fs/mod.ts';
+import * as path from 'https://deno.land/std@0.224.0/path/mod.ts';
+import { exists } from 'https://deno.land/std@0.224.0/fs/mod.ts';
 import * as crypto from 'node:crypto';
 import { homedir } from 'node:os';
 
 
-const __dirname = path.dirname(path.fromFileUrl(import.meta.url));
 const DIGITAL_OCEAN_API_KEY = Deno.env.get('DIGITAL_OCEAN_API_KEY');
 const CLOUDFLARE_ACCOUNT_ID = Deno.env.get('CLOUDFLARE_ACCOUNT_ID');
 const CLOUDFLARE_API_KEY = Deno.env.get('CLOUDFLARE_API_KEY');
@@ -18,7 +19,34 @@ const LOCAL_PORT = 8888;
 const REMOTE_PORT = 8888
 const baseUrl = 'https://api.digitalocean.com/v2';
 const keyAlgorithm = 'ed25519';
-const userData = `
+const appId = 'proxy-loop';
+const __dirname = path.dirname(path.fromFileUrl(import.meta.url));
+const tmpPath = `${__dirname}/.tmp/`;
+const srcPath = `${__dirname}/src/`;
+const knownHostsPath = `${homedir()}/.ssh/known_hosts`;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+const getFiles = async (path: string) => {
+    const fileNames: string[] = [];
+
+    for await (const dirEntry of Deno.readDir(path)) {
+      if (dirEntry.isFile) {
+        fileNames.push(dirEntry.name);
+      }
+    }
+
+    return fileNames;
+};
+
+const createFolderIfNeed = async (path: string) => {
+    if (!await exists(path)) {
+        await Deno.mkdir(path);
+    }
+};
+
+const buildUserData = () => {
+    return `
 #cloud-config
 runcmd:
     - sudo apt install tinyproxy -y
@@ -34,32 +62,9 @@ runcmd:
     - HOST_KEY=$(cat /etc/ssh/ssh_host_${keyAlgorithm}_key.pub | cut -d " " -f 2)
     - curl --request PUT -H 'Content-Type=*\/*' --data $HOST_KEY --url https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${CLOUDFLARE_KV_NAMESPACE}/values/$DROPLET_ID --oauth2-bearer ${CLOUDFLARE_API_KEY}
 `;
-const appId = 'proxy-loop';
-const tmpPath = `${__dirname}/.tmp/`;
-const srcPath = `${__dirname}/src/`;
-const knownHostsPath = `${homedir()}/.ssh/known_hosts`;
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-const getFiles = async (path) => {
-    const fileNames: string[] = [];
-
-    for await (const dirEntry of Deno.readDir(path)) {
-      if (dirEntry.isFile) {
-        fileNames.push(dirEntry.name);
-      }
-    }
-
-    return fileNames;
 };
 
-const createFolderIfNeed = async (path) => {
-    if (!await exists(path)) {
-        await Deno.mkdir(path);
-    }
-};
-
-const getHostKey = async (dropletId) => {
+const getHostKey = async (dropletId: number) => {
     let hostKey: any = '';
 
     while(!hostKey) {
@@ -74,7 +79,7 @@ const getHostKey = async (dropletId) => {
                 hostKey = text
             }
         }
-        catch(err) {
+        catch(_) {
             await sleep(1000);
         }
     }
@@ -89,7 +94,7 @@ const apiTest = async (proxyUrl = '') => {
         try {
             canGet = await listRegions(proxyUrl);
         }
-        catch(err) {
+        catch(_) {
             await sleep(1000);
         }
     }
@@ -131,7 +136,7 @@ const listKeys = async () => {
     return json;
 };
 
-const createDroplet = async (region, name, size, publicKey, userData) => {
+const createDroplet = async (region: string, name: string, size: string, publicKey: string, userData: string) => {
     const headers = {
         Authorization: `Bearer ${DIGITAL_OCEAN_API_KEY}`,
         'Content-Type': 'application/json'
@@ -150,7 +155,7 @@ const createDroplet = async (region, name, size, publicKey, userData) => {
     return json;
 };
 
-const deleteDroplets = async (ids) => {
+const deleteDroplets = async (ids: number[]) => {
     let index = 0;
 
     while(index < ids.length) {
@@ -165,7 +170,7 @@ const deleteDroplets = async (ids) => {
     }
 };
 
-const deleteKeys = async (ids) => {
+const deleteKeys = async (ids: number[]) => {
     let index = 0;
 
     while(index < ids.length) {
@@ -180,7 +185,7 @@ const deleteKeys = async (ids) => {
     }
 };
 
-const addKey = async (publicKey, name) => {
+const addKey = async (publicKey: string, name: string) => {
     const headers = {
         Authorization: `Bearer ${DIGITAL_OCEAN_API_KEY}`,
         'Content-Type': 'application/json'
@@ -194,7 +199,8 @@ const addKey = async (publicKey, name) => {
     return json['ssh_key']['id'];
 };
 
-const connectSshProxyTunnel = async (cmd) => {
+const connectSshProxyTunnel = async (cmd: string, ) => {
+    // @ts-ignore: because
     const connectSshProxyTunnelProcess = Deno.run({
         cmd: cmd.split(' '),
         stdout: 'piped',
@@ -204,14 +210,11 @@ const connectSshProxyTunnel = async (cmd) => {
     new TextDecoder().decode(await connectSshProxyTunnelProcess.stderrOutput());
 };
 
-const killAllSshTunnelsByPort = (port) => {
-    const cmd = `pkill -f ${port}:`;
-    Deno.run({
-        cmd: cmd.split(' '),
-        stdout: 'null',
-        stderr: 'null',
-        stdin: 'null'
-    });
+const killAllSshTunnelsByPort = async (port: number) => {
+    const cmd = 'pkill';
+    const args =  `-f ${port}:`.split(' ');
+    const command = new Deno.Command(cmd, { args});
+    await command.output();
 };
 
 await createFolderIfNeed(tmpPath);
@@ -231,8 +234,7 @@ const connectSshProxyTunnelEpochs = connectSshProxyTunnelFiles
     .sort()
     .reverse();
 
-
-killAllSshTunnelsByPort(LOCAL_TEST_PORT);
+await killAllSshTunnelsByPort(LOCAL_TEST_PORT);
 
 if (connectSshProxyTunnelEpochs.length) {
     killAllSshTunnelsByPort(LOCAL_PORT);
@@ -302,9 +304,9 @@ const proxy = async () => {
         const type = types[typeIndex];
 
         const regions = (await listRegions())
-            .regions.filter(region => region.sizes.includes(dropletSize));
+            .regions.filter((region: any) => region.sizes.includes(dropletSize));
         const slugs = regions
-            .map(region => region.slug)
+            .map((region: any) => region.slug)
             .sort(() => (Math.random() > 0.5) ? 1 : -1);
         const dropletRegion = slugs[0];
         const dropletName = `${appId}-${type}-${epoch}`;
@@ -312,11 +314,13 @@ const proxy = async () => {
         const passphrase = crypto.randomBytes(64).toString('hex');
         const keyPath = `${tmpPath}${dropletName}`;
         const createSshKeyCmd = `${srcPath}generate-ssh-key.exp ${passphrase} ${keyPath} ${keyAlgorithm}`;
+        // @ts-ignore: because
         const createSshKeyProcess = Deno.run({ cmd: createSshKeyCmd.split(' ') });
         await createSshKeyProcess.status();
 
         const publicKey = await Deno.readTextFile(`${keyPath}.pub`);
         const publicKeyId = await addKey(publicKey, dropletName);
+        const userData = buildUserData();
 
         const createdDroplet = await createDroplet(dropletRegion, dropletName, dropletSize, publicKeyId, userData);
         const dropletId = createdDroplet.droplet.id;
@@ -329,10 +333,10 @@ const proxy = async () => {
             const droplets = list.droplets;
 
             if (list && droplets) {
-                const droplet = droplets.find(droplet => droplet.id == createdDroplet.droplet.id);
+                const droplet = droplets.find((droplet: any) => droplet.id == createdDroplet.droplet.id);
 
                 if (droplet && droplet.networks.v4.length) {
-                    dropletIp = droplet.networks.v4.filter(network => network.type == 'public')[0]['ip_address'];
+                    dropletIp = droplet.networks.v4.filter((network: any) => network.type == 'public')[0]['ip_address'];
                 }
             }
         }
@@ -343,10 +347,10 @@ const proxy = async () => {
         Deno.writeTextFileSync(`${tmpPath}${dropletName}-connect-ssh-proxy-tunnel-command`, connectSshProxyTunnelCmd);
 
         if (type === 'a') {
-            console.log('Starting to get host keys.');
+            console.log('Starting to fetch host keys.');
             const hostKeyB = await getHostKey(dropletIds[0]);
             const hostKeyA = await getHostKey(dropletIds[1]);
-            console.log('Successfully got host keys.');
+            console.log('Successfully fetched host keys.');
 
             console.log('Starting to add host keys to known hosts.');
             Deno.writeTextFileSync(knownHostsPath, `${dropletIps[0]} ssh-${keyAlgorithm} ${hostKeyB}\n`, { append: true });
@@ -356,6 +360,7 @@ const proxy = async () => {
             console.log('Starting SSH tunnel connection test.');
             let isConnectable = false;
             while(!isConnectable) {
+                // @ts-ignore: because
                 const openSshProxyTunnelTestProcess = Deno.run({
                     cmd: connectSshProxyTunnelCmd.replace(`${LOCAL_PORT}`, `${LOCAL_TEST_PORT}`).split(' '),
                     stdout: 'piped',
@@ -371,8 +376,8 @@ const proxy = async () => {
             await apiTest(`http://localhost:${LOCAL_TEST_PORT}`);
             console.log('Successfully finished API test (1).');
 
-            killAllSshTunnelsByPort(LOCAL_TEST_PORT);
-            killAllSshTunnelsByPort(LOCAL_PORT);
+            await killAllSshTunnelsByPort(LOCAL_TEST_PORT);
+            await killAllSshTunnelsByPort(LOCAL_PORT);
 
             await sleep(1000);
 
@@ -390,12 +395,12 @@ const proxy = async () => {
 
     const keys = await listKeys();
     const deletableKeyIds = keys['ssh_keys']
-        .filter(key => key.name.includes(appId))
-        .map(key => key.id);
+        .filter((key: any) => key.name.includes(appId))
+        .map((key: any) => key.id);
     await deleteKeys(deletableKeyIds);
 
     const deletableDropletIds = previousDroplets.droplets
-        .filter(droplet => droplet.name.includes(appId))
-        .map(droplet => droplet.id);
+        .filter((droplet: any) => droplet.name.includes(appId))
+        .map((droplet: any) => droplet.id);
     await deleteDroplets(deletableDropletIds);
 };
