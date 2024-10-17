@@ -7,19 +7,19 @@ import * as crypto from 'node:crypto';
 import { homedir } from 'node:os';
 
 
-const DIGITAL_OCEAN_API_KEY = Deno.env.get('DIGITAL_OCEAN_API_KEY');
-const CLOUDFLARE_ACCOUNT_ID = Deno.env.get('CLOUDFLARE_ACCOUNT_ID');
-const CLOUDFLARE_API_KEY = Deno.env.get('CLOUDFLARE_API_KEY');
-const CLOUDFLARE_KV_NAMESPACE = Deno.env.get('CLOUDFLARE_KV_NAMESPACE');
-const dropletSize = 's-1vcpu-512mb-10gb';
+const APP_ID = String(Deno.env.get('APP_ID'));
 const LOOP_INTERVAL_MIN = Number(Deno.env.get('LOOP_INTERVAL_MIN'));
 const LOOP_TIMEOUT_MIN = Number(Deno.env.get('LOOP_TIMEOUT_MIN'));
-const LOCAL_TEST_PORT = 8887;
-const LOCAL_PORT = 8888;
-const REMOTE_PORT = 8888
+const LOCAL_TEST_PORT = Number(Deno.env.get('LOCAL_TEST_PORT'));
+const LOCAL_PORT = Number(Deno.env.get('LOCAL_PORT'));
+const REMOTE_PORT = Number(Deno.env.get('REMOTE_PORT'));
+const KEY_ALGORITHM = String(Deno.env.get('KEY_ALGORITHM'));
+const DIGITAL_OCEAN_API_KEY = String(Deno.env.get('DIGITAL_OCEAN_API_KEY'));
+const CLOUDFLARE_ACCOUNT_ID = String(Deno.env.get('CLOUDFLARE_ACCOUNT_ID'));
+const CLOUDFLARE_API_KEY = String(Deno.env.get('CLOUDFLARE_API_KEY'));
+const CLOUDFLARE_KV_NAMESPACE = String(Deno.env.get('CLOUDFLARE_KV_NAMESPACE'));
+const DROPLET_SIZE = String(Deno.env.get('DROPLET_SIZE'));
 const baseUrl = 'https://api.digitalocean.com/v2';
-const keyAlgorithm = 'ed25519';
-const appId = 'proxy-loop';
 const __dirname = path.dirname(path.fromFileUrl(import.meta.url));
 const tmpPath = `${__dirname}/.tmp/`;
 const srcPath = `${__dirname}/src/`;
@@ -59,7 +59,7 @@ runcmd:
     - echo "PasswordAuthentication no" > sudo nano /etc/ssh/sshd_config
 
     - DROPLET_ID=$(echo \`curl http://169.254.169.254/metadata/v1/id\`)
-    - HOST_KEY=$(cat /etc/ssh/ssh_host_${keyAlgorithm}_key.pub | cut -d " " -f 2)
+    - HOST_KEY=$(cat /etc/ssh/ssh_host_${KEY_ALGORITHM}_key.pub | cut -d " " -f 2)
     - curl --request PUT -H 'Content-Type=*\/*' --data $HOST_KEY --url https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${CLOUDFLARE_KV_NAMESPACE}/values/$DROPLET_ID --oauth2-bearer ${CLOUDFLARE_API_KEY}
 `;
 };
@@ -224,7 +224,7 @@ const tmpFiles = await getFiles(tmpPath);
 const connectionFileId = 'connect-ssh-proxy-tunnel-command';
 
 const connectSshProxyTunnelFiles = tmpFiles
-    .filter(file => file.includes(appId))
+    .filter(file => file.includes(APP_ID))
     .filter(file => file.includes('-b-'))
     .filter(file => file.endsWith(connectionFileId));
 
@@ -310,16 +310,16 @@ const proxy = async () => {
         const type = types[typeIndex];
 
         const regions = (await listRegions())
-            .regions.filter((region: any) => region.sizes.includes(dropletSize));
+            .regions.filter((region: any) => region.sizes.includes(DROPLET_SIZE));
         const slugs = regions
             .map((region: any) => region.slug)
             .sort(() => (Math.random() > 0.5) ? 1 : -1);
         const dropletRegion = slugs[0];
-        const dropletName = `${appId}-${type}-${epoch}`;
+        const dropletName = `${APP_ID}-${type}-${epoch}`;
 
         const passphrase = crypto.randomBytes(64).toString('hex');
         const keyPath = `${tmpPath}${dropletName}`;
-        const createSshKeyCmd = `${srcPath}generate-ssh-key.exp ${passphrase} ${keyPath} ${keyAlgorithm}`;
+        const createSshKeyCmd = `${srcPath}generate-ssh-key.exp ${passphrase} ${keyPath} ${KEY_ALGORITHM}`;
         // @ts-ignore: because
         const createSshKeyProcess = Deno.run({ cmd: createSshKeyCmd.split(' ') });
         await createSshKeyProcess.status();
@@ -328,10 +328,10 @@ const proxy = async () => {
         const publicKeyId = await addKey(publicKey, dropletName);
         const userData = buildUserData();
 
-        const createdDroplet = await createDroplet(dropletRegion, dropletName, dropletSize, publicKeyId, userData);
+        const createdDroplet = await createDroplet(dropletRegion, dropletName, DROPLET_SIZE, publicKeyId, userData);
         const dropletId = createdDroplet.droplet.id;
         dropletIds.push(dropletId);
-        console.log('Created droplet.', { dropletSize, dropletRegion, dropletName, dropletId });
+        console.log('Created droplet.', { DROPLET_SIZE, dropletRegion, dropletName, dropletId });
 
         let dropletIp = null;
         while (!dropletIp) {
@@ -359,8 +359,8 @@ const proxy = async () => {
             console.log('Successfully fetched host keys.');
 
             console.log('Starting to add host keys to known hosts.');
-            Deno.writeTextFileSync(knownHostsPath, `${dropletIps[0]} ssh-${keyAlgorithm} ${hostKeyB}\n`, { append: true });
-            Deno.writeTextFileSync(knownHostsPath, `${dropletIps[1]} ssh-${keyAlgorithm} ${hostKeyA}\n`, { append: true });
+            Deno.writeTextFileSync(knownHostsPath, `${dropletIps[0]} ssh-${KEY_ALGORITHM} ${hostKeyB}\n`, { append: true });
+            Deno.writeTextFileSync(knownHostsPath, `${dropletIps[1]} ssh-${KEY_ALGORITHM} ${hostKeyA}\n`, { append: true });
             console.log('Successfully added host keys to known hosts.');
 
             console.log('Starting SSH tunnel connection test.');
@@ -401,12 +401,12 @@ const proxy = async () => {
 
     const keys = await listKeys();
     const deletableKeyIds = keys['ssh_keys']
-        .filter((key: any) => key.name.includes(appId))
+        .filter((key: any) => key.name.includes(APP_ID))
         .map((key: any) => key.id);
     await deleteKeys(deletableKeyIds);
 
     const deletableDropletIds = previousDroplets.droplets
-        .filter((droplet: any) => droplet.name.includes(appId))
+        .filter((droplet: any) => droplet.name.includes(APP_ID))
         .map((droplet: any) => droplet.id);
     await deleteDroplets(deletableDropletIds);
 };
