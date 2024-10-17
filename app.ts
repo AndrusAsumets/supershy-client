@@ -248,7 +248,7 @@ if (connectSshProxyTunnelEpochs.length) {
     await connectSshProxyTunnel(connectSshProxyTunnelCmd);
     await apiTest();
 
-    console.log('SSH tunnel connection B connected .');
+    console.log('SSH tunnel connection B connected.');
 }
 
 let secondsLeftForLoopRetrigger = 0;
@@ -389,7 +389,7 @@ const proxy = async () => {
 
             console.log('Starting SSH tunnel connection A.');
             await connectSshProxyTunnel(connectSshProxyTunnelCmd);
-            console.log('SSH tunnel connection A connected .');
+            console.log('SSH tunnel connection A connected.');
 
             console.log('Starting API test (2).');
             await apiTest();
