@@ -136,7 +136,7 @@ const listKeys = async () => {
     return json;
 };
 
-const createDroplet = async (region: string, name: string, size: string, publicKey: string, userData: string) => {
+const createDroplet = async (region: string, name: string, size: string, publicKeyId: string, userData: string) => {
     const headers = {
         Authorization: `Bearer ${DIGITAL_OCEAN_API_KEY}`,
         'Content-Type': 'application/json'
@@ -146,7 +146,7 @@ const createDroplet = async (region: string, name: string, size: string, publicK
         region,
         size,
         image: 'debian-12-x64',
-        ssh_keys: [publicKey],
+        ssh_keys: [publicKeyId],
         user_data: userData
 
     };
@@ -234,13 +234,12 @@ const connectSshProxyTunnelFiles = tmpFiles
 
 const connectSshProxyTunnelEpochs = connectSshProxyTunnelFiles
     .filter(file => file.endsWith(connectionFileId))
-    .map(file => file.split('-')[3])
+    .map(file => file.split('-')[2])
     .sort()
     .reverse();
 
 await killAllSshTunnelsByPort(LOCAL_TEST_PORT);
 
-/*
 if (connectSshProxyTunnelEpochs.length) {
     killAllSshTunnelsByPort(LOCAL_PORT);
 
@@ -255,7 +254,6 @@ if (connectSshProxyTunnelEpochs.length) {
 
     console.log('SSH tunnel connection B connected.');
 }
-*/
 
 let secondsLeftForLoopRetrigger = 0;
 let timeout = 0;
@@ -301,93 +299,21 @@ setInterval(() => {
     }
 }, 1000);
 
-const rotate = async () => {
-    // Store for deleting later on in the process.
-    const previousDroplets = await listDroplets();
+const handleHostKeys = async (dropletIds: number[], dropletIps: string[]) => {
+    let index = 0;
 
-    const epoch = Number(new Date());
+    while (index < dropletIds.length) {
+        const dropletId = dropletIds[index];
+        const dropletIp = dropletIps[index];
 
-    const types = ['b', 'a'];
-    const dropletIds: number[] = [];
-    const dropletIps: string[] = [];
+        const hostKey = await getHostKey(dropletId);
+        console.log(`Fetched host key for droplet ${dropletId}.`);
 
-    let typeIndex = 0;
-    while (typeIndex < types.length) {
-        const type = types[typeIndex];
+        Deno.writeTextFileSync(knownHostsPath, `${dropletIp} ssh-${KEY_ALGORITHM} ${hostKey}\n`, { append: true });
+        console.log(`Added host key for ${dropletIp} to known hosts.`);
 
-        const regions = (await listRegions())
-            .regions.filter((region: any) => region.sizes.includes(DROPLET_SIZE));
-        const slugs = regions
-            .map((region: any) => region.slug)
-            .sort(() => (Math.random() > 0.5) ? 1 : -1);
-        const dropletRegion = slugs[0];
-        const dropletName = `${APP_ID}-${type}-${epoch}`;
-
-        const passphrase = crypto.randomBytes(64).toString('hex');
-        const keyPath = `${tmpPath}${dropletName}`;
-        const createSshKeyCmd = `${srcPath}generate-ssh-key.exp ${passphrase} ${keyPath} ${KEY_ALGORITHM}`;
-        // @ts-ignore: because
-        const createSshKeyProcess = Deno.run({ cmd: createSshKeyCmd.split(' ') });
-        await createSshKeyProcess.status();
-
-        const publicKey = await Deno.readTextFile(`${keyPath}.pub`);
-        const publicKeyId = await addKey(publicKey, dropletName);
-        const userData = buildUserData();
-
-        const createdDroplet = await createDroplet(dropletRegion, dropletName, DROPLET_SIZE, publicKeyId, userData);
-        const dropletId = createdDroplet.droplet.id;
-        dropletIds.push(dropletId);
-        console.log('Created droplet.', { DROPLET_SIZE, dropletRegion, dropletName, dropletId });
-
-        let dropletIp = null;
-        while (!dropletIp) {
-            const list = await listDroplets();
-            const droplets = list.droplets;
-
-            if (list && droplets) {
-                const droplet = droplets.find((droplet: any) => droplet.id == createdDroplet.droplet.id);
-
-                if (droplet && droplet.networks.v4.length) {
-                    dropletIp = droplet.networks.v4.filter((network: any) => network.type == 'public')[0]['ip_address'];
-                }
-            }
-        }
-        dropletIps.push(dropletIp);
-        console.log(`Found network at ${dropletIp}.`);
-
-        const connectSshProxyTunnelCmd = `${srcPath}connect-ssh-tunnel.exp ${passphrase} ${dropletIp} root ${LOCAL_PORT} ${REMOTE_PORT} ${keyPath}`;
-        Deno.writeTextFileSync(`${tmpPath}${dropletName}-connect-ssh-proxy-tunnel-command`, connectSshProxyTunnelCmd);
-
-        if (type === 'a') {
-            await fetchHostKeys(dropletIds, dropletIps);
-            await connect(connectSshProxyTunnelCmd);
-        }
-
-        typeIndex = typeIndex + 1;
+        index = index + 1;
     }
-
-    const keys = await listKeys();
-    const deletableKeyIds = keys['ssh_keys']
-        .filter((key: any) => key.name.includes(APP_ID))
-        .map((key: any) => key.id);
-    await deleteKeys(deletableKeyIds);
-
-    const deletableDropletIds = previousDroplets.droplets
-        .filter((droplet: any) => droplet.name.includes(APP_ID))
-        .map((droplet: any) => droplet.id);
-    await deleteDroplets(deletableDropletIds);
-};
-
-const fetchHostKeys = async (dropletIds: number[], dropletIps: string[]) => {
-    console.log('Starting to retrive host keys.');
-    const hostKeyB = await getHostKey(dropletIds[0]);
-    const hostKeyA = await getHostKey(dropletIds[1]);
-    console.log('Successfully retrived host keys.');
-
-    console.log('Starting to add host keys to known hosts.');
-    Deno.writeTextFileSync(knownHostsPath, `${dropletIps[0]} ssh-${KEY_ALGORITHM} ${hostKeyB}\n`, { append: true });
-    Deno.writeTextFileSync(knownHostsPath, `${dropletIps[1]} ssh-${KEY_ALGORITHM} ${hostKeyA}\n`, { append: true });
-    console.log('Successfully added host keys to known hosts.');
 };
 
 const connect = async (cmd: string) => {
@@ -411,4 +337,98 @@ const connect = async (cmd: string) => {
     console.log('Starting API test (2).');
     await apiTest();
     console.log('Successfully finished API test (2).');
+};
+
+const getDropletIp = async (dropletId: string) => {
+    let dropletIp = null;
+
+    while (!dropletIp) {
+        const list = await listDroplets();
+        const droplets = list.droplets;
+
+        if (list && droplets) {
+            const droplet = droplets.find((droplet: any) => droplet.id == dropletId);
+
+            if (droplet && droplet.networks.v4.length) {
+                dropletIp = droplet.networks.v4.filter((network: any) => network.type == 'public')[0]['ip_address'];
+            }
+        }
+    }
+
+    return dropletIp;
+};
+
+const cleanup = async (previousDroplets: any[]) => {
+    const keys = await listKeys();
+    const deletableKeyIds = keys['ssh_keys']
+        .filter((key: any) => key.name.includes(APP_ID))
+        .map((key: any) => key.id);
+    await deleteKeys(deletableKeyIds);
+
+    const deletableDropletIds = previousDroplets
+        .filter((droplet: any) => droplet.name.includes(APP_ID))
+        .map((droplet: any) => droplet.id);
+    await deleteDroplets(deletableDropletIds);
+};
+
+const createKey = async (keyPath: string, dropletName: string, passphrase: string) => {
+    const createSshKeyCmd = `${srcPath}generate-ssh-key.exp ${passphrase} ${keyPath} ${KEY_ALGORITHM}`;
+    // @ts-ignore: because
+    const createSshKeyProcess = Deno.run({ cmd: createSshKeyCmd.split(' ') });
+    await createSshKeyProcess.status();
+
+    const publicKey = await Deno.readTextFile(`${keyPath}.pub`);
+    const publicKeyId = await addKey(publicKey, dropletName);
+    return publicKeyId
+};
+
+const rotate = async () => {
+    // Store for deleting later on in the process.
+    const previousDroplets = await listDroplets();
+
+    const epoch = Number(new Date());
+
+    const types = ['b', 'a'];
+    const dropletIds: number[] = [];
+    const dropletIps: string[] = [];
+
+    let typeIndex = 0;
+    while (typeIndex < types.length) {
+        const type = types[typeIndex];
+
+        const regions = (await listRegions())
+            .regions.filter((region: any) => region.sizes.includes(DROPLET_SIZE));
+        const slugs = regions
+            .map((region: any) => region.slug)
+            .sort(() => (Math.random() > 0.5) ? 1 : -1);
+        const dropletRegion = slugs[0];
+        const dropletName = `${APP_ID}-${type}-${epoch}`;
+
+        const keyPath = `${tmpPath}${dropletName}`;
+        const passphrase = crypto.randomBytes(64).toString('hex');
+        const publicKeyId = await createKey(keyPath, dropletName, passphrase);
+
+        const userData = buildUserData();
+
+        const createdDroplet = await createDroplet(dropletRegion, dropletName, DROPLET_SIZE, publicKeyId, userData);
+        const dropletId = createdDroplet.droplet.id;
+        dropletIds.push(dropletId);
+        console.log('Created droplet.', { DROPLET_SIZE, dropletRegion, dropletName, dropletId });
+
+        const dropletIp = await getDropletIp(dropletId);
+        dropletIps.push(dropletIp);
+        console.log(`Found network at ${dropletIp}.`);
+
+        const connectSshProxyTunnelCmd = `${srcPath}connect-ssh-tunnel.exp ${passphrase} ${dropletIp} root ${LOCAL_PORT} ${REMOTE_PORT} ${keyPath}`;
+        Deno.writeTextFileSync(`${tmpPath}${dropletName}-${dropletId}-connect-ssh-proxy-tunnel-command`, connectSshProxyTunnelCmd);
+
+        if (type === 'a') {
+            await handleHostKeys(dropletIds, dropletIps);
+            await connect(connectSshProxyTunnelCmd);
+        }
+
+        typeIndex = typeIndex + 1;
+    }
+
+    await cleanup(previousDroplets.droplets);
 };
