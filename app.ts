@@ -199,15 +199,19 @@ const addKey = async (publicKey: string, name: string) => {
     return json['ssh_key']['id'];
 };
 
-const connectSshProxyTunnel = async (cmd: string, ) => {
-    // @ts-ignore: because
-    const connectSshProxyTunnelProcess = Deno.run({
-        cmd: cmd.split(' '),
-        stdout: 'piped',
-        stderr: 'piped',
-        stdin: 'null'
-    });
-    new TextDecoder().decode(await connectSshProxyTunnelProcess.stderrOutput());
+const connectSshProxyTunnel = async (cmd: string) => {
+    let isConnectable = false;
+    while(!isConnectable) {
+        // @ts-ignore: because
+        const openSshProxyTunnelTestProcess = Deno.run({
+            cmd: cmd.split(' '),
+            stdout: 'piped',
+            stderr: 'piped',
+            stdin: 'null'
+        });
+        const output = new TextDecoder().decode(await openSshProxyTunnelTestProcess.stderrOutput());
+        isConnectable = !output;
+    }
 };
 
 const killAllSshTunnelsByPort = async (port: number) => {
@@ -236,6 +240,7 @@ const connectSshProxyTunnelEpochs = connectSshProxyTunnelFiles
 
 await killAllSshTunnelsByPort(LOCAL_TEST_PORT);
 
+/*
 if (connectSshProxyTunnelEpochs.length) {
     killAllSshTunnelsByPort(LOCAL_PORT);
 
@@ -250,6 +255,7 @@ if (connectSshProxyTunnelEpochs.length) {
 
     console.log('SSH tunnel connection B connected.');
 }
+*/
 
 let secondsLeftForLoopRetrigger = 0;
 let timeout = 0;
@@ -270,7 +276,7 @@ const loop = () => {
             try {
                 const startTime = performance.now();
                 secondsLeftForLoopRetrigger = LOOP_INTERVAL_MIN * 60;
-                await proxy();
+                await rotate();
                 const endTime = performance.now();
                 console.log(`Proxy loop finished in ${Number((endTime - startTime) / 1000).toFixed(0)} seconds.`);
             }
@@ -295,7 +301,7 @@ setInterval(() => {
     }
 }, 1000);
 
-const proxy = async () => {
+const rotate = async () => {
     // Store for deleting later on in the process.
     const previousDroplets = await listDroplets();
 
@@ -303,7 +309,7 @@ const proxy = async () => {
 
     const types = ['b', 'a'];
     const dropletIds: number[] = [];
-    const dropletIps: number[] = [];
+    const dropletIps: string[] = [];
 
     let typeIndex = 0;
     while (typeIndex < types.length) {
@@ -353,47 +359,8 @@ const proxy = async () => {
         Deno.writeTextFileSync(`${tmpPath}${dropletName}-connect-ssh-proxy-tunnel-command`, connectSshProxyTunnelCmd);
 
         if (type === 'a') {
-            console.log('Starting to fetch host keys.');
-            const hostKeyB = await getHostKey(dropletIds[0]);
-            const hostKeyA = await getHostKey(dropletIds[1]);
-            console.log('Successfully fetched host keys.');
-
-            console.log('Starting to add host keys to known hosts.');
-            Deno.writeTextFileSync(knownHostsPath, `${dropletIps[0]} ssh-${KEY_ALGORITHM} ${hostKeyB}\n`, { append: true });
-            Deno.writeTextFileSync(knownHostsPath, `${dropletIps[1]} ssh-${KEY_ALGORITHM} ${hostKeyA}\n`, { append: true });
-            console.log('Successfully added host keys to known hosts.');
-
-            console.log('Starting SSH tunnel connection test.');
-            let isConnectable = false;
-            while(!isConnectable) {
-                // @ts-ignore: because
-                const openSshProxyTunnelTestProcess = Deno.run({
-                    cmd: connectSshProxyTunnelCmd.replace(`${LOCAL_PORT}`, `${LOCAL_TEST_PORT}`).split(' '),
-                    stdout: 'piped',
-                    stderr: 'piped',
-                    stdin: 'null'
-                });
-                const output = new TextDecoder().decode(await openSshProxyTunnelTestProcess.stderrOutput());
-                isConnectable = !output;
-            }
-            console.log('Successfully finished SSH tunnel connection test.');
-
-            console.log('Starting API test (1).');
-            await apiTest(`http://localhost:${LOCAL_TEST_PORT}`);
-            console.log('Successfully finished API test (1).');
-
-            await killAllSshTunnelsByPort(LOCAL_TEST_PORT);
-            await killAllSshTunnelsByPort(LOCAL_PORT);
-
-            await sleep(1000);
-
-            console.log('Starting SSH tunnel connection A.');
-            await connectSshProxyTunnel(connectSshProxyTunnelCmd);
-            console.log('SSH tunnel connection A connected.');
-
-            console.log('Starting API test (2).');
-            await apiTest();
-            console.log('Successfully finished API test (2).');
+            await fetchHostKeys(dropletIds, dropletIps);
+            await connect(connectSshProxyTunnelCmd);
         }
 
         typeIndex = typeIndex + 1;
@@ -409,4 +376,39 @@ const proxy = async () => {
         .filter((droplet: any) => droplet.name.includes(APP_ID))
         .map((droplet: any) => droplet.id);
     await deleteDroplets(deletableDropletIds);
+};
+
+const fetchHostKeys = async (dropletIds: number[], dropletIps: string[]) => {
+    console.log('Starting to retrive host keys.');
+    const hostKeyB = await getHostKey(dropletIds[0]);
+    const hostKeyA = await getHostKey(dropletIds[1]);
+    console.log('Successfully retrived host keys.');
+
+    console.log('Starting to add host keys to known hosts.');
+    Deno.writeTextFileSync(knownHostsPath, `${dropletIps[0]} ssh-${KEY_ALGORITHM} ${hostKeyB}\n`, { append: true });
+    Deno.writeTextFileSync(knownHostsPath, `${dropletIps[1]} ssh-${KEY_ALGORITHM} ${hostKeyA}\n`, { append: true });
+    console.log('Successfully added host keys to known hosts.');
+};
+
+const connect = async (cmd: string) => {
+    console.log('Starting SSH tunnel connection test.');
+    await connectSshProxyTunnel(cmd.replace(`${LOCAL_PORT}`, `${LOCAL_TEST_PORT}`));
+    console.log('Successfully finished SSH tunnel connection test.');
+
+    console.log('Starting API test (1).');
+    await apiTest(`http://localhost:${LOCAL_TEST_PORT}`);
+    console.log('Successfully finished API test (1).');
+
+    await killAllSshTunnelsByPort(LOCAL_TEST_PORT);
+    await killAllSshTunnelsByPort(LOCAL_PORT);
+
+    await sleep(1000);
+
+    console.log('Starting SSH tunnel connection A.');
+    await connectSshProxyTunnel(cmd);
+    console.log('SSH tunnel connection A connected.');
+
+    console.log('Starting API test (2).');
+    await apiTest();
+    console.log('Successfully finished API test (2).');
 };
