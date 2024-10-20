@@ -308,7 +308,7 @@ const createKey = async (keyPath: string, dropletName: string, passphrase: strin
     return publicKeyId
 };
 
-const connect = async (cmd: string) => {
+const connect = async (cmd: string, type: string) => {
     console.log('Starting SSH tunnel connection test.');
     await connectSshProxyTunnel(cmd.replace(`${LOCAL_PORT}`, `${LOCAL_TEST_PORT}`));
     console.log('Successfully finished SSH tunnel connection test.');
@@ -322,9 +322,9 @@ const connect = async (cmd: string) => {
 
     await sleep(1000);
 
-    console.log('Starting SSH tunnel connection A.');
+    console.log(`Starting SSH tunnel connection to (${type}).`);
     await connectSshProxyTunnel(cmd);
-    console.log('SSH tunnel connection A connected.');
+    console.log(`Connected SSH tunnel to (${type}).`);
 
     console.log('Starting API test (2).');
     await apiTest();
@@ -345,33 +345,6 @@ const cleanup = async (previousDroplets: any[]) => {
 };
 
 const rotate = async () => {
-    const tmpFiles = await getFiles(tmpPath);
-    const connectSshProxyTunnelFilesB = tmpFiles
-        .filter(file => file.includes(APP_ID))
-        .filter(file => file.includes('-b-'))
-        .filter(file => file.endsWith(connectionString));
-
-    const dropletId = Number(
-        connectSshProxyTunnelFilesB
-            .filter(file => file.endsWith(connectionString))
-            .map(file => file.split('-')[3])
-            .sort()
-            .reverse()[0]
-    );
-
-    if (dropletId) {
-        const lastConnectionString = connectSshProxyTunnelFilesB
-            .filter(connectSshProxyTunnelFile => connectSshProxyTunnelFile
-                .includes(String(dropletId))
-            )[0];
-        const dropletIp = lastConnectionString.split('-')[4];
-        await updateHostKeys(dropletId, dropletIp);
-        const connectSshProxyTunnelCmd = await Deno.readTextFile(`${tmpPath}${lastConnectionString}`);
-        await connect(connectSshProxyTunnelCmd);
-
-        console.log('SSH tunnel connection B connected.');
-    }
-
     // Store for deleting later on in the process.
     const previousDroplets = await listDroplets();
     const epoch = Number(new Date());
@@ -381,6 +354,33 @@ const rotate = async () => {
 
     let connectSshProxyTunnelCmd = '';
     let typeIndex = 0;
+
+    const tmpFiles = await getFiles(tmpPath);
+    const connectSshProxyTunnelFilesB = tmpFiles
+        .filter(file => file.includes(APP_ID))
+        .filter(file => file.includes('-b-'))
+        .filter(file => file.endsWith(connectionString));
+
+    const previousDropletId = Number(
+        connectSshProxyTunnelFilesB
+            .filter(file => file.endsWith(connectionString))
+            .map(file => file.split('-')[3])
+            .sort()
+            .reverse()[0]
+    );
+
+    if (previousDropletId) {
+        const lastConnectionString = connectSshProxyTunnelFilesB
+            .filter(connectSshProxyTunnelFile => connectSshProxyTunnelFile
+                .includes(String(previousDropletId))
+            )[0];
+        const previousDropletIp = lastConnectionString.split('-')[4];
+        await updateHostKeys(previousDropletId, previousDropletIp);
+        const connectSshProxyTunnelCmd = await Deno.readTextFile(`${tmpPath}${lastConnectionString}`);
+        await connect(connectSshProxyTunnelCmd, types[0]);
+
+        console.log('SSH tunnel connection B connected.');
+    }
 
     while (typeIndex < types.length) {
         const type = types[typeIndex];
@@ -409,7 +409,7 @@ const rotate = async () => {
         typeIndex = typeIndex + 1;
     }
 
-    await connect(connectSshProxyTunnelCmd);
+    await connect(connectSshProxyTunnelCmd, types[1]);
     await cleanup(previousDroplets.droplets);
 };
 
