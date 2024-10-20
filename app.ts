@@ -5,6 +5,7 @@ import * as path from 'https://deno.land/std@0.224.0/path/mod.ts';
 import { exists } from 'https://deno.land/std@0.224.0/fs/mod.ts';
 import * as crypto from 'node:crypto';
 import { homedir } from 'node:os';
+import { CreateDroplet, Connect } from './types.d.ts';
 
 
 const APP_ID = String(Deno.env.get('APP_ID'));
@@ -154,7 +155,8 @@ const listKeys = async () => {
     return json;
 };
 
-const createDroplet = async (region: string, name: string, size: string, publicKeyId: string, userData: string) => {
+const createDroplet = async (args: CreateDroplet) => {
+    const { region, name, size, publicKeyId, userData } = args;
     const headers = {
         Authorization: `Bearer ${DIGITAL_OCEAN_API_KEY}`,
         'Content-Type': 'application/json'
@@ -323,16 +325,11 @@ const createKey = async (keyPath: string, dropletName: string, passphrase: strin
     return publicKeyId
 };
 
-const connect = async (
-    cmd: string,
-    type: string,
-    strictHostKeyChecking: string,
-    dropletId: number,
-    dropletIp: string
-) => {
+const connect = async (args: Connect) => {
+    const { type, strictHostKeyChecking, dropletId, dropletIp } = args;
     console.log(`Starting SSH test tunnel connection to (${type}).`);
 
-    cmd = cmd.replace('\n', '');
+    const cmd = args.cmd.replace('\n', '');
     await connectSshProxyTunnel(
         cmd
             .replace(`${LOCAL_PORT}`, `${LOCAL_TEST_PORT}`)
@@ -395,7 +392,13 @@ const init = async () => {
             )[0];
         const previousDropletIp = lastConnectionString.split('-')[4];
         const connectSshProxyTunnelCmd = await Deno.readTextFile(`${tmpPath}${lastConnectionString}`);
-        await connect(connectSshProxyTunnelCmd, types[0], STRICT_HOST_KEY_CHECKING_NO, previousDropletId, previousDropletIp);
+        await connect({
+            cmd: connectSshProxyTunnelCmd,
+            type: types[0],
+            strictHostKeyChecking: STRICT_HOST_KEY_CHECKING_NO,
+            dropletId: previousDropletId,
+            dropletIp: previousDropletIp
+        });
     }
 };
 
@@ -421,7 +424,13 @@ const rotate = async () => {
         const passphrase = crypto.randomBytes(64).toString('hex');
         const publicKeyId = await createKey(keyPath, dropletName, passphrase);
 
-        const dropletId = await createDroplet(dropletRegion, dropletName, DROPLET_SIZE, publicKeyId, buildUserData());
+        const dropletId = await createDroplet({
+            region: dropletRegion,
+            name: dropletName,
+            size: DROPLET_SIZE,
+            publicKeyId,
+            userData: buildUserData()
+        });
         dropletIds.push(dropletId);
         console.log('Created droplet.', { DROPLET_SIZE, dropletRegion, dropletName, dropletId });
 
@@ -436,7 +445,13 @@ const rotate = async () => {
         typeIndex = typeIndex + 1;
     }
 
-    await connect(connectSshProxyTunnelCmd, types[1], STRICT_HOST_KEY_CHECKING_YES, dropletIds[1], dropletIps[1]);
+    await connect({
+        cmd: connectSshProxyTunnelCmd,
+        type: types[1],
+        strictHostKeyChecking: STRICT_HOST_KEY_CHECKING_YES,
+        dropletId: dropletIds[1],
+        dropletIp: dropletIps[1]
+    });
     await cleanup(previousDroplets.droplets);
 };
 
