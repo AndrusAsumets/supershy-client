@@ -19,6 +19,7 @@ const CLOUDFLARE_ACCOUNT_ID = String(Deno.env.get('CLOUDFLARE_ACCOUNT_ID'));
 const CLOUDFLARE_API_KEY = String(Deno.env.get('CLOUDFLARE_API_KEY'));
 const CLOUDFLARE_KV_NAMESPACE = String(Deno.env.get('CLOUDFLARE_KV_NAMESPACE'));
 const DROPLET_SIZE = String(Deno.env.get('DROPLET_SIZE'));
+const TEST_PROXY_URL = `http://localhost:${LOCAL_TEST_PORT}`;
 const baseUrl = 'https://api.digitalocean.com/v2';
 const __dirname = path.dirname(path.fromFileUrl(import.meta.url));
 const tmpPath = `${__dirname}/.tmp/`;
@@ -72,7 +73,7 @@ runcmd:
 `;
 };
 
-const getHostKey = async (dropletId: number) => {
+const getHostKey = async (dropletId: number, proxyUrl = '') => {
     let hostKey: any = '';
 
     while(!hostKey) {
@@ -80,11 +81,20 @@ const getHostKey = async (dropletId: number) => {
             const headers = {
                 Authorization: `Bearer ${CLOUDFLARE_API_KEY}`
             };
-            const res = await fetch(`https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${CLOUDFLARE_KV_NAMESPACE}/values/${dropletId}`, { method: 'GET', headers });
+            const options: any = { method: 'GET', headers };
+            if (proxyUrl) {
+                options.client = Deno.createHttpClient({
+                    proxy: {
+                      url: proxyUrl
+                    }
+                });
+            }
+            const url = `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${CLOUDFLARE_KV_NAMESPACE}/values/${dropletId}`;
+            const res = await fetch(url, options);
             const text = await res.text();
 
             if (!text.includes('key not found')) {
-                hostKey = text
+                hostKey = text;
             }
         }
         catch(_) {
@@ -229,12 +239,12 @@ const killAllSshTunnelsByPort = async (port: number) => {
     await command.output();
 };
 
-const updateHostKeys = async (dropletId: number, dropletIp: string) => {
+const updateHostKeys = async (dropletId: number, dropletIp: string, proxyUrl = '') => {
     const knownHosts = await Deno.readTextFile(knownHostsPath);
     const isAlreadySaved = knownHosts.includes(dropletIp);
 
     if (!isAlreadySaved) {
-        const hostKey = await getHostKey(dropletId);
+        const hostKey = await getHostKey(dropletId, proxyUrl);
         console.log(`Fetched host key for droplet ${dropletId}.`);
 
         Deno.writeTextFileSync(knownHostsPath, `${dropletIp} ssh-${KEY_ALGORITHM} ${hostKey}\n`, { append: true });
@@ -313,18 +323,28 @@ const createKey = async (keyPath: string, dropletName: string, passphrase: strin
     return publicKeyId
 };
 
-const connect = async (cmd: string, type: string, strictHostKeyChecking: string) => {
+const connect = async (
+    cmd: string,
+    type: string,
+    strictHostKeyChecking: string,
+    dropletId: number,
+    dropletIp: string
+) => {
     console.log(`Starting SSH test tunnel connection to (${type}).`);
 
-    cmd = cmd
-        .replace(STRICT_HOST_KEY_CHECKING_YES, strictHostKeyChecking)
-        .replace('\n', '');
-    await connectSshProxyTunnel(cmd.replace(`${LOCAL_PORT}`, `${LOCAL_TEST_PORT}`));
+    cmd = cmd.replace('\n', '');
+    await connectSshProxyTunnel(
+        cmd
+            .replace(`${LOCAL_PORT}`, `${LOCAL_TEST_PORT}`)
+            .replace(STRICT_HOST_KEY_CHECKING_YES, strictHostKeyChecking)
+    );
     console.log(`Connected SSH test tunnel to (${type}).`);
 
     console.log('Starting API test (1).');
-    await apiTest(`http://localhost:${LOCAL_TEST_PORT}`);
+    await apiTest(TEST_PROXY_URL);
     console.log('Successfully finished API test (1).');
+
+    await updateHostKeys(dropletId, dropletIp, TEST_PROXY_URL);
 
     await killAllSshTunnelsByPort(LOCAL_TEST_PORT);
     await killAllSshTunnelsByPort(LOCAL_PORT);
@@ -373,10 +393,9 @@ const init = async () => {
             .filter(connectSshProxyTunnelFile => connectSshProxyTunnelFile
                 .includes(String(previousDropletId))
             )[0];
-        //const previousDropletIp = lastConnectionString.split('-')[4];
-        //await updateHostKeys(previousDropletId, previousDropletIp);
+        const previousDropletIp = lastConnectionString.split('-')[4];
         const connectSshProxyTunnelCmd = await Deno.readTextFile(`${tmpPath}${lastConnectionString}`);
-        await connect(connectSshProxyTunnelCmd, types[0], STRICT_HOST_KEY_CHECKING_NO);
+        await connect(connectSshProxyTunnelCmd, types[0], STRICT_HOST_KEY_CHECKING_NO, previousDropletId, previousDropletIp);
     }
 };
 
@@ -417,7 +436,7 @@ const rotate = async () => {
         typeIndex = typeIndex + 1;
     }
 
-    await connect(connectSshProxyTunnelCmd, types[1], STRICT_HOST_KEY_CHECKING_YES);
+    await connect(connectSshProxyTunnelCmd, types[1], STRICT_HOST_KEY_CHECKING_YES, dropletIds[1], dropletIps[1]);
     await cleanup(previousDroplets.droplets);
 };
 
