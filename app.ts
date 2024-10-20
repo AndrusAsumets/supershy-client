@@ -267,24 +267,19 @@ const loop = () => {
     clearTimeout(timeout);
 
     timeout = setTimeout(async () => {
-        let canProceed = true;
-
-        while(canProceed) {
-            try {
-                const startTime = performance.now();
-                secondsLeftForLoopRetrigger = LOOP_INTERVAL_MIN * 60;
-                await rotate();
-                const endTime = performance.now();
-                console.log(`Proxy loop finished in ${Number((endTime - startTime) / 1000).toFixed(0)} seconds.`);
-            }
-            catch(err) {
-                console.log(`Proxy loop caught an error.`, err);
-                canProceed = false;
-                clearTimeout(timeout);
-            }
-
-            await retrySleep();
+        try {
+            const startTime = performance.now();
+            secondsLeftForLoopRetrigger = LOOP_INTERVAL_MIN * 60;
+            await rotate();
+            const endTime = performance.now();
+            console.log(`Proxy loop finished in ${Number((endTime - startTime) / 1000).toFixed(0)} seconds.`);
         }
+        catch(err) {
+            console.log(`Proxy loop caught an error.`, err);
+        }
+
+        await retrySleep();
+        loop();
     });
 };
 
