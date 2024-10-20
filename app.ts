@@ -21,17 +21,18 @@ const CLOUDFLARE_API_KEY = String(Deno.env.get('CLOUDFLARE_API_KEY'));
 const CLOUDFLARE_KV_NAMESPACE = String(Deno.env.get('CLOUDFLARE_KV_NAMESPACE'));
 const DROPLET_SIZE = String(Deno.env.get('DROPLET_SIZE'));
 const TEST_PROXY_URL = `http://localhost:${LOCAL_TEST_PORT}`;
-const baseUrl = 'https://api.digitalocean.com/v2';
-const __dirname = path.dirname(path.fromFileUrl(import.meta.url));
-const tmpPath = `${__dirname}/.tmp/`;
-const srcPath = `${__dirname}/src/`;
-const knownHostsPath = `${homedir()}/.ssh/known_hosts`;
-const connectionString = 'connection-string';
-const generateSshKeyFileName = 'generate-ssh-key.exp';
-const connectSshTunnelFileName = 'connect-ssh-tunnel.exp';
-const types = ['b', 'a'];
+const BASE_URL = 'https://api.digitalocean.com/v2';
+const __DIRNAME = path.dirname(path.fromFileUrl(import.meta.url));
+const TMP_PATH = `${__DIRNAME}/.tmp/`;
+const SRC_PATH = `${__DIRNAME}/src/`;
+const KNOWN_HOSTS_PATH = `${homedir()}/.ssh/known_hosts`;
+const CONNECTION_STRING = 'connection-string';
+const GENERATE_SSH_KEY_FILE_NAME = 'generate-ssh-key.exp';
+const CONNECT_SSH_TUNNEL_FILE_NAME = 'connect-ssh-tunnel.exp';
+const TYPES: string[] = ['b', 'a'];
 const STRICT_HOST_KEY_CHECKING_YES = 'StrictHostKeyChecking=yes';
 const STRICT_HOST_KEY_CHECKING_NO = 'StrictHostKeyChecking=no';
+
 let secondsLeftForLoopRetrigger = 0;
 let timeout = 0;
 
@@ -132,7 +133,7 @@ const listRegions = async (proxyUrl = '') => {
             }
         });
     }
-    const res = await fetch(`${baseUrl}/regions`, options);
+    const res = await fetch(`${BASE_URL}/regions`, options);
     const json: any = await res.json();
     return json.regions;
 };
@@ -141,7 +142,7 @@ const listDroplets = async () => {
     const headers = {
         Authorization: `Bearer ${DIGITAL_OCEAN_API_KEY}`
     };
-    const res = await fetch(`${baseUrl}/droplets`, { method: 'GET', headers });
+    const res = await fetch(`${BASE_URL}/droplets`, { method: 'GET', headers });
     const json: any = await res.json();
     return json;
 };
@@ -150,7 +151,7 @@ const listKeys = async () => {
     const headers = {
         Authorization: `Bearer ${DIGITAL_OCEAN_API_KEY}`
     };
-    const res = await fetch(`${baseUrl}/account/keys`, { method: 'GET', headers });
+    const res = await fetch(`${BASE_URL}/account/keys`, { method: 'GET', headers });
     const json: any = await res.json();
     return json;
 };
@@ -170,7 +171,7 @@ const createDroplet = async (args: CreateDroplet) => {
         user_data: userData
 
     };
-    const res = await fetch(`${baseUrl}/droplets`, { method: 'POST', headers, body: JSON.stringify(body) });
+    const res = await fetch(`${BASE_URL}/droplets`, { method: 'POST', headers, body: JSON.stringify(body) });
     const json: any = await res.json();
     return json.droplet.id;
 };
@@ -184,7 +185,7 @@ const deleteDroplets = async (ids: number[]) => {
             Authorization: `Bearer ${DIGITAL_OCEAN_API_KEY}`,
             'Content-Type': 'application/json'
         };
-        await fetch(`${baseUrl}/droplets/${id}`, { method: 'DELETE', headers });
+        await fetch(`${BASE_URL}/droplets/${id}`, { method: 'DELETE', headers });
         console.log(`Deleted droplet: ${id}.`);
         index = index + 1;
     }
@@ -199,7 +200,7 @@ const deleteKeys = async (ids: number[]) => {
             Authorization: `Bearer ${DIGITAL_OCEAN_API_KEY}`,
             'Content-Type': 'application/json'
         };
-        await fetch(`${baseUrl}/account/keys/${id}`, { method: 'DELETE', headers });
+        await fetch(`${BASE_URL}/account/keys/${id}`, { method: 'DELETE', headers });
         console.log(`Deleted key: ${id}.`);
         index = index + 1;
     }
@@ -214,7 +215,7 @@ const addKey = async (publicKey: string, name: string) => {
         name: name,
         'public_key': publicKey
     };
-    const res = await fetch(`${baseUrl}/account/keys`, { method: 'POST', headers, body: JSON.stringify(body) });
+    const res = await fetch(`${BASE_URL}/account/keys`, { method: 'POST', headers, body: JSON.stringify(body) });
     const json: any = await res.json();
     return json['ssh_key']['id'];
 };
@@ -242,14 +243,14 @@ const killAllSshTunnelsByPort = async (port: number) => {
 };
 
 const updateHostKeys = async (dropletId: number, dropletIp: string, proxyUrl = '') => {
-    const knownHosts = await Deno.readTextFile(knownHostsPath);
+    const knownHosts = await Deno.readTextFile(KNOWN_HOSTS_PATH);
     const isAlreadySaved = knownHosts.includes(dropletIp);
 
     if (!isAlreadySaved) {
         const hostKey = await getHostKey(dropletId, proxyUrl);
         console.log(`Fetched host key for droplet ${dropletId}.`);
 
-        Deno.writeTextFileSync(knownHostsPath, `${dropletIp} ssh-${KEY_ALGORITHM} ${hostKey}\n`, { append: true });
+        Deno.writeTextFileSync(KNOWN_HOSTS_PATH, `${dropletIp} ssh-${KEY_ALGORITHM} ${hostKey}\n`, { append: true });
         console.log(`Added host key for ${dropletIp} to known hosts.`);
     }
 };
@@ -266,7 +267,9 @@ const loop = () => {
     clearTimeout(timeout);
 
     timeout = setTimeout(async () => {
-        while(true) {
+        let canProceed = true;
+
+        while(canProceed) {
             try {
                 const startTime = performance.now();
                 secondsLeftForLoopRetrigger = LOOP_INTERVAL_MIN * 60;
@@ -276,6 +279,8 @@ const loop = () => {
             }
             catch(err) {
                 console.log(`Proxy loop caught an error.`, err);
+                canProceed = false;
+                clearTimeout(timeout);
             }
 
             await retrySleep();
@@ -285,7 +290,7 @@ const loop = () => {
 
 setInterval(() => {
     secondsLeftForLoopRetrigger = secondsLeftForLoopRetrigger - 1;
-    const secondsLeftForLoopTimeout = (LOOP_TIMEOUT_MIN) * 60 + secondsLeftForLoopRetrigger;
+    const secondsLeftForLoopTimeout = LOOP_TIMEOUT_MIN * 60 + secondsLeftForLoopRetrigger;
 
     if (secondsLeftForLoopTimeout < 0) {
         console.log(`Reached timeout interval of ${LOOP_TIMEOUT_MIN} minutes, restarting the loop.`);
@@ -315,7 +320,7 @@ const getDropletIp = async (dropletId: string) => {
 };
 
 const createKey = async (keyPath: string, dropletName: string, passphrase: string) => {
-    const createSshKeyCmd = `${srcPath}${generateSshKeyFileName} ${passphrase} ${keyPath} ${KEY_ALGORITHM}`;
+    const createSshKeyCmd = `${SRC_PATH}${GENERATE_SSH_KEY_FILE_NAME} ${passphrase} ${keyPath} ${KEY_ALGORITHM}`;
     // @ts-ignore: because
     const createSshKeyProcess = Deno.run({ cmd: createSshKeyCmd.split(' ') });
     await createSshKeyProcess.status();
@@ -371,15 +376,15 @@ const cleanup = async (previousDroplets: any[]) => {
 };
 
 const init = async () => {
-    const tmpFiles = await getFiles(tmpPath);
+    const tmpFiles = await getFiles(TMP_PATH);
     const connectSshProxyTunnelFilesB = tmpFiles
         .filter(file => file.includes(APP_ID))
         .filter(file => file.includes('-b-'))
-        .filter(file => file.endsWith(connectionString));
+        .filter(file => file.endsWith(CONNECTION_STRING));
 
     const previousDropletId = Number(
         connectSshProxyTunnelFilesB
-            .filter(file => file.endsWith(connectionString))
+            .filter(file => file.endsWith(CONNECTION_STRING))
             .map(file => file.split('-')[3])
             .sort()
             .reverse()[0]
@@ -391,10 +396,10 @@ const init = async () => {
                 .includes(String(previousDropletId))
             )[0];
         const previousDropletIp = lastConnectionString.split('-')[4];
-        const connectSshProxyTunnelCmd = await Deno.readTextFile(`${tmpPath}${lastConnectionString}`);
+        const connectSshProxyTunnelCmd = await Deno.readTextFile(`${TMP_PATH}${lastConnectionString}`);
         await connect({
             cmd: connectSshProxyTunnelCmd,
-            type: types[0],
+            type: TYPES[0],
             strictHostKeyChecking: STRICT_HOST_KEY_CHECKING_NO,
             dropletId: previousDropletId,
             dropletIp: previousDropletIp
@@ -412,15 +417,15 @@ const rotate = async () => {
     let connectSshProxyTunnelCmd = '';
     let typeIndex = 0;
 
-    while (typeIndex < types.length) {
-        const type = types[typeIndex];
+    while (typeIndex < TYPES.length) {
+        const type = TYPES[typeIndex];
         const dropletRegion = (await listRegions())
             .filter((region: any) => region.sizes.includes(DROPLET_SIZE))
             .map((region: any) => region.slug)
             .sort(() => (Math.random() > 0.5) ? 1 : -1)[0];
         const dropletName = `${APP_ID}-${type}-${epoch}`;
 
-        const keyPath = `${tmpPath}${dropletName}`;
+        const keyPath = `${TMP_PATH}${dropletName}`;
         const passphrase = crypto.randomBytes(64).toString('hex');
         const publicKeyId = await createKey(keyPath, dropletName, passphrase);
 
@@ -437,8 +442,8 @@ const rotate = async () => {
         const dropletIp = await getDropletIp(dropletId);
         dropletIps.push(dropletIp);
 
-        connectSshProxyTunnelCmd = `${srcPath}${connectSshTunnelFileName} ${passphrase} ${dropletIp} root ${LOCAL_PORT} ${REMOTE_PORT} ${keyPath} ${STRICT_HOST_KEY_CHECKING_YES}`;
-        Deno.writeTextFileSync(`${tmpPath}${dropletName}-${dropletId}-${dropletIp}-${connectionString}`, connectSshProxyTunnelCmd);
+        connectSshProxyTunnelCmd = `${SRC_PATH}${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${dropletIp} root ${LOCAL_PORT} ${REMOTE_PORT} ${keyPath} ${STRICT_HOST_KEY_CHECKING_YES}`;
+        Deno.writeTextFileSync(`${TMP_PATH}${dropletName}-${dropletId}-${dropletIp}-${CONNECTION_STRING}`, connectSshProxyTunnelCmd);
 
         await updateHostKeys(dropletId, dropletIp);
 
@@ -447,7 +452,7 @@ const rotate = async () => {
 
     await connect({
         cmd: connectSshProxyTunnelCmd,
-        type: types[1],
+        type: TYPES[1],
         strictHostKeyChecking: STRICT_HOST_KEY_CHECKING_YES,
         dropletId: dropletIds[1],
         dropletIp: dropletIps[1]
@@ -455,6 +460,6 @@ const rotate = async () => {
     await cleanup(previousDroplets.droplets);
 };
 
-await createFolderIfNeed(tmpPath);
+await createFolderIfNeed(TMP_PATH);
 await init();
 loop();
