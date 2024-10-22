@@ -388,6 +388,16 @@ const createKey = async (
     return publicKeyId;
 };
 
+const getConnectionString = (args: ConnectionString): string => {
+    const {
+        passphrase,
+        dropletIp,
+        keyPath,
+        strictHostKeyChecking
+    } = args;
+    return `${SRC_PATH}${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${dropletIp} ${USER} ${LOCAL_PORT} ${REMOTE_PORT} ${keyPath} ${strictHostKeyChecking}`;
+};
+
 const connect = async (args: Connect) => {
     await killAllSshTunnelsByPort(LOCAL_TEST_PORT);
 
@@ -439,6 +449,7 @@ const init = async () => {
         .chain
         .get('connections')
         .filter((connection: Connection) => connection.type === Types.B)
+        .filter((connection: Connection) => !connection.isDeleted)
         .sortBy('createdTime')
         .reverse()
         .value()[0];
@@ -470,16 +481,6 @@ const init = async () => {
             dropletIp,
         });
     }
-};
-
-const getConnectionString = (args: ConnectionString): string => {
-    const {
-        passphrase,
-        dropletIp,
-        keyPath,
-        strictHostKeyChecking
-    } = args;
-    return `${SRC_PATH}${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${dropletIp} ${USER} ${LOCAL_PORT} ${REMOTE_PORT} ${keyPath} ${strictHostKeyChecking}`;
 };
 
 const rotate = async () => {
@@ -532,6 +533,7 @@ const rotate = async () => {
         });
 
         const connection: Connection = {
+            appId: APP_ID,
             dropletId,
             dropletName,
             dropletIp,
@@ -541,13 +543,13 @@ const rotate = async () => {
             type,
             user: USER,
             passphrase,
-            appId: APP_ID,
             loopIntervalMin: LOOP_INTERVAL_MIN,
             loopTimeoutMin: LOOP_TIMEOUT_MIN,
             keyAlgorithm: KEY_ALGORITHM,
             localTestPort: LOCAL_TEST_PORT,
             localPort: LOCAL_PORT,
             remotePort: REMOTE_PORT,
+            keyPath,
             connectionString,
             isDeleted: false,
             createdTime: new Date().toISOString(),

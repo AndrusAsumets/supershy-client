@@ -39,6 +39,7 @@ export interface Connection {
 	localTestPort: number
 	localPort: number
 	remotePort: number
+	keyPath: string
 	connectionString: string
 	appId: string
 	loopIntervalMin: number
