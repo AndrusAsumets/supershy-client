@@ -6,7 +6,8 @@
     "npm:cli-progress@*": "3.12.0",
     "npm:jsonwebtoken@*": "9.0.2",
     "npm:lodash@*": "4.17.21",
-    "npm:lowdb@*": "7.0.1"
+    "npm:lowdb@*": "7.0.1",
+    "npm:uuid@*": "10.0.0"
   },
   "jsr": {
     "@std/dotenv@0.225.2": {
@@ -132,6 +133,9 @@
     },
     "undici-types@6.19.8": {
       "integrity": "sha512-ve2KP6f/JnbPBFyobGHuerC9g1FYGn/F8n1LWTwNxCEzd6IfqTwUQcNXgEtmmQ6DlRrC1hrSrBnCZPokRrDHjw=="
+    },
+    "uuid@10.0.0": {
+      "integrity": "sha512-8XkAphELsDnEGrDxUOHB3RGvXz6TeuYSGEZBOjtTtPm2lwhGBjLgOzLHB63IUWfBpNucQjND6d3AOudO+H3RWQ=="
     }
   },
   "redirects": {

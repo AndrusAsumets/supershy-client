@@ -7,6 +7,7 @@ import * as crypto from 'node:crypto';
 // @deno-types='npm:@types/node'
 import { homedir } from 'node:os';
 import { JSONFile } from 'npm:lowdb/node';
+import { v7 as uuidv7 } from 'npm:uuid';
 
 import { Low } from 'npm:lowdb';
 import lodash from 'npm:lodash';
@@ -489,7 +490,6 @@ const init = async () => {
 const rotate = async () => {
     // Store for deleting later on in the process.
     const previousDroplets = await listDroplets();
-    const rotationId = Number(new Date());
     const dropletIds: number[] = [];
     const dropletIps: string[] = [];
 
@@ -497,6 +497,7 @@ const rotate = async () => {
     let typeIndex = 0;
 
     while (typeIndex < TYPES.length) {
+        const connectionId = uuidv7();
         const type = TYPES[typeIndex];
         const dropletRegion = (await listRegions())
             .filter((region: any) =>
@@ -507,7 +508,7 @@ const rotate = async () => {
             .filter((region: any) => region.sizes.includes(DROPLET_SIZE))
             .map((region: any) => region.slug)
             .sort(() => (Math.random() > 0.5) ? 1 : -1)[0];
-        const dropletName = `${APP_ID}-${ENV}-${type}-${rotationId}`;
+        const dropletName = `${APP_ID}-${ENV}-${type}-${connectionId}`;
 
         const keyPath = `${KEY_PATH}${dropletName}`;
         const passphrase = crypto.randomBytes(64).toString('hex');
@@ -541,13 +542,13 @@ const rotate = async () => {
         });
 
         const connection: Connection = {
+            connectionId,
             appId: APP_ID,
             dropletId,
             dropletName,
             dropletIp,
             dropletRegion,
             dropletSize: DROPLET_SIZE,
-            rotationId,
             type,
             user: USER,
             passphrase,

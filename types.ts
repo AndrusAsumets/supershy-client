@@ -27,12 +27,12 @@ export interface Connect {
 }
 
 export interface Connection {
+	connectionId: string
 	dropletId: number
 	dropletName: string
 	dropletIp: string
 	dropletRegion: string
 	dropletSize: string
-	rotationId: number
 	type: Types
 	user: string
 	passphrase: string
