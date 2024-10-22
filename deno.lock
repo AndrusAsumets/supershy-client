@@ -2,6 +2,7 @@
   "version": "4",
   "specifiers": {
     "jsr:@std/dotenv@*": "0.225.2",
+    "npm:@types/node@*": "22.5.4",
     "npm:cli-progress@*": "3.12.0",
     "npm:jsonwebtoken@*": "9.0.2",
     "npm:lodash@*": "4.17.21",
@@ -13,6 +14,12 @@
     }
   },
   "npm": {
+    "@types/node@22.5.4": {
+      "integrity": "sha512-FDuKUJQm/ju9fT/SeX/6+gBzoPzlVCzfzmGkwKvRHQVxi4BntVbyIwf6a4Xn62mrvndLiml6z/UBXIdEVjQLXg==",
+      "dependencies": [
+        "undici-types"
+      ]
+    },
     "ansi-regex@5.0.1": {
       "integrity": "sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ=="
     },
@@ -122,6 +129,9 @@
       "dependencies": [
         "ansi-regex"
       ]
+    },
+    "undici-types@6.19.8": {
+      "integrity": "sha512-ve2KP6f/JnbPBFyobGHuerC9g1FYGn/F8n1LWTwNxCEzd6IfqTwUQcNXgEtmmQ6DlRrC1hrSrBnCZPokRrDHjw=="
     }
   },
   "redirects": {
