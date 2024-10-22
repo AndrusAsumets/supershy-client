@@ -33,6 +33,9 @@ const CLOUDFLARE_ACCOUNT_ID = String(Deno.env.get('CLOUDFLARE_ACCOUNT_ID'));
 const CLOUDFLARE_API_KEY = String(Deno.env.get('CLOUDFLARE_API_KEY'));
 const CLOUDFLARE_KV_NAMESPACE = String(Deno.env.get('CLOUDFLARE_KV_NAMESPACE'));
 const DROPLET_SIZE = String(Deno.env.get('DROPLET_SIZE'));
+const DROPLET_REGIONS = String(Deno.env.get('DROPLET_REGIONS'))
+    .split(',')
+    .filter(region => region.length)
 const TEST_PROXY_URL = `http://localhost:${LOCAL_TEST_PORT}`;
 const BASE_URL = 'https://api.digitalocean.com/v2';
 const __DIRNAME = path.dirname(path.fromFileUrl(import.meta.url));
@@ -496,6 +499,11 @@ const rotate = async () => {
     while (typeIndex < TYPES.length) {
         const type = TYPES[typeIndex];
         const dropletRegion = (await listRegions())
+            .filter((region: any) =>
+                DROPLET_REGIONS.length
+                    ? DROPLET_REGIONS.includes(region.slug)
+                    : true
+            )
             .filter((region: any) => region.sizes.includes(DROPLET_SIZE))
             .map((region: any) => region.slug)
             .sort(() => (Math.random() > 0.5) ? 1 : -1)[0];
