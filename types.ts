@@ -1,7 +1,29 @@
+export enum STRICT_HOST_KEY_CHECKING {
+	YES = 'StrictHostKeyChecking=yes',
+	NO = 'StrictHostKeyChecking=no'
+}
+
+export interface ConnectionString {
+	passphrase: string
+	dropletIp: string
+	localPort: number
+	remotePort: number
+	keyPath: string
+	strictHostKeyChecking: STRICT_HOST_KEY_CHECKING
+}
+
 export enum Types {
 	A = 'a',
 	B = 'b',
 	C = 'c'
+}
+
+export interface Connect {
+	connectionString: string
+	type: string
+	strictHostKeyChecking: string
+	dropletId: number
+	dropletIp: string
 }
 
 export interface Connection {
@@ -17,6 +39,7 @@ export interface Connection {
 	localTestPort: number
 	localPort: number
 	remotePort: number
+	connectionString: string
 	appId: string
 	loopIntervalMin: number
 	loopTimeoutMin: number
@@ -37,12 +60,4 @@ export interface CreateDroplet {
 	size: string
 	publicKeyId: string
 	userData: string
-}
-
-export interface Connect {
-	cmd: string
-	type: string
-	strictHostKeyChecking: string
-    dropletId: number
-    dropletIp: string
 }

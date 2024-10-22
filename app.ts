@@ -11,11 +11,13 @@ import { JSONFile } from 'npm:lowdb/node';
 import { Low } from 'npm:lowdb';
 import lodash from 'npm:lodash';
 import {
+    ConnectionString,
     Connect,
     Connection,
     CreateDroplet,
     DatabaseData,
     Types,
+    STRICT_HOST_KEY_CHECKING,
 } from './types.ts';
 
 const ENV = String(Deno.env.get('ENV'));
@@ -44,8 +46,6 @@ const GENERATE_SSH_KEY_FILE_NAME = 'generate-ssh-key.exp';
 const CONNECT_SSH_TUNNEL_FILE_NAME = 'connect-ssh-tunnel.exp';
 const USER = 'root';
 const TYPES: Types[] = [Types.B, Types.A];
-const STRICT_HOST_KEY_CHECKING_YES = 'StrictHostKeyChecking=yes';
-const STRICT_HOST_KEY_CHECKING_NO = 'StrictHostKeyChecking=no';
 
 const defaultData: DatabaseData = {
     connections: [],
@@ -60,7 +60,7 @@ class LowWithLodash<T> extends Low<T> {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-const buildDatabase = async (): Promise<LowWithLodash<DatabaseData>> => {
+const getDatabase = async (): Promise<LowWithLodash<DatabaseData>> => {
     const adapter = new JSONFile<DatabaseData>(DB_FILE_NAME);
     const db = new LowWithLodash(adapter, defaultData);
     await db.read();
@@ -69,7 +69,7 @@ const buildDatabase = async (): Promise<LowWithLodash<DatabaseData>> => {
     return db;
 };
 
-const db: LowWithLodash<DatabaseData> = await buildDatabase();
+const db: LowWithLodash<DatabaseData> = await getDatabase();
 
 const ensurePath = async (path: string) => {
     if (!await exists(path)) {
@@ -77,7 +77,7 @@ const ensurePath = async (path: string) => {
     }
 };
 
-const buildUserData = () => {
+const getUserData = () => {
     return `
 #cloud-config
 runcmd:
@@ -394,11 +394,11 @@ const connect = async (args: Connect) => {
     const { type, strictHostKeyChecking, dropletId, dropletIp } = args;
     console.log(`Starting SSH test tunnel connection to (${type}).`);
 
-    const cmd = args.cmd.replace('\n', '');
+    const connectionString = args.connectionString.replace('\n', '');
     await connectSshProxyTunnel(
-        cmd
+        connectionString
             .replace(`${LOCAL_PORT}`, `${LOCAL_TEST_PORT}`)
-            .replace(STRICT_HOST_KEY_CHECKING_YES, strictHostKeyChecking),
+            .replace(STRICT_HOST_KEY_CHECKING.YES, strictHostKeyChecking),
     );
     console.log(`Connected SSH test tunnel to (${type}).`);
 
@@ -414,7 +414,7 @@ const connect = async (args: Connect) => {
     await sleep(1000);
 
     console.log(`Starting SSH tunnel connection to (${type}).`);
-    await connectSshProxyTunnel(cmd);
+    await connectSshProxyTunnel(connectionString);
     console.log(`Connected SSH tunnel to (${type}).`);
 
     console.log('Starting API test (2).');
@@ -454,16 +454,32 @@ const init = async () => {
             remotePort,
         } = connection;
         const keyPath = `${KEY_PATH}${dropletName}`;
-        const cmd =
-            `${SRC_PATH}${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${dropletIp} ${USER} ${localPort} ${remotePort} ${keyPath} ${STRICT_HOST_KEY_CHECKING_YES}`;
+        const connectionString = getConnectionString({
+            passphrase,
+            dropletIp,
+            localPort,
+            remotePort,
+            keyPath,
+            strictHostKeyChecking: STRICT_HOST_KEY_CHECKING.YES
+        });
         await connect({
-            cmd,
+            connectionString,
             type,
-            strictHostKeyChecking: STRICT_HOST_KEY_CHECKING_NO,
+            strictHostKeyChecking: STRICT_HOST_KEY_CHECKING.NO,
             dropletId,
             dropletIp,
         });
     }
+};
+
+const getConnectionString = (args: ConnectionString): string => {
+    const {
+        passphrase,
+        dropletIp,
+        keyPath,
+        strictHostKeyChecking
+    } = args;
+    return `${SRC_PATH}${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${dropletIp} ${USER} ${LOCAL_PORT} ${REMOTE_PORT} ${keyPath} ${strictHostKeyChecking}`;
 };
 
 const rotate = async () => {
@@ -473,7 +489,7 @@ const rotate = async () => {
     const dropletIds: number[] = [];
     const dropletIps: string[] = [];
 
-    let cmd = '';
+    let connectionString = '';
     let typeIndex = 0;
 
     while (typeIndex < TYPES.length) {
@@ -493,7 +509,7 @@ const rotate = async () => {
             name: dropletName,
             size: DROPLET_SIZE,
             publicKeyId,
-            userData: buildUserData(),
+            userData: getUserData(),
         });
         dropletIds.push(dropletId);
         console.log('Created droplet.', {
@@ -506,8 +522,14 @@ const rotate = async () => {
         const dropletIp = await getDropletIp(dropletId);
         dropletIps.push(dropletIp);
 
-        cmd =
-            `${SRC_PATH}${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${dropletIp} ${USER} ${LOCAL_PORT} ${REMOTE_PORT} ${keyPath} ${STRICT_HOST_KEY_CHECKING_YES}`;
+        connectionString = getConnectionString({
+            passphrase,
+            dropletIp,
+            localPort: LOCAL_PORT,
+            remotePort: REMOTE_PORT,
+            keyPath,
+            strictHostKeyChecking: STRICT_HOST_KEY_CHECKING.YES
+        });
 
         const connection: Connection = {
             dropletId,
@@ -526,6 +548,7 @@ const rotate = async () => {
             localTestPort: LOCAL_TEST_PORT,
             localPort: LOCAL_PORT,
             remotePort: REMOTE_PORT,
+            connectionString,
             isDeleted: false,
             createdTime: new Date().toISOString(),
             modifiedTime: null,
@@ -540,9 +563,9 @@ const rotate = async () => {
     }
 
     await connect({
-        cmd,
+        connectionString,
         type: Types.A,
-        strictHostKeyChecking: STRICT_HOST_KEY_CHECKING_YES,
+        strictHostKeyChecking: STRICT_HOST_KEY_CHECKING.YES,
         dropletId: dropletIds[1],
         dropletIp: dropletIps[1],
     });
