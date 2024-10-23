@@ -438,18 +438,16 @@ const connect = async (args: Connect) => {
     console.log('Successfully finished API test (2).');
 };
 
-const cleanup = async () => {
-    const itemsToLeave = CONNECTION_TYPES.length;
-
+const cleanup = async (dropletIdsToKeep: number[]) => {
     const deletableKeyIds = (await listKeys())['ssh_keys']
         .filter((key: any) => key.name.includes(`${APP_ID}-${ENV}`))
         .map((key: any) => key.id);
     await deleteKeys(deletableKeyIds);
 
     const deletableDropletIds = (await listDroplets()).droplets
-        .filter((key: any) => key.name.includes(`${APP_ID}-${ENV}`))
-        .map((droplet: any) => droplet.id);
-    deletableDropletIds.length = deletableDropletIds.length - itemsToLeave;
+        .filter((droplet: any) => droplet.name.includes(`${APP_ID}-${ENV}`))
+        .map((droplet: any) => droplet.id)
+        .filter((id: number) => !dropletIdsToKeep.includes(id));
     await deleteDroplets(deletableDropletIds);
 };
 
@@ -490,16 +488,17 @@ setInterval(() => {
 }, 1000);
 
 const rotate = async () => {
-    const alreadyConnected = await init();
-    const connectionTypes: ConnectionTypes[] = alreadyConnected
+    const initConnection = await init();
+    const connectionTypes: ConnectionTypes[] = initConnection
         ? [ConnectionTypes.A]
         : CONNECTION_TYPES;
     const connectionIndex = 0;
     let connectionString = '';
     let connectionTypeIndex = 0;
-
     const dropletIds: number[] = [];
     const dropletIps: string[] = [];
+
+    initConnection && dropletIds.push(initConnection.dropletId);
 
     while (connectionTypeIndex < connectionTypes.length) {
         const connectionId = uuidv7();
@@ -580,7 +579,7 @@ const rotate = async () => {
         connectionTypeIndex = connectionTypeIndex + 1;
     }
 
-    if (!alreadyConnected) {
+    if (!initConnection) {
         await connect({
             connectionString,
             strictHostKeyChecking: STRICT_HOST_KEY_CHECKING.YES,
@@ -589,7 +588,7 @@ const rotate = async () => {
         });
     }
 
-    await cleanup();
+    await cleanup(dropletIds);
 };
 
 await ensurePath(DATA_PATH);
