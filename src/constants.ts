@@ -3,19 +3,37 @@ import { homedir } from 'node:os';
 
 import { ConnectionTypes } from './types.ts';
 
-const ENV = String(Deno.env.get('ENV'));
-const APP_ID = String(Deno.env.get('APP_ID'));
-const LOOP_INTERVAL_MIN = Number(Deno.env.get('LOOP_INTERVAL_MIN'));
-const LOOP_TIMEOUT_MIN = Number(Deno.env.get('LOOP_TIMEOUT_MIN'));
-const LOCAL_TEST_PORT = Number(Deno.env.get('LOCAL_TEST_PORT'));
-const LOCAL_PORT = Number(Deno.env.get('LOCAL_PORT'));
-const REMOTE_PORT = Number(Deno.env.get('REMOTE_PORT'));
-const KEY_ALGORITHM = String(Deno.env.get('KEY_ALGORITHM'));
-const DIGITAL_OCEAN_API_KEY = String(Deno.env.get('DIGITAL_OCEAN_API_KEY'));
-const CLOUDFLARE_ACCOUNT_ID = String(Deno.env.get('CLOUDFLARE_ACCOUNT_ID'));
-const CLOUDFLARE_API_KEY = String(Deno.env.get('CLOUDFLARE_API_KEY'));
-const CLOUDFLARE_KV_NAMESPACE = String(Deno.env.get('CLOUDFLARE_KV_NAMESPACE'));
-const DROPLET_SIZE = String(Deno.env.get('DROPLET_SIZE'));
+const APP_ID = Deno.env.get('APP_ID')
+    ? String(Deno.env.get('APP_ID'))
+    : 'supershy-client';
+const ENV = Deno.env.get('ENV')
+    ? String(Deno.env.get('ENV'))
+    : 'dev';
+const LOOP_INTERVAL_MIN = Deno.env.get('LOOP_INTERVAL_MIN')
+    ? Number(Deno.env.get('LOOP_INTERVAL_MIN'))
+    : 30;
+const LOOP_TIMEOUT_MIN = Deno.env.get('LOOP_TIMEOUT_MIN')
+    ? Number(Deno.env.get('LOOP_TIMEOUT_MIN'))
+    : 5;
+const LOCAL_TEST_PORT = Deno.env.get('LOCAL_TEST_PORT')
+    ? Number(Deno.env.get('LOCAL_TEST_PORT'))
+    : 8887
+const LOCAL_PORT = Deno.env.get('LOCAL_PORT')
+    ? Number(Deno.env.get('LOCAL_PORT'))
+    : 8888;
+const REMOTE_PORT = Deno.env.get('REMOTE_PORT')
+    ? Number(Deno.env.get('REMOTE_PORT'))
+    : 8888;
+const DROPLET_SIZE = Deno.env.get('DROPLET_SIZE')
+    ? String(Deno.env.get('DROPLET_SIZE'))
+    : 's-1vcpu-512mb-10gb';
+const KEY_ALGORITHM = Deno.env.get('KEY_ALGORITHM')
+    ? String(Deno.env.get('KEY_ALGORITHM'))
+    : 'ed25519';
+const DIGITAL_OCEAN_API_KEY = Deno.env.get('DIGITAL_OCEAN_API_KEY');
+const CLOUDFLARE_ACCOUNT_ID = Deno.env.get('CLOUDFLARE_ACCOUNT_ID');
+const CLOUDFLARE_API_KEY = Deno.env.get('CLOUDFLARE_API_KEY');
+const CLOUDFLARE_KV_NAMESPACE = Deno.env.get('CLOUDFLARE_KV_NAMESPACE');
 const DROPLET_REGIONS = String(Deno.env.get('DROPLET_REGIONS'))
     .split(',')
     .filter(region => region.length);
@@ -35,6 +53,22 @@ const GENERATE_SSH_KEY_FILE_NAME = 'generate-ssh-key.exp';
 const CONNECT_SSH_TUNNEL_FILE_NAME = 'connect-ssh-tunnel.exp';
 const USER = 'root';
 const CONNECTION_TYPES = [ConnectionTypes.A, ConnectionTypes.A];
+
+if (!DIGITAL_OCEAN_API_KEY) {
+    throw `DIGITAL_OCEAN_API_KEY env variable was not provided.`;
+}
+
+if (!CLOUDFLARE_ACCOUNT_ID) {
+    throw `CLOUDFLARE_ACCOUNT_ID env variable was not provided.`;
+}
+
+if (!CLOUDFLARE_API_KEY) {
+    throw `CLOUDFLARE_API_KEY env variable was not provided.`;
+}
+
+if (!CLOUDFLARE_KV_NAMESPACE) {
+    throw `CLOUDFLARE_KV_NAMESPACEY env variable was not provided.`;
+}
 
 export {
     ENV,
