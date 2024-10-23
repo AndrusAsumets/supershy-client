@@ -3,24 +3,8 @@ export enum STRICT_HOST_KEY_CHECKING {
 	NO = 'StrictHostKeyChecking=no'
 }
 
-export interface ConnectionString {
-	dropletIp: string
-	localPort: number
-	remotePort: number
-	passphrase: string
-	keyPath: string
-	strictHostKeyChecking: STRICT_HOST_KEY_CHECKING
-}
-
 export enum ConnectionTypes {
 	A = 'a'
-}
-
-export interface Connect {
-	connectionString: string
-	strictHostKeyChecking: string
-	dropletId: number
-	dropletIp: string
 }
 
 export interface Connection {
@@ -43,6 +27,7 @@ export interface Connection {
 	appId: string
 	loopIntervalMin: number
 	loopTimeoutMin: number
+	sshLogOutputPath: string
 	isDeleted: false
 	createdTime: string
 	modifiedTime: string | null

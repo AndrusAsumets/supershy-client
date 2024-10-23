@@ -13,8 +13,6 @@ import { Low } from 'npm:lowdb';
 import lodash from 'npm:lodash';
 import {
     ConnectionTypes,
-    ConnectionString,
-    Connect,
     Connection,
     CreateDroplet,
     DatabaseData,
@@ -45,8 +43,10 @@ const HOME_PATH = homedir();
 const DATA_PATH = `${HOME_PATH}/.${APP_ID}`;
 const KEY_PATH = `${DATA_PATH}/.keys`;
 const SRC_PATH = `${__DIRNAME}/src`;
+const LOG_PATH = `${DATA_PATH}/logs`;
 const KNOWN_HOSTS_PATH = `${HOME_PATH}/.ssh/known_hosts`;
 const DB_FILE_NAME = `${DATA_PATH}/.database.${ENV}.json`;
+const SSH_LOG_OUTPUT_EXTENSION = '.ssh.out';
 const GENERATE_SSH_KEY_FILE_NAME = 'generate-ssh-key.exp';
 const CONNECT_SSH_TUNNEL_FILE_NAME = 'connect-ssh-tunnel.exp';
 const USER = 'root';
@@ -100,7 +100,7 @@ runcmd:
 };
 
 const getHostKey = async (dropletId: number, proxyUrl = '') => {
-    let hostKey: any = '';
+    let hostKey: string = '';
 
     while (!hostKey) {
         try {
@@ -132,11 +132,11 @@ const getHostKey = async (dropletId: number, proxyUrl = '') => {
 };
 
 const apiTest = async (proxyUrl = '') => {
-    let canGet = false;
+    let response = null;
 
-    while (!canGet) {
+    while (!response) {
         try {
-            canGet = await listRegions(proxyUrl);
+            response = await listRegions(proxyUrl);
         } catch (_) {
             await sleep(1000);
         }
@@ -259,20 +259,37 @@ const addKey = async (publicKey: string, name: string) => {
     return json['ssh_key']['id'];
 };
 
-const connectSshProxyTunnel = async (cmd: string) => {
-    let isConnectable = false;
-    while (!isConnectable) {
-        // @ts-ignore: because
-        const openSshProxyTunnelTestProcess = Deno.run({
-            cmd: cmd.split(' '),
-            stdout: 'piped',
-            stderr: 'piped',
-            stdin: 'null',
-        });
-        const output = new TextDecoder().decode(
-            await openSshProxyTunnelTestProcess.stderrOutput(),
-        );
-        isConnectable = !output;
+const tunnel = async (
+    connection: Connection,
+    port: number,
+    strictHostKeyChecking: string,
+) => {
+    const connectionString = connection.connectionString
+        .replace(` ${LOCAL_PORT} `, ` ${port} `)
+        .replace(STRICT_HOST_KEY_CHECKING.YES, strictHostKeyChecking)
+        .replace('\n', '');
+    let isConnected = false;
+
+    while (!isConnected) {
+        try {
+            await killAllSshTunnelsByPort(port);
+            await sleep(1000);
+
+            // @ts-ignore: because
+            const openSshProxyTunnelTestProcess = Deno.run({
+                cmd: connectionString.split(' '),
+                stdout: 'piped',
+                stderr: 'piped',
+                stdin: 'null',
+            });
+            await sleep(5000);
+            await openSshProxyTunnelTestProcess.stderrOutput();
+            const sshLogOutput = await Deno.readTextFile(connection.sshLogOutputPath);
+            isConnected = sshLogOutput.includes('pledge: network');
+        }
+        catch(_) {
+            _;
+        }
     }
 };
 
@@ -355,15 +372,20 @@ const createKey = async (
     return publicKeyId;
 };
 
-const getConnectionString = (args: ConnectionString): string => {
+const getConnectionString = (
+    connection: Connection,
+    strictHostKeyChecking: string,
+): string => {
     const {
         passphrase,
         dropletIp,
         keyPath,
-        strictHostKeyChecking
-    } = args;
-    return `${SRC_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${dropletIp} ${USER} ${LOCAL_PORT} ${REMOTE_PORT} ${keyPath} ${strictHostKeyChecking}`;
+        sshLogOutputPath
+    } = connection;
+    return `${SRC_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${dropletIp} ${USER} ${LOCAL_PORT} ${REMOTE_PORT} ${keyPath} ${strictHostKeyChecking} ${sshLogOutputPath}`;
 };
+
+const getSshLogOutputPath = (connectionId: string): string =>`${LOG_PATH}/${connectionId}${SSH_LOG_OUTPUT_EXTENSION}`;
 
 const init = async () => {
     const connection = db
@@ -374,48 +396,22 @@ const init = async () => {
         .reverse()
         .value()[0];
 
-    if (connection) {
-        const {
-            dropletId,
-            dropletIp,
-            dropletName,
-            passphrase,
-            localPort,
-            remotePort,
-        } = connection;
-        const keyPath = `${KEY_PATH}/${dropletName}`;
-        const connectionString = getConnectionString({
-            passphrase,
-            dropletIp,
-            localPort,
-            remotePort,
-            keyPath,
-            strictHostKeyChecking: STRICT_HOST_KEY_CHECKING.YES
-        });
-        await connect({
-            connectionString,
-            strictHostKeyChecking: STRICT_HOST_KEY_CHECKING.NO,
-            dropletId,
-            dropletIp,
-        });
-    }
-
+    connection && await connect(connection, STRICT_HOST_KEY_CHECKING.NO);
     return connection;
 };
 
-const connect = async (args: Connect) => {
-    const { dropletId, dropletIp, strictHostKeyChecking } = args;
-
-    await killAllSshTunnelsByPort(LOCAL_TEST_PORT);
-    await sleep(1000);
+const connect = async (
+    connection: Connection,
+    strictHostKeyChecking: string,
+) => {
+    const { dropletId, dropletIp } = connection;
 
     console.log(`Starting SSH test tunnel connection to ${dropletIp}.`);
 
-    const connectionString = args.connectionString.replace('\n', '');
-    await connectSshProxyTunnel(
-        connectionString
-            .replace(`${LOCAL_PORT}`, `${LOCAL_TEST_PORT}`)
-            .replace(STRICT_HOST_KEY_CHECKING.YES, strictHostKeyChecking),
+    await tunnel(
+        connection,
+        LOCAL_TEST_PORT,
+        strictHostKeyChecking,
     );
     console.log(`Connected SSH test tunnel to ${dropletIp}.`);
 
@@ -426,11 +422,10 @@ const connect = async (args: Connect) => {
     await updateHostKeys(dropletId, dropletIp, TEST_PROXY_URL);
 
     await killAllSshTunnelsByPort(LOCAL_TEST_PORT);
-    await killAllSshTunnelsByPort(LOCAL_PORT);
     await sleep(1000);
 
     console.log(`Starting SSH tunnel connection to ${dropletIp}.`);
-    await connectSshProxyTunnel(connectionString);
+    await tunnel(connection, LOCAL_PORT, strictHostKeyChecking);
     console.log(`Connected SSH tunnel to ${dropletIp}.`);
 
     console.log('Starting API test (2).');
@@ -488,21 +483,17 @@ setInterval(() => {
 }, 1000);
 
 const rotate = async () => {
+    const activeConnections: Connection[] = [];
     const initConnection = await init();
+    initConnection && activeConnections.push(initConnection);
     const connectionTypes: ConnectionTypes[] = initConnection
         ? [ConnectionTypes.A]
         : CONNECTION_TYPES;
-    const connectionIndex = 0;
-    let connectionString = '';
-    let connectionTypeIndex = 0;
-    const dropletIds: number[] = [];
-    const dropletIps: string[] = [];
+    let connectionIndex = 0;
 
-    initConnection && dropletIds.push(initConnection.dropletId);
-
-    while (connectionTypeIndex < connectionTypes.length) {
+    while (connectionIndex < connectionTypes.length) {
         const connectionId = uuidv7();
-        const connectionType = connectionTypes[connectionTypeIndex];
+        const connectionType = connectionTypes[connectionIndex];
         const dropletRegion = (await listRegions())
             .filter((region: any) =>
                 DROPLET_REGIONS.length
@@ -525,7 +516,6 @@ const rotate = async () => {
             publicKeyId,
             userData: getUserData(),
         });
-        dropletIds.push(dropletId);
         console.log('Created droplet.', {
             dropletName,
             dropletRegion,
@@ -535,16 +525,6 @@ const rotate = async () => {
         });
 
         const dropletIp = await getDropletIp(dropletId);
-        dropletIps.push(dropletIp);
-
-        connectionString = getConnectionString({
-            passphrase,
-            dropletIp,
-            localPort: LOCAL_PORT,
-            remotePort: REMOTE_PORT,
-            keyPath,
-            strictHostKeyChecking: STRICT_HOST_KEY_CHECKING.YES
-        });
 
         const connection: Connection = {
             connectionId,
@@ -565,32 +545,35 @@ const rotate = async () => {
             localPort: LOCAL_PORT,
             remotePort: REMOTE_PORT,
             keyPath,
-            connectionString,
+            sshLogOutputPath: getSshLogOutputPath(connectionId),
+            connectionString: '',
             isDeleted: false,
             createdTime: new Date().toISOString(),
             modifiedTime: null,
             deletedTime: null,
         };
+        connection.connectionString = getConnectionString(connection, STRICT_HOST_KEY_CHECKING.YES);
+
         db.data.connections.push(connection);
         db.write();
 
         await updateHostKeys(dropletId, dropletIp);
 
-        connectionTypeIndex = connectionTypeIndex + 1;
+        activeConnections.push(connection);
+        connectionIndex = connectionIndex + 1;
     }
 
     if (!initConnection) {
-        await connect({
-            connectionString,
-            strictHostKeyChecking: STRICT_HOST_KEY_CHECKING.YES,
-            dropletId: dropletIds[connectionIndex],
-            dropletIp: dropletIps[connectionIndex],
-        });
+        await connect(activeConnections[0], STRICT_HOST_KEY_CHECKING.YES);
     }
 
-    await cleanup(dropletIds);
+    await cleanup(
+        activeConnections.map(connection => connection.dropletId)
+    );
 };
 
 await ensurePath(DATA_PATH);
 await ensurePath(KEY_PATH);
+await ensurePath(LOG_PATH);
+
 loop();
