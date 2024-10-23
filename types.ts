@@ -4,23 +4,23 @@ export enum STRICT_HOST_KEY_CHECKING {
 }
 
 export interface ConnectionString {
-	passphrase: string
 	dropletIp: string
 	localPort: number
 	remotePort: number
+	passphrase: string
 	keyPath: string
 	strictHostKeyChecking: STRICT_HOST_KEY_CHECKING
 }
 
-export enum Types {
+export enum ConnectionTypes {
 	A = 'a',
 	B = 'b',
 	C = 'c'
 }
 
 export interface Connect {
+	connectionType: ConnectionTypes
 	connectionString: string
-	type: string
 	strictHostKeyChecking: string
 	dropletId: number
 	dropletIp: string
@@ -28,23 +28,23 @@ export interface Connect {
 
 export interface Connection {
 	connectionId: string
+	connectionType: ConnectionTypes
 	dropletId: number
 	dropletName: string
 	dropletIp: string
 	dropletRegion: string
 	dropletSize: string
-	type: Types
 	user: string
 	passphrase: string
 	localTestPort: number
 	localPort: number
 	remotePort: number
+	keyAlgorithm: string
 	keyPath: string
 	connectionString: string
 	appId: string
 	loopIntervalMin: number
 	loopTimeoutMin: number
-	keyAlgorithm: string
 	isDeleted: false
 	createdTime: string
 	modifiedTime: string | null
