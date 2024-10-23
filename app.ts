@@ -1,11 +1,8 @@
 // deno-lint-ignore-file ban-unused-ignore no-explicit-any no-deprecated-deno-api
 
 import 'jsr:@std/dotenv/load';
-import * as path from 'https://deno.land/std@0.224.0/path/mod.ts';
 import { exists } from 'https://deno.land/std@0.224.0/fs/mod.ts';
 import * as crypto from 'node:crypto';
-// @deno-types='npm:@types/node'
-import { homedir } from 'node:os';
 import { JSONFile } from 'npm:lowdb/node';
 import { v7 as uuidv7 } from 'npm:uuid';
 
@@ -16,41 +13,40 @@ import {
     Connection,
     CreateDroplet,
     DatabaseData,
-    STRICT_HOST_KEY_CHECKING,
-} from './types.ts';
+    StrictHostKeyChecking,
+} from './src/types.ts';
 
-const ENV = String(Deno.env.get('ENV'));
-const APP_ID = String(Deno.env.get('APP_ID'));
-const LOOP_INTERVAL_MIN = Number(Deno.env.get('LOOP_INTERVAL_MIN'));
-const LOOP_TIMEOUT_MIN = Number(Deno.env.get('LOOP_TIMEOUT_MIN'));
-const LOCAL_TEST_PORT = Number(Deno.env.get('LOCAL_TEST_PORT'));
-const LOCAL_PORT = Number(Deno.env.get('LOCAL_PORT'));
-const REMOTE_PORT = Number(Deno.env.get('REMOTE_PORT'));
-const KEY_ALGORITHM = String(Deno.env.get('KEY_ALGORITHM'));
-const DIGITAL_OCEAN_API_KEY = String(Deno.env.get('DIGITAL_OCEAN_API_KEY'));
-const CLOUDFLARE_ACCOUNT_ID = String(Deno.env.get('CLOUDFLARE_ACCOUNT_ID'));
-const CLOUDFLARE_API_KEY = String(Deno.env.get('CLOUDFLARE_API_KEY'));
-const CLOUDFLARE_KV_NAMESPACE = String(Deno.env.get('CLOUDFLARE_KV_NAMESPACE'));
-const DROPLET_SIZE = String(Deno.env.get('DROPLET_SIZE'));
-const DROPLET_REGIONS = String(Deno.env.get('DROPLET_REGIONS'))
-    .split(',')
-    .filter(region => region.length)
-const TEST_PROXY_URL = `http://localhost:${LOCAL_TEST_PORT}`;
-const DIGITAL_OCEAN_BASE_URL = 'https://api.digitalocean.com/v2';
-const CLOUDFLARE_BASE_URL = 'https://api.cloudflare.com/client/v4';
-const __DIRNAME = path.dirname(path.fromFileUrl(import.meta.url));
-const HOME_PATH = homedir();
-const DATA_PATH = `${HOME_PATH}/.${APP_ID}`;
-const KEY_PATH = `${DATA_PATH}/.keys`;
-const SRC_PATH = `${__DIRNAME}/src`;
-const LOG_PATH = `${DATA_PATH}/logs`;
-const KNOWN_HOSTS_PATH = `${HOME_PATH}/.ssh/known_hosts`;
-const DB_FILE_NAME = `${DATA_PATH}/.database.${ENV}.json`;
-const SSH_LOG_OUTPUT_EXTENSION = '.ssh.out';
-const GENERATE_SSH_KEY_FILE_NAME = 'generate-ssh-key.exp';
-const CONNECT_SSH_TUNNEL_FILE_NAME = 'connect-ssh-tunnel.exp';
-const USER = 'root';
-const CONNECTION_TYPES = [ConnectionTypes.A, ConnectionTypes.A];
+import {
+    ENV,
+    APP_ID,
+    LOOP_INTERVAL_MIN,
+    LOOP_TIMEOUT_MIN,
+    LOCAL_TEST_PORT,
+    LOCAL_PORT,
+    REMOTE_PORT,
+    KEY_ALGORITHM,
+    DIGITAL_OCEAN_API_KEY,
+    CLOUDFLARE_ACCOUNT_ID,
+    CLOUDFLARE_API_KEY,
+    CLOUDFLARE_KV_NAMESPACE,
+    DROPLET_SIZE,
+    DROPLET_REGIONS,
+    TEST_PROXY_URL,
+    DIGITAL_OCEAN_BASE_URL,
+    CLOUDFLARE_BASE_URL,
+    __DIRNAME,
+    DATA_PATH,
+    KEY_PATH,
+    SRC_PATH,
+    LOG_PATH,
+    KNOWN_HOSTS_PATH,
+    DB_FILE_NAME,
+    SSH_LOG_OUTPUT_EXTENSION,
+    GENERATE_SSH_KEY_FILE_NAME,
+    CONNECT_SSH_TUNNEL_FILE_NAME,
+    USER,
+    CONNECTION_TYPES,
+} from './src/constants.ts';
 
 const defaultData: DatabaseData = {
     connections: [],
@@ -266,7 +262,7 @@ const tunnel = async (
 ) => {
     const connectionString = connection.connectionString
         .replace(` ${LOCAL_PORT} `, ` ${port} `)
-        .replace(STRICT_HOST_KEY_CHECKING.YES, strictHostKeyChecking)
+        .replace(StrictHostKeyChecking.Yes, strictHostKeyChecking)
         .replace('\n', '');
     let isConnected = false;
 
@@ -361,10 +357,10 @@ const createKey = async (
     dropletName: string,
     passphrase: string,
 ) => {
-    const createSshKeyCmd =
+    const cmd =
         `${SRC_PATH}/${GENERATE_SSH_KEY_FILE_NAME} ${passphrase} ${keyPath} ${KEY_ALGORITHM}`;
     // @ts-ignore: because
-    const createSshKeyProcess = Deno.run({ cmd: createSshKeyCmd.split(' ') });
+    const createSshKeyProcess = Deno.run({ cmd: cmd.split(' ') });
     await createSshKeyProcess.status();
 
     const publicKey = await Deno.readTextFile(`${keyPath}.pub`);
@@ -396,7 +392,7 @@ const init = async () => {
         .reverse()
         .value()[0];
 
-    connection && await connect(connection, STRICT_HOST_KEY_CHECKING.NO);
+    connection && await connect(connection, StrictHostKeyChecking.No);
     return connection;
 };
 
@@ -552,7 +548,7 @@ const rotate = async () => {
             modifiedTime: null,
             deletedTime: null,
         };
-        connection.connectionString = getConnectionString(connection, STRICT_HOST_KEY_CHECKING.YES);
+        connection.connectionString = getConnectionString(connection, StrictHostKeyChecking.Yes);
 
         db.data.connections.push(connection);
         db.write();
@@ -564,7 +560,7 @@ const rotate = async () => {
     }
 
     if (!initConnection) {
-        await connect(activeConnections[0], STRICT_HOST_KEY_CHECKING.YES);
+        await connect(activeConnections[0], StrictHostKeyChecking.Yes);
     }
 
     await cleanup(

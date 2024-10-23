@@ -1,6 +1,6 @@
-export enum STRICT_HOST_KEY_CHECKING {
-	YES = 'StrictHostKeyChecking=yes',
-	NO = 'StrictHostKeyChecking=no'
+export enum StrictHostKeyChecking {
+	Yes = 'StrictHostKeyChecking=yes',
+	No = 'StrictHostKeyChecking=no'
 }
 
 export enum ConnectionTypes {
