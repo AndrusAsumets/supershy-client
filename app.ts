@@ -411,9 +411,9 @@ const connect = async (
     );
     console.log(`Connected SSH test tunnel to ${dropletIp}.`);
 
-    console.log('Starting API test (1).');
+    console.log('Starting DigitalOcean API test (1).');
     await apiTest(TEST_PROXY_URL);
-    console.log('Successfully finished API test (1).');
+    console.log('Successfully finished DigitalOcean API test (1).');
 
     await updateHostKeys(dropletId, dropletIp, TEST_PROXY_URL);
 
@@ -424,9 +424,9 @@ const connect = async (
     await tunnel(connection, LOCAL_PORT, strictHostKeyChecking);
     console.log(`Connected SSH tunnel to ${dropletIp}.`);
 
-    console.log('Starting API test (2).');
+    console.log('Starting DigitalOcean API test (2).');
     await apiTest();
-    console.log('Successfully finished API test (2).');
+    console.log('Successfully finished DigitalOcean API test (2).');
 };
 
 const cleanup = async (dropletIdsToKeep: number[]) => {

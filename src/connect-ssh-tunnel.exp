@@ -5,11 +5,11 @@ set server [lrange $argv 1 1]
 set user [lrange $argv 2 2]
 set local_port [lrange $argv 3 3]
 set remote_port [lrange $argv 4 4]
-set key [lrange $argv 5 5]
+set key_path [lrange $argv 5 5]
 set strict_host_key_checking [lrange $argv 6 6]
 set output_path [lrange $argv 7 7]
 
-spawn -ignore HUP ssh -v $user@$server -f -N -L $local_port:0.0.0.0:$remote_port -i $key -o $strict_host_key_checking -E $output_path
+spawn -ignore HUP ssh -v $user@$server -f -N -L $local_port:0.0.0.0:$remote_port -i $key_path -o $strict_host_key_checking -E $output_path
 expect "*passphrase*"
 send -- "$passphrase\r"
 interact
