@@ -316,42 +316,6 @@ const retrySleep = async () => {
     }
 };
 
-const loop = () => {
-    clearTimeout(timeout);
-
-    timeout = setTimeout(async () => {
-        try {
-            const startTime = performance.now();
-            secondsLeftForLoopRetrigger = LOOP_INTERVAL_MIN * 60;
-            await rotate();
-            const endTime = performance.now();
-            console.log(
-                `Proxy loop finished in ${
-                    Number((endTime - startTime) / 1000).toFixed(0)
-                } seconds.`,
-            );
-        } catch (err) {
-            console.log(`Proxy loop caught an error.`, err);
-        }
-
-        await retrySleep();
-        loop();
-    });
-};
-
-setInterval(() => {
-    secondsLeftForLoopRetrigger = secondsLeftForLoopRetrigger - 1;
-    const secondsLeftForLoopTimeout = LOOP_TIMEOUT_MIN * 60 +
-        secondsLeftForLoopRetrigger;
-
-    if (secondsLeftForLoopTimeout < 0) {
-        console.log(
-            `Reached timeout interval of ${LOOP_TIMEOUT_MIN} minutes, restarting the loop.`,
-        );
-        loop();
-    }
-}, 1000);
-
 const getDropletIp = async (dropletId: string) => {
     let dropletIp = null;
 
@@ -488,6 +452,42 @@ const init = async () => {
         });
     }
 };
+
+const loop = () => {
+    clearTimeout(timeout);
+
+    timeout = setTimeout(async () => {
+        try {
+            const startTime = performance.now();
+            secondsLeftForLoopRetrigger = LOOP_INTERVAL_MIN * 60;
+            await rotate();
+            const endTime = performance.now();
+            console.log(
+                `Proxy loop finished in ${
+                    Number((endTime - startTime) / 1000).toFixed(0)
+                } seconds.`,
+            );
+        } catch (err) {
+            console.log(`Proxy loop caught an error.`, err);
+        }
+
+        await retrySleep();
+        loop();
+    });
+};
+
+setInterval(() => {
+    secondsLeftForLoopRetrigger = secondsLeftForLoopRetrigger - 1;
+    const secondsLeftForLoopTimeout = LOOP_TIMEOUT_MIN * 60 +
+        secondsLeftForLoopRetrigger;
+
+    if (secondsLeftForLoopTimeout < 0) {
+        console.log(
+            `Reached timeout interval of ${LOOP_TIMEOUT_MIN} minutes, restarting the loop.`,
+        );
+        loop();
+    }
+}, 1000);
 
 const rotate = async () => {
     // Store for deleting later on in the process.
