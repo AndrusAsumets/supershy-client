@@ -50,7 +50,7 @@ const DB_FILE_NAME = `${DATA_PATH}/.database.${ENV}.json`;
 const GENERATE_SSH_KEY_FILE_NAME = 'generate-ssh-key.exp';
 const CONNECT_SSH_TUNNEL_FILE_NAME = 'connect-ssh-tunnel.exp';
 const USER = 'root';
-const CONNECTION_TYPES: ConnectionTypes[] = [ConnectionTypes.B, ConnectionTypes.A];
+const CONNECTION_TYPES = [ConnectionTypes.A, ConnectionTypes.A];
 
 const defaultData: DatabaseData = {
     connections: [],
@@ -92,8 +92,6 @@ runcmd:
     - echo 'Timeout 600' > nano tinyproxy.conf
     - echo 'Allow 0.0.0.0' > nano tinyproxy.conf
     - tinyproxy -d -c tinyproxy.conf
-
-    - echo 'PasswordAuthentication no' > sudo nano /etc/ssh/sshd_config
 
     - DROPLET_ID=$(echo \`curl http://169.254.169.254/metadata/v1/id\`)
     - HOST_KEY=$(cat /etc/ssh/ssh_host_${KEY_ALGORITHM}_key.pub | cut -d ' ' -f 2)
@@ -367,58 +365,10 @@ const getConnectionString = (args: ConnectionString): string => {
     return `${SRC_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${dropletIp} ${USER} ${LOCAL_PORT} ${REMOTE_PORT} ${keyPath} ${strictHostKeyChecking}`;
 };
 
-const connect = async (args: Connect) => {
-    const { dropletId, dropletIp, connectionType, strictHostKeyChecking } = args;
-
-    await killAllSshTunnelsByPort(LOCAL_TEST_PORT);
-    await sleep(1000);
-
-    console.log(`Starting SSH test tunnel connection to (${connectionType}).`);
-
-    const connectionString = args.connectionString.replace('\n', '');
-    await connectSshProxyTunnel(
-        connectionString
-            .replace(`${LOCAL_PORT}`, `${LOCAL_TEST_PORT}`)
-            .replace(STRICT_HOST_KEY_CHECKING.YES, strictHostKeyChecking),
-    );
-    console.log(`Connected SSH test tunnel to (${connectionType}).`);
-
-    console.log('Starting API test (1).');
-    await apiTest(TEST_PROXY_URL);
-    console.log('Successfully finished API test (1).');
-
-    await updateHostKeys(dropletId, dropletIp, TEST_PROXY_URL);
-
-    await killAllSshTunnelsByPort(LOCAL_TEST_PORT);
-    await killAllSshTunnelsByPort(LOCAL_PORT);
-    await sleep(1000);
-
-    console.log(`Starting SSH tunnel connection to (${connectionType}).`);
-    await connectSshProxyTunnel(connectionString);
-    console.log(`Connected SSH tunnel to (${connectionType}).`);
-
-    console.log('Starting API test (2).');
-    await apiTest();
-    console.log('Successfully finished API test (2).');
-};
-
-const cleanup = async (previousDroplets: any[]) => {
-    const keys = await listKeys();
-    const deletableKeyIds = keys['ssh_keys']
-        .filter((key: any) => key.name.includes(`${APP_ID}-${ENV}`))
-        .map((key: any) => key.id);
-    await deleteKeys(deletableKeyIds);
-    const deletableDropletIds = previousDroplets
-        .filter((key: any) => key.name.includes(`${APP_ID}-${ENV}`))
-        .map((droplet: any) => droplet.id);
-    await deleteDroplets(deletableDropletIds);
-};
-
 const init = async () => {
     const connection = db
         .chain
         .get('connections')
-        .filter((connection: Connection) => connection.connectionType === ConnectionTypes.B)
         .filter((connection: Connection) => !connection.isDeleted)
         .sortBy('createdTime')
         .reverse()
@@ -429,7 +379,6 @@ const init = async () => {
             dropletId,
             dropletIp,
             dropletName,
-            connectionType,
             passphrase,
             localPort,
             remotePort,
@@ -445,12 +394,63 @@ const init = async () => {
         });
         await connect({
             connectionString,
-            connectionType,
             strictHostKeyChecking: STRICT_HOST_KEY_CHECKING.NO,
             dropletId,
             dropletIp,
         });
     }
+
+    return connection;
+};
+
+const connect = async (args: Connect) => {
+    const { dropletId, dropletIp, strictHostKeyChecking } = args;
+
+    await killAllSshTunnelsByPort(LOCAL_TEST_PORT);
+    await sleep(1000);
+
+    console.log(`Starting SSH test tunnel connection to ${dropletIp}.`);
+
+    const connectionString = args.connectionString.replace('\n', '');
+    await connectSshProxyTunnel(
+        connectionString
+            .replace(`${LOCAL_PORT}`, `${LOCAL_TEST_PORT}`)
+            .replace(STRICT_HOST_KEY_CHECKING.YES, strictHostKeyChecking),
+    );
+    console.log(`Connected SSH test tunnel to ${dropletIp}.`);
+
+    console.log('Starting API test (1).');
+    await apiTest(TEST_PROXY_URL);
+    console.log('Successfully finished API test (1).');
+
+    await updateHostKeys(dropletId, dropletIp, TEST_PROXY_URL);
+
+    await killAllSshTunnelsByPort(LOCAL_TEST_PORT);
+    await killAllSshTunnelsByPort(LOCAL_PORT);
+    await sleep(1000);
+
+    console.log(`Starting SSH tunnel connection to ${dropletIp}.`);
+    await connectSshProxyTunnel(connectionString);
+    console.log(`Connected SSH tunnel to ${dropletIp}.`);
+
+    console.log('Starting API test (2).');
+    await apiTest();
+    console.log('Successfully finished API test (2).');
+};
+
+const cleanup = async () => {
+    const itemsToLeave = CONNECTION_TYPES.length;
+
+    const deletableKeyIds = (await listKeys())['ssh_keys']
+        .filter((key: any) => key.name.includes(`${APP_ID}-${ENV}`))
+        .map((key: any) => key.id);
+    await deleteKeys(deletableKeyIds);
+
+    const deletableDropletIds = (await listDroplets()).droplets
+        .filter((key: any) => key.name.includes(`${APP_ID}-${ENV}`))
+        .map((droplet: any) => droplet.id);
+    deletableDropletIds.length = deletableDropletIds.length - itemsToLeave;
+    await deleteDroplets(deletableDropletIds);
 };
 
 const loop = () => {
@@ -490,17 +490,20 @@ setInterval(() => {
 }, 1000);
 
 const rotate = async () => {
-    // Store for deleting later on in the process.
-    const previousDroplets = await listDroplets();
-    const dropletIds: number[] = [];
-    const dropletIps: string[] = [];
-
+    const alreadyConnected = await init();
+    const connectionTypes: ConnectionTypes[] = alreadyConnected
+        ? [ConnectionTypes.A]
+        : CONNECTION_TYPES;
+    const connectionIndex = 0;
     let connectionString = '';
     let connectionTypeIndex = 0;
 
-    while (connectionTypeIndex < CONNECTION_TYPES.length) {
+    const dropletIds: number[] = [];
+    const dropletIps: string[] = [];
+
+    while (connectionTypeIndex < connectionTypes.length) {
         const connectionId = uuidv7();
-        const connectionType = CONNECTION_TYPES[connectionTypeIndex];
+        const connectionType = connectionTypes[connectionTypeIndex];
         const dropletRegion = (await listRegions())
             .filter((region: any) =>
                 DROPLET_REGIONS.length
@@ -529,6 +532,7 @@ const rotate = async () => {
             dropletRegion,
             dropletSize: DROPLET_SIZE,
             dropletId,
+            dropletPublicKeyId: publicKeyId,
         });
 
         const dropletIp = await getDropletIp(dropletId);
@@ -551,6 +555,7 @@ const rotate = async () => {
             dropletIp,
             dropletRegion,
             dropletSize: DROPLET_SIZE,
+            dropletPublicKeyId: publicKeyId,
             connectionType,
             user: USER,
             passphrase,
@@ -575,17 +580,18 @@ const rotate = async () => {
         connectionTypeIndex = connectionTypeIndex + 1;
     }
 
-    await connect({
-        connectionString,
-        connectionType: ConnectionTypes.A,
-        strictHostKeyChecking: STRICT_HOST_KEY_CHECKING.YES,
-        dropletId: dropletIds[1],
-        dropletIp: dropletIps[1],
-    });
-    await cleanup(previousDroplets.droplets);
+    if (!alreadyConnected) {
+        await connect({
+            connectionString,
+            strictHostKeyChecking: STRICT_HOST_KEY_CHECKING.YES,
+            dropletId: dropletIds[connectionIndex],
+            dropletIp: dropletIps[connectionIndex],
+        });
+    }
+
+    await cleanup();
 };
 
 await ensurePath(DATA_PATH);
 await ensurePath(KEY_PATH);
-await init();
 loop();

@@ -13,13 +13,10 @@ export interface ConnectionString {
 }
 
 export enum ConnectionTypes {
-	A = 'a',
-	B = 'b',
-	C = 'c'
+	A = 'a'
 }
 
 export interface Connect {
-	connectionType: ConnectionTypes
 	connectionString: string
 	strictHostKeyChecking: string
 	dropletId: number
@@ -34,6 +31,7 @@ export interface Connection {
 	dropletIp: string
 	dropletRegion: string
 	dropletSize: string
+	dropletPublicKeyId: number
 	user: string
 	passphrase: string
 	localTestPort: number
