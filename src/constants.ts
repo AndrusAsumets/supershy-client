@@ -37,9 +37,11 @@ const DIGITAL_OCEAN_API_KEY = Deno.env.get('DIGITAL_OCEAN_API_KEY');
 const CLOUDFLARE_ACCOUNT_ID = Deno.env.get('CLOUDFLARE_ACCOUNT_ID');
 const CLOUDFLARE_API_KEY = Deno.env.get('CLOUDFLARE_API_KEY');
 const CLOUDFLARE_KV_NAMESPACE = Deno.env.get('CLOUDFLARE_KV_NAMESPACE');
-const DROPLET_REGIONS = String(Deno.env.get('DROPLET_REGIONS'))
-    .split(',')
-    .filter(region => region.length);
+const DROPLET_REGIONS = Deno.env.get('DROPLET_REGIONS')
+    ? String(Deno.env.get('DROPLET_REGIONS'))
+        .split(',')
+        .filter(region => region.length)
+    : [];
 const TEST_PROXY_URL = `http://localhost:${LOCAL_TEST_PORT}`;
 const DIGITAL_OCEAN_BASE_URL = 'https://api.digitalocean.com/v2';
 const CLOUDFLARE_BASE_URL = 'https://api.cloudflare.com/client/v4';
