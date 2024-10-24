@@ -13,19 +13,27 @@ thus IP addresses) will keep repeating itself as long as you have the client
 running. This way you can get stay pretty private, but still enjoy decent
 internet speeds.
 
+Each time a Droplet is created, a phonehome call is made from it to Cloudflare
+KV containing Droplet's public host key, which will be then queried by supershy,
+and henceforth added to your SSH's known_hosts file. When SSH client is
+connecting to the SSH server, strict_host_key_checking will be enabled. This
+adds a layer of security against any possible MITM attacks.
+
 The logic behind jumping from one exit node to another is that it helps you to
 keep your communications safe. Should anyone try to pinpoint you using your exit
 node's IP, then by the time they get to probing the server, the server will have
 been long gone.
 
 The motivation for creating the project derives from the fact that my own
-communications started to be intercepted by some malice nation-state actors.
-When either of the two most VPN-s highly distinguished for anonymity did not
-help anymore, I started using a single SSH tunnel to which I routed all my web
-traffic to. After a while though, I noticed these started to get hacked, too. It
-seems it currently takes them 30 minutes to deliver their payload, which led me
-to reason that if I will be able to change the server before that might happen,
-I should able live to fight yet another day.
+communications started to be intercepted by several malicious nation-state
+actors. When either of the two most VPN-s highly distinguished for anonymity did
+not help anymore, I started using a single SSH tunnel to which I routed all my
+web traffic to. After a while though, I noticed these started to get hacked,
+too. It seems it currently takes them 30 minutes to deliver their payload, which
+led me to reason that if I will be able to change the server before that might
+happen, I should able live to fight yet another day. It is also good to give
+something back to the humanity as kindness seems to be in short supply these
+days everywhere.
 
 ### Installation (properly tested only on Debian-based Linux thus far)
 
