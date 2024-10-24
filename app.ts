@@ -25,6 +25,7 @@ import {
     LOCAL_PORT,
     REMOTE_PORT,
     KEY_ALGORITHM,
+    KEY_LENGTH,
     DIGITAL_OCEAN_API_KEY,
     CLOUDFLARE_ACCOUNT_ID,
     CLOUDFLARE_API_KEY,
@@ -358,7 +359,7 @@ const createKey = async (
     passphrase: string,
 ) => {
     const cmd =
-        `${SRC_PATH}/${GENERATE_SSH_KEY_FILE_NAME} ${passphrase} ${keyPath} ${KEY_ALGORITHM}`;
+        `${SRC_PATH}/${GENERATE_SSH_KEY_FILE_NAME} ${passphrase} ${keyPath} ${KEY_ALGORITHM} ${KEY_LENGTH}`;
     // @ts-ignore: because
     const createSshKeyProcess = Deno.run({ cmd: cmd.split(' ') });
     await createSshKeyProcess.status();

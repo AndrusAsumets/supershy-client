@@ -30,6 +30,9 @@ const DROPLET_SIZE = Deno.env.get('DROPLET_SIZE')
 const KEY_ALGORITHM = Deno.env.get('KEY_ALGORITHM')
     ? String(Deno.env.get('KEY_ALGORITHM'))
     : 'ed25519';
+const KEY_LENGTH = Deno.env.get('KEY_LENGTH')
+    ? Number(Deno.env.get('KEY_LENGTH'))
+    : 32768;
 const DIGITAL_OCEAN_API_KEY = Deno.env.get('DIGITAL_OCEAN_API_KEY');
 const CLOUDFLARE_ACCOUNT_ID = Deno.env.get('CLOUDFLARE_ACCOUNT_ID');
 const CLOUDFLARE_API_KEY = Deno.env.get('CLOUDFLARE_API_KEY');
@@ -79,6 +82,7 @@ export {
     LOCAL_PORT,
     REMOTE_PORT,
     KEY_ALGORITHM,
+    KEY_LENGTH,
     DIGITAL_OCEAN_API_KEY,
     CLOUDFLARE_ACCOUNT_ID,
     CLOUDFLARE_API_KEY,
