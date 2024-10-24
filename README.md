@@ -3,21 +3,21 @@ Supershy is a SSH tunnel proxy with a rotating exit node.
 During its initiation, the client creates two new Droplets (let's call them
 First Node and Second Node) inside Digital Ocean containing nothing else but a
 simple Tinyproxy proxy daemon. Next up, it creates a SSH tunnel from your
-machine to the First Node. If you then change your browser's (or any other
-app's/system) proxy settings to http://localhost:8888, all of your network
-activity will be routed using Droplet via SSH tunnel. After 30 minutes, the
-client will automatically connect to the Second Node, then creates a new fresh
-First Node instance, connects to it, and then eventually sunsets the original
-First Node by destrying it for good. The cycle of renewing your exit nodes (and
-thus IP addresses) will keep repeating itself as long as you have the client
-running. This way you can get stay pretty private, but still enjoy decent
-internet speeds.
+machine to the First Node. If you then change your browser's (or any other app
+or a system which has basic support for proxying) proxy settings to
+http://localhost:8888, all of your network activity will be routed using Droplet
+via SSH tunnel. After 30 minutes, the client will automatically connect to the
+Second Node, then creates a new fresh First Node instance for future use, and
+then eventually sunsets the original First Node by destrying it for good. The
+cycle of renewing your exit nodes (and thus IP addresses) will keep repeating
+itself as long as you have the client running. This way you can get stay pretty
+private, but still enjoy decent internet speeds.
 
 Each time a Droplet is created, a phonehome call is made from it to Cloudflare
 KV containing Droplet's public host key, which will be then queried by supershy,
 and henceforth added to your SSH's known_hosts file. When SSH client is
 connecting to the SSH server, strict_host_key_checking will be enabled. This
-adds a layer of security against any possible MITM attacks.
+adds a layer of security against possible MITM attacks.
 
 The logic behind jumping from one exit node to another is that it helps you to
 keep your communications safe. Should anyone try to pinpoint you using your exit
@@ -29,11 +29,11 @@ communications started to be intercepted by several malicious nation-state
 actors. When either of the two most VPN-s highly distinguished for anonymity did
 not help anymore, I started using a single SSH tunnel to which I routed all my
 web traffic to. After a while though, I noticed these started to get hacked,
-too. It seems it currently takes them 30 minutes to deliver their payload, which
-led me to reason that if I will be able to change the server before that might
-happen, I should able live to fight yet another day. It is also good to give
-something back to the humanity as kindness seems to be in short supply these
-days everywhere.
+too. It seems it currently takes them 30 minutes to fully deliver their payload,
+which led me to reason that if I will be able to change the server before that
+might happen, I should able live to fight yet another day. It is also good to
+give something back to the humanity as kindness seems to be in short supply
+these days everywhere.
 
 ### Installation (properly tested only on Debian-based Linux thus far)
 
