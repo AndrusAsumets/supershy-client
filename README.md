@@ -1,44 +1,107 @@
-# create droplet
-curl -X POST "https://api.digitalocean.com/v2/droplets" \
-	-d'{"name":"My-Droplet","region":"ams3","size":"s-1vcpu-512mb-10gb","image":"debian-12-x64"}' \
-	-H "Authorization: Bearer $TOKEN" \
-	-H "Content-Type: application/json"
+Supershy is a SSH tunnel proxy with a rotating exit node.
 
+During its initiation, the client creates two new Droplets (let's call them
+First Node and Second Node) inside Digital Ocean containing nothing else but a
+simple Tinyproxy proxy daemon. Next up, it creates a SSH tunnel from your
+machine to the First Node. If you then change your browser's (or any other
+app's/system) proxy settings to http://localhost:8888, all of your network
+activity will be routed using Droplet via SSH tunnel. After 30 minutes, the
+client will automatically connect to the Second Node, then creates a new fresh
+First Node instance, connects to it, and then eventually sunsets the original
+First Node by destrying it for good. The cycle of renewing your exit nodes (and
+thus IP addresses) will keep repeating itself as long as you have the client
+running. This way you can get stay pretty private, but still enjoy decent
+internet speeds.
 
-# read all droplets
-curl -X GET "https://api.digitalocean.com/v2/droplets" \
-        -H "Authorization: Bearer $TOKEN"
+The logic behind jumping from one exit node to another is that it helps you to
+keep your communications safe. Should anyone try to pinpoint you using your exit
+node's IP, then by the time they get to probing the server, the server will have
+been long gone.
 
+The motivation for creating the project derives from the fact that my own
+communications started to be intercepted by some malice nation-state actors.
+When either of the two most VPN-s highly distinguished for anonymity did not
+help anymore, I started using a single SSH tunnel to which I routed all my web
+traffic to. After a while though, I noticed these started to get hacked, too. It
+seems it currently takes them 30 minutes to deliver their payload, which led me
+to reason that if I will be able to change the server before that might happen,
+I should able live to fight yet another day.
 
-# delete droplet
-curl -X DELETE "https://api.digitalocean.com/v2/droplets/$DROPLET_ID" \
-	-H "Authorization: Bearer $TOKEN" \
-	-H "Content-Type: application/json"
+### Installation (properly tested only on Debian-based Linux thus far)
 
+```
+# Deno
+https://docs.deno.com/runtime/getting_started/installation/
+```
 
-# run app
-deno run --allow-all app.ts -t {DIGITAL_OCEAN_API_KEY} -r 10
+```
+# Expect for Linux
+sudo apt install expect
 
+# Expect for Mac
+brew install expect
+```
 
-# Digital Ocean token scopes
-Fully Scoped Access
-regions (1): read
-1 scope
-Create Access
-ssh_key / droplet
-2 scopes
-Read Access
-ssh_key / droplet
-2 scopes
-Delete Access
-ssh_key / droplet
-2 scopes
-Total Custom Scopes
-7 scopes
+```
+# supershy-client
+git clone git@github.com:AndrusAsumets/supershy-client.git
+cd supershy-client
+cp sample.env .env
+```
 
-// httping -x localhost:8888 -g http://google.com
-// etc/profile.d/proxy.sh
+```
+# .env
+LOOP_INTERVAL_MIN=how often you would like to recycle the exit nodes in minutes. Will default to 30.
 
-DROPLET_ID=$(echo `curl http://169.254.169.254/metadata/v1/id`)
-HOST_KEY=$(echo `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` | cut -d " " -f 2  | cut -d ":" -f 2)
-curl https://proxy-loop.requestcatcher.com/$HOST_KEY/$DROPLET_ID
+DROPLET_REGIONS=comma separated list of Digital Ocean's regions (e.g, AMS3,FRA1,NYC1,SFO3,SGP1,SYD1). Will default to randomize between all they have available if left empty.
+
+DIGITAL_OCEAN_API_KEY=
+ -> Open https://cloud.digitalocean.com/account/api/tokens
+ -> Generate New Token.
+ -> Regions: read.
+ -> Droplet: create, read, delete.
+ -> ssh_key: create, read, delete.
+ -> Click to copy the API key.
+
+CLOUDFLARE_ACCOUNT_ID=
+ -> Open https://dash.cloudflare.com
+ -> Workers & Pages.
+ -> Click to copy Account ID.
+
+CLOUDFLARE_KV_NAMESPACE=
+ -> https://dash.cloudflare.com
+ -> Workers & Pages.
+ -> KV.
+ -> Create a namespace.
+ -> Name it.
+ -> Click to copy ID.
+
+CLOUDFLARE_API_KEY=
+ -> Open https://dash.cloudflare.com/profile/api-tokens
+ -> Create Token.
+ -> Get started on Create Custom Token from below.
+ -> Name it.
+ -> Click Select item... from the Permissions, select Workers KV Storage, select Edit from select...
+ -> Continue to summary.
+ -> Make sure it contains "All accounts - Workers KV Storage:Edit" below User API Tokens.
+ -> Create Token.
+ -> Click to copy the API token.
+```
+
+```
+# Run supershy
+deno run --allow-all app.ts
+```
+
+```
+# Update your browser's proxy url:
+Firefox
+	-> Open https://support.mozilla.org/en-US/kb/connection-settings-firefox
+	-> Check Manual proxy configuration.
+	-> Enter "http://localhost:8888" inside HTTP Proxy field.
+	-> Check "Also use this proxy for HTTPS".
+```
+
+Safe travels!
+
+Andrus
