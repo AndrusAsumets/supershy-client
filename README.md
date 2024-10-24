@@ -104,10 +104,10 @@ deno run --allow-all app.ts
 ```
 # Update your browser's proxy url:
 Firefox
-	-> Open https://support.mozilla.org/en-US/kb/connection-settings-firefox
-	-> Check Manual proxy configuration.
-	-> Enter "http://localhost:8888" inside HTTP Proxy field.
-	-> Check "Also use this proxy for HTTPS".
+ -> Open https://support.mozilla.org/en-US/kb/connection-settings-firefox
+ -> Check Manual proxy configuration. 
+ -> Enter "http://localhost:8888" inside HTTP Proxy field.
+ -> Check "Also use this proxy for HTTPS".
 ```
 
 Safe travels!
