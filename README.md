@@ -1,4 +1,4 @@
-Supershy is a SSH tunnel proxy with a rotating exit node.
+Supershy is a DIY SSH tunnel proxy with a rotating exit node.
 
 During its initiation, the client creates two new Droplets (let's call them
 First Node and Second Node) inside Digital Ocean containing nothing else but a
