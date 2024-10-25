@@ -21,6 +21,7 @@ import {
     APP_ID,
     LOOP_INTERVAL_MIN,
     LOOP_TIMEOUT_MIN,
+    TUNNEL_CONNECT_TIMEOUT_SEC,
     LOCAL_TEST_PORT,
     LOCAL_PORT,
     REMOTE_PORT,
@@ -279,7 +280,7 @@ const tunnel = async (
                 stderr: 'piped',
                 stdin: 'null',
             });
-            await sleep(5000);
+            await sleep(TUNNEL_CONNECT_TIMEOUT_SEC * 1000);
             await openSshProxyTunnelTestProcess.stderrOutput();
             const sshLogOutput = await Deno.readTextFile(connection.sshLogOutputPath);
             isConnected = sshLogOutput.includes('pledge: network');
