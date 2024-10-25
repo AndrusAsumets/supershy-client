@@ -131,15 +131,7 @@ const getHostKey = async (dropletId: number, proxyUrl = '') => {
 };
 
 const apiTest = async (proxyUrl = '') => {
-    let response = null;
-
-    while (!response) {
-        try {
-            response = await listRegions(proxyUrl);
-        } catch (_) {
-            await sleep(1000);
-        }
-    }
+    await listRegions(proxyUrl);
 };
 
 const listRegions = async (proxyUrl = '') => {
@@ -262,6 +254,7 @@ const tunnel = async (
     connection: Connection,
     port: number,
     strictHostKeyChecking: string,
+    proxyUrl: string = '',
 ) => {
     const connectionString = connection.connectionString
         .replace(` ${LOCAL_PORT} `, ` ${port} `)
@@ -269,8 +262,11 @@ const tunnel = async (
         .replace('\n', '');
     let isConnected = false;
 
+    console.log(`Starting SSH tunnel connection to ${connection.dropletIp}:${port}.`);
+
     while (!isConnected) {
         try {
+
             await killAllSshTunnelsByPort(port);
             await sleep(1000);
 
@@ -284,10 +280,19 @@ const tunnel = async (
             await sleep(TUNNEL_CONNECT_TIMEOUT_SEC * 1000);
             await openSshProxyTunnelTestProcess.stderrOutput();
             const sshLogOutput = await Deno.readTextFile(connection.sshLogOutputPath);
-            isConnected = sshLogOutput.includes('pledge: network');
+            const hasNetwork = sshLogOutput.includes('pledge: network');
+
+            if (hasNetwork) {
+                console.log('Starting DigitalOcean API test.');
+                await apiTest(proxyUrl);
+                console.log('Successfully finished DigitalOcean API test.');
+                console.log(`Connected SSH test tunnel to ${connection.dropletIp}.`);
+                isConnected = true;
+            }
         }
-        catch(_) {
-            _;
+        catch(err) {
+            console.log(err);
+            console.log(`Restarting SSH tunnel connection to ${connection.dropletIp}:${port}.`);
         }
     }
 };
@@ -405,31 +410,19 @@ const connect = async (
 ) => {
     const { dropletId, dropletIp } = connection;
 
-    console.log(`Starting SSH test tunnel connection to ${dropletIp}.`);
-
     await tunnel(
         connection,
         LOCAL_TEST_PORT,
         strictHostKeyChecking,
+        TEST_PROXY_URL,
     );
-    console.log(`Connected SSH test tunnel to ${dropletIp}.`);
-
-    console.log('Starting DigitalOcean API test (1).');
-    await apiTest(TEST_PROXY_URL);
-    console.log('Successfully finished DigitalOcean API test (1).');
 
     await updateHostKeys(dropletId, dropletIp, TEST_PROXY_URL);
 
     await killAllSshTunnelsByPort(LOCAL_TEST_PORT);
     await sleep(1000);
 
-    console.log(`Starting SSH tunnel connection to ${dropletIp}.`);
     await tunnel(connection, LOCAL_PORT, strictHostKeyChecking);
-    console.log(`Connected SSH tunnel to ${dropletIp}.`);
-
-    console.log('Starting DigitalOcean API test (2).');
-    await apiTest();
-    console.log('Successfully finished DigitalOcean API test (2).');
 };
 
 const cleanup = async (dropletIdsToKeep: number[]) => {
