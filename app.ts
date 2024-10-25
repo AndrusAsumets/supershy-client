@@ -32,6 +32,7 @@ import {
     CLOUDFLARE_API_KEY,
     CLOUDFLARE_KV_NAMESPACE,
     DROPLET_SIZE,
+    DROPLET_IMAGE,
     DROPLET_REGIONS,
     TEST_PROXY_URL,
     DIGITAL_OCEAN_BASE_URL,
@@ -190,7 +191,7 @@ const createDroplet = async (args: CreateDroplet) => {
         name,
         region,
         size,
-        image: 'debian-12-x64',
+        image: DROPLET_IMAGE,
         ssh_keys: [publicKeyId],
         user_data: userData,
     };

@@ -30,6 +30,9 @@ const REMOTE_PORT = Deno.env.get('REMOTE_PORT')
 const DROPLET_SIZE = Deno.env.get('DROPLET_SIZE')
     ? String(Deno.env.get('DROPLET_SIZE'))
     : 's-1vcpu-512mb-10gb';
+const DROPLET_IMAGE = Deno.env.get('DROPLET_IMAGE')
+    ? String(Deno.env.get('DROPLET_IMAGE'))
+    : 'debian-12-x64';
 const KEY_ALGORITHM = Deno.env.get('KEY_ALGORITHM')
     ? String(Deno.env.get('KEY_ALGORITHM'))
     : 'ed25519';
@@ -94,6 +97,7 @@ export {
     CLOUDFLARE_API_KEY,
     CLOUDFLARE_KV_NAMESPACE,
     DROPLET_SIZE,
+    DROPLET_IMAGE,
     DROPLET_REGIONS,
     TEST_PROXY_URL,
     DIGITAL_OCEAN_BASE_URL,
