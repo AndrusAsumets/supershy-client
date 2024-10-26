@@ -113,7 +113,7 @@ Firefox
 ```
 
 ```
-# Test that it's all working:
+# Test that it's all working
  -> Open https://ipleak.net
  -> Make sure countries of both IP and DNS match with the region of Digital Ocean your supershy is currently connected to.
 ```
