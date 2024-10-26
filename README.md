@@ -39,7 +39,7 @@ these days everywhere.
 
 ```
 # Deno
-https://docs.deno.com/runtime/getting_started/installation/
+https://docs.deno.com/runtime/getting_started/installation
 ```
 
 ```
@@ -61,7 +61,8 @@ cp sample.env .env
 # .env
 LOOP_INTERVAL_MIN=how often you would like to recycle the exit nodes in minutes. Will default to 30.
 
-DROPLET_REGIONS=comma separated list of Digital Ocean's regions (e.g, AMS3,FRA1,NYC1,SFO3,SGP1,SYD1). Will default to randomize between all they have available if left empty.
+DROPLET_REGIONS=comma separated list of Digital Ocean's regions (e.g, AMS3,FRA1,NYC1,SFO3,SGP1,SYD1).
+Will default to randomize between all they have available if left empty.
 
 DIGITAL_OCEAN_API_KEY=
  -> Open https://cloud.digitalocean.com/account/api/tokens
@@ -106,8 +107,15 @@ deno run --allow-all app.ts
 Firefox
  -> Open https://support.mozilla.org/en-US/kb/connection-settings-firefox
  -> Check Manual proxy configuration. 
- -> Enter "http://localhost:8888" inside HTTP Proxy field.
+ -> Enter "localhost" for the HTTP field and "8888" for the Port field.
  -> Check "Also use this proxy for HTTPS".
+ -> Ok.
+```
+
+```
+# Test that it's all working:
+ -> Open https://ipleak.net
+ -> Make sure countries of both IP and DNS match with the region of Digital Ocean your supershy is currently connected to.
 ```
 
 Safe travels!
