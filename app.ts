@@ -55,6 +55,7 @@ const defaultData: DatabaseData = {
     connections: [],
 };
 
+let isFirstConnection = true;
 let secondsLeftForLoopRetrigger = 0;
 let timeout = 0;
 
@@ -370,7 +371,6 @@ const tunnel = async (
 
     while (!isConnected) {
         try {
-
             await pkill(`${port}:`);
             await sleep(1000);
 
@@ -402,13 +402,15 @@ const tunnel = async (
 };
 
 const connect = async (
-    connection: Connection
+    connection: Connection,
 ) => {
     const { dropletId, dropletIp } = connection;
-
     const testConnection = JSON.parse(JSON.stringify(connection));
-    testConnection.connectionString = testConnection.connectionString
-        .replace(StrictHostKeyChecking.Yes, StrictHostKeyChecking.No);
+
+    if (isFirstConnection) {
+        testConnection.connectionString = testConnection.connectionString
+            .replace(StrictHostKeyChecking.Yes, StrictHostKeyChecking.No);
+    }
 
     await tunnel(
         testConnection,
@@ -422,6 +424,8 @@ const connect = async (
     await sleep(1000);
 
     await tunnel(connection, LOCAL_PORT);
+
+    isFirstConnection = false;
 };
 
 const cleanup = async (dropletIdsToKeep: number[]) => {
