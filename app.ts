@@ -75,7 +75,7 @@ const getDatabase = async (): Promise<LowWithLodash<DatabaseData>> => {
 
 const db: LowWithLodash<DatabaseData> = await getDatabase();
 
-const ensurePath = async (path: string) => {
+const ensureFolder= async (path: string) => {
     if (!await exists(path)) {
         await Deno.mkdir(path);
     }
@@ -257,29 +257,23 @@ const pkill = async (input: string) => {
     await command.output();
 };
 
-const findFromFile = async (path: string, content: string) => {
-    const file = await Deno.readTextFile(path);
-    return file.includes(content);
-};
-
-const updateHostKeys = async (
-    dropletId: number,
-    dropletIp: string,
+const updateHostKey = async (
+    connection: Connection,
     proxyUrl = '',
 ) => {
-    const isFoundFromKnownHosts = await findFromFile(KNOWN_HOSTS_PATH, dropletIp);
+    const { dropletId, dropletIp } = connection;
 
-    if (!isFoundFromKnownHosts) {
-        const hostKey = await getHostKey(dropletId, proxyUrl);
-        console.log(`Fetched host key for droplet ${dropletId}.`);
+    connection.hostKey = await getHostKey(dropletId, proxyUrl);
+    console.log(`Fetched host key for droplet ${dropletId}.`);
 
-        Deno.writeTextFileSync(
-            KNOWN_HOSTS_PATH,
-            `${dropletIp} ssh-${KEY_ALGORITHM} ${hostKey}\n`,
-            { append: true },
-        );
-        console.log(`Added host key for ${dropletIp} to known hosts.`);
-    }
+    Deno.writeTextFileSync(
+        KNOWN_HOSTS_PATH,
+        `${dropletIp} ssh-${KEY_ALGORITHM} ${connection.hostKey}\n`,
+        { append: true },
+    );
+    console.log(`Added host key for ${dropletIp} to known hosts.`);
+
+    return connection;
 };
 
 const retrySleep = async () => {
@@ -407,22 +401,11 @@ const tunnel = async (
 const connect = async (
     connection: Connection,
 ) => {
-    const { dropletId, dropletIp } = connection;
-    const testConnection = JSON.parse(JSON.stringify(connection));
-    const isFoundFromKnownHosts = await findFromFile(KNOWN_HOSTS_PATH, dropletIp);
-
-    if (!isFoundFromKnownHosts) {
-        testConnection.connectionString = testConnection.connectionString
-            .replace(StrictHostKeyChecking.Yes, StrictHostKeyChecking.No);
-    }
-
     await tunnel(
-        testConnection,
+        connection,
         LOCAL_TEST_PORT,
         TEST_PROXY_URL,
     );
-
-    await updateHostKeys(dropletId, dropletIp, TEST_PROXY_URL);
 
     await pkill(`${LOCAL_TEST_PORT}:`);
     await sleep(1000);
@@ -523,7 +506,7 @@ const rotate = async () => {
 
         const dropletIp = await getDropletIp(dropletId);
 
-        const connection: Connection = {
+        let connection: Connection = {
             connectionId,
             appId: APP_ID,
             dropletId,
@@ -542,6 +525,7 @@ const rotate = async () => {
             localPort: LOCAL_PORT,
             remotePort: REMOTE_PORT,
             keyPath,
+            hostKey: '',
             sshLogOutputPath: getSshLogOutputPath(connectionId),
             connectionString: '',
             isDeleted: false,
@@ -551,10 +535,10 @@ const rotate = async () => {
         };
         connection.connectionString = getConnectionString(connection);
 
+        connection = await updateHostKey(connection);
+
         db.data.connections.push(connection);
         db.write();
-
-        await updateHostKeys(dropletId, dropletIp);
 
         activeConnections.push(connection);
         connectionIndex = connectionIndex + 1;
@@ -569,8 +553,8 @@ const rotate = async () => {
     );
 };
 
-await ensurePath(DATA_PATH);
-await ensurePath(KEY_PATH);
-await ensurePath(LOG_PATH);
+await ensureFolder(DATA_PATH);
+await ensureFolder(KEY_PATH);
+await ensureFolder(LOG_PATH);
 
 loop();
