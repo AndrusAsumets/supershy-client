@@ -515,6 +515,7 @@ const rotate = async () => {
             dropletIp,
             dropletRegion,
             dropletSize: DROPLET_SIZE,
+            dropletImage: DROPLET_IMAGE,
             dropletPublicKeyId: publicKeyId,
             connectionType,
             user: USER,

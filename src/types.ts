@@ -15,6 +15,7 @@ export interface Connection {
 	dropletIp: string
 	dropletRegion: string
 	dropletSize: string
+	dropletImage: string
 	dropletPublicKeyId: number
 	user: string
 	passphrase: string
