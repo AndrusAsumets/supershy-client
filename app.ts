@@ -250,56 +250,9 @@ const addKey = async (publicKey: string, name: string) => {
     return json['ssh_key']['id'];
 };
 
-const tunnel = async (
-    connection: Connection,
-    port: number,
-    strictHostKeyChecking: string,
-    proxyUrl: string = '',
-) => {
-    const connectionString = connection.connectionString
-        .replace(` ${LOCAL_PORT} `, ` ${port} `)
-        .replace(StrictHostKeyChecking.Yes, strictHostKeyChecking)
-        .replace('\n', '');
-    let isConnected = false;
-
-    console.log(`Starting SSH tunnel connection to ${connection.dropletIp}:${port}.`);
-
-    while (!isConnected) {
-        try {
-
-            await killAllSshTunnelsByPort(port);
-            await sleep(1000);
-
-            // @ts-ignore: because
-            const openSshProxyTunnelTestProcess = Deno.run({
-                cmd: connectionString.split(' '),
-                stdout: 'piped',
-                stderr: 'piped',
-                stdin: 'null',
-            });
-            await sleep(TUNNEL_CONNECT_TIMEOUT_SEC * 1000);
-            await openSshProxyTunnelTestProcess.stderrOutput();
-            const sshLogOutput = await Deno.readTextFile(connection.sshLogOutputPath);
-            const hasNetwork = sshLogOutput.includes('pledge: network');
-
-            if (hasNetwork) {
-                console.log('Starting DigitalOcean API test.');
-                await apiTest(proxyUrl);
-                console.log('Successfully finished DigitalOcean API test.');
-                console.log(`Connected SSH test tunnel to ${connection.dropletIp}.`);
-                isConnected = true;
-            }
-        }
-        catch(err) {
-            console.log(err);
-            console.log(`Restarting SSH tunnel connection to ${connection.dropletIp}:${port}.`);
-        }
-    }
-};
-
-const killAllSshTunnelsByPort = async (port: number) => {
+const pkill = async (input: string) => {
     const cmd = 'pkill';
-    const args = `-f ${port}:`.split(' ');
+    const args = `-f ${input}`.split(' ');
     const command = new Deno.Command(cmd, { args });
     await command.output();
 };
@@ -378,7 +331,6 @@ const createKey = async (
 
 const getConnectionString = (
     connection: Connection,
-    strictHostKeyChecking: string,
 ): string => {
     const {
         passphrase,
@@ -386,7 +338,7 @@ const getConnectionString = (
         keyPath,
         sshLogOutputPath
     } = connection;
-    return `${SRC_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${dropletIp} ${USER} ${LOCAL_PORT} ${REMOTE_PORT} ${keyPath} ${strictHostKeyChecking} ${sshLogOutputPath}`;
+    return `${SRC_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${dropletIp} ${USER} ${LOCAL_PORT} ${REMOTE_PORT} ${keyPath} ${StrictHostKeyChecking.Yes} ${sshLogOutputPath}`;
 };
 
 const getSshLogOutputPath = (connectionId: string): string =>`${LOG_PATH}/${connectionId}${SSH_LOG_OUTPUT_EXTENSION}`;
@@ -400,29 +352,76 @@ const init = async () => {
         .reverse()
         .value()[0];
 
-    connection && await connect(connection, StrictHostKeyChecking.No);
+    connection && await connect(connection);
     return connection;
 };
 
-const connect = async (
+const tunnel = async (
     connection: Connection,
-    strictHostKeyChecking: string,
+    port: number,
+    proxyUrl: string = '',
+) => {
+    const connectionString = connection.connectionString
+        .replace(` ${LOCAL_PORT} `, ` ${port} `)
+        .replace('\n', '');
+    let isConnected = false;
+
+    console.log(`Starting SSH tunnel connection to ${connection.dropletIp}:${port}.`);
+
+    while (!isConnected) {
+        try {
+
+            await pkill(`${port}:`);
+            await sleep(1000);
+
+            // @ts-ignore: because
+            const openSshProxyTunnelTestProcess = Deno.run({
+                cmd: connectionString.split(' '),
+                stdout: 'piped',
+                stderr: 'piped',
+                stdin: 'null',
+            });
+            await sleep(TUNNEL_CONNECT_TIMEOUT_SEC * 1000);
+            await openSshProxyTunnelTestProcess.stderrOutput();
+            const sshLogOutput = await Deno.readTextFile(connection.sshLogOutputPath);
+            const hasNetwork = sshLogOutput.includes('pledge: network');
+
+            if (hasNetwork) {
+                console.log('Starting DigitalOcean API test.');
+                await apiTest(proxyUrl);
+                console.log('Successfully finished DigitalOcean API test.');
+                console.log(`Connected SSH test tunnel to ${connection.dropletIp}.`);
+                isConnected = true;
+            }
+        }
+        catch(err) {
+            console.log(err);
+            console.log(`Restarting SSH tunnel connection to ${connection.dropletIp}:${port}.`);
+        }
+    }
+};
+
+const connect = async (
+    connection: Connection
 ) => {
     const { dropletId, dropletIp } = connection;
 
+    const testConnection = JSON.parse(JSON.stringify(connection));
+    testConnection.connectionString = testConnection.connectionString
+        .replace(StrictHostKeyChecking.Yes, StrictHostKeyChecking.No);
+
     await tunnel(
-        connection,
+        testConnection,
         LOCAL_TEST_PORT,
-        strictHostKeyChecking,
         TEST_PROXY_URL,
     );
 
     await updateHostKeys(dropletId, dropletIp, TEST_PROXY_URL);
 
-    await killAllSshTunnelsByPort(LOCAL_TEST_PORT);
+    await pkill(`${LOCAL_TEST_PORT}:`);
     await sleep(1000);
 
-    await tunnel(connection, LOCAL_PORT, strictHostKeyChecking);
+    await tunnel(connection, LOCAL_PORT);
 };
 
 const cleanup = async (dropletIdsToKeep: number[]) => {
@@ -544,7 +543,7 @@ const rotate = async () => {
             modifiedTime: null,
             deletedTime: null,
         };
-        connection.connectionString = getConnectionString(connection, StrictHostKeyChecking.Yes);
+        connection.connectionString = getConnectionString(connection);
 
         db.data.connections.push(connection);
         db.write();
@@ -556,7 +555,7 @@ const rotate = async () => {
     }
 
     if (!initConnection) {
-        await connect(activeConnections[0], StrictHostKeyChecking.Yes);
+        await connect(activeConnections[0]);
     }
 
     await cleanup(
