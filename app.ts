@@ -329,14 +329,15 @@ const createKey = async (
 
 const getConnectionString = (
     connection: Connection,
-): string => {
+): Connection => {
     const {
         passphrase,
         dropletIp,
         keyPath,
         sshLogOutputPath
     } = connection;
-    return `${SRC_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${dropletIp} ${USER} ${LOCAL_PORT} ${REMOTE_PORT} ${keyPath} ${StrictHostKeyChecking.Yes} ${sshLogOutputPath}`;
+    connection.connectionString = `${SRC_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${dropletIp} ${USER} ${LOCAL_PORT} ${REMOTE_PORT} ${keyPath} ${StrictHostKeyChecking.Yes} ${sshLogOutputPath}`;
+    return connection;
 };
 
 const getSshLogOutputPath = (connectionId: string): string =>`${LOG_PATH}/${connectionId}${SSH_LOG_OUTPUT_EXTENSION}`;
@@ -533,8 +534,7 @@ const rotate = async () => {
             modifiedTime: null,
             deletedTime: null,
         };
-        connection.connectionString = getConnectionString(connection);
-
+        connection = getConnectionString(connection);
         connection = await updateHostKey(connection);
 
         db.data.connections.push(connection);
