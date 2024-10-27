@@ -55,7 +55,6 @@ const defaultData: DatabaseData = {
     connections: [],
 };
 
-let isFirstConnection = true;
 let secondsLeftForLoopRetrigger = 0;
 let timeout = 0;
 
@@ -258,15 +257,19 @@ const pkill = async (input: string) => {
     await command.output();
 };
 
+const findFromFile = async (path: string, content: string) => {
+    const file = await Deno.readTextFile(path);
+    return file.includes(content);
+};
+
 const updateHostKeys = async (
     dropletId: number,
     dropletIp: string,
     proxyUrl = '',
 ) => {
-    const knownHosts = await Deno.readTextFile(KNOWN_HOSTS_PATH);
-    const isAlreadySaved = knownHosts.includes(dropletIp);
+    const isFoundFromKnownHosts = await findFromFile(KNOWN_HOSTS_PATH, dropletIp);
 
-    if (!isAlreadySaved) {
+    if (!isFoundFromKnownHosts) {
         const hostKey = await getHostKey(dropletId, proxyUrl);
         console.log(`Fetched host key for droplet ${dropletId}.`);
 
@@ -406,8 +409,9 @@ const connect = async (
 ) => {
     const { dropletId, dropletIp } = connection;
     const testConnection = JSON.parse(JSON.stringify(connection));
+    const isFoundFromKnownHosts = await findFromFile(KNOWN_HOSTS_PATH, dropletIp);
 
-    if (isFirstConnection) {
+    if (!isFoundFromKnownHosts) {
         testConnection.connectionString = testConnection.connectionString
             .replace(StrictHostKeyChecking.Yes, StrictHostKeyChecking.No);
     }
@@ -424,8 +428,6 @@ const connect = async (
     await sleep(1000);
 
     await tunnel(connection, LOCAL_PORT);
-
-    isFirstConnection = false;
 };
 
 const cleanup = async (dropletIdsToKeep: number[]) => {
