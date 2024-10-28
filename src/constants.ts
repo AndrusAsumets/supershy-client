@@ -59,6 +59,7 @@ const SRC_PATH = `${__DIRNAME}`;
 const LOG_PATH = `${DATA_PATH}/logs`;
 const KNOWN_HOSTS_PATH = `${HOME_PATH}/.ssh/known_hosts`;
 const DB_FILE_NAME = `${DATA_PATH}/.database.${ENV}.json`;
+const DB_SELECTOR = 'connections';
 const SSH_LOG_OUTPUT_EXTENSION = '.ssh.out';
 const GENERATE_SSH_KEY_FILE_NAME = 'generate-ssh-key.exp';
 const CONNECT_SSH_TUNNEL_FILE_NAME = 'connect-ssh-tunnel.exp';
@@ -110,6 +111,7 @@ export {
     LOG_PATH,
     KNOWN_HOSTS_PATH,
     DB_FILE_NAME,
+    DB_SELECTOR,
     SSH_LOG_OUTPUT_EXTENSION,
     GENERATE_SSH_KEY_FILE_NAME,
     CONNECT_SSH_TUNNEL_FILE_NAME,

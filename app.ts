@@ -43,6 +43,7 @@ import {
     LOG_PATH,
     KNOWN_HOSTS_PATH,
     DB_FILE_NAME,
+    DB_SELECTOR,
     SSH_LOG_OUTPUT_EXTENSION,
     GENERATE_SSH_KEY_FILE_NAME,
     CONNECT_SSH_TUNNEL_FILE_NAME,
@@ -51,7 +52,7 @@ import {
 } from './src/constants.ts';
 
 const defaultData: DatabaseData = {
-    connections: [],
+    [DB_SELECTOR]: [],
 };
 
 let secondsLeftForLoopRetrigger = 0;
@@ -73,6 +74,20 @@ const getDatabase = async (): Promise<LowWithLodash<DatabaseData>> => {
 };
 
 const db: LowWithLodash<DatabaseData> = await getDatabase();
+
+const updateDb = async (
+    db: LowWithLodash<DatabaseData>,
+    connection: Connection
+) => {
+    await db
+        .chain
+        .get(DB_SELECTOR)
+        .find({ connectionId: connection.connectionId })
+        .assign(connection)
+        .value();
+
+    await db.write();
+};
 
 const ensureFolder= async (path: string) => {
     if (!await exists(path)) {
@@ -328,15 +343,14 @@ const createKey = async (
 
 const getConnectionString = (
     connection: Connection,
-): Connection => {
+): string => {
     const {
         passphrase,
         dropletIp,
         keyPath,
         sshLogOutputPath
     } = connection;
-    connection.connectionString = `${SRC_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${dropletIp} ${USER} ${LOCAL_PORT} ${REMOTE_PORT} ${keyPath} ${sshLogOutputPath}`;
-    return connection;
+    return `${SRC_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${dropletIp} ${USER} ${LOCAL_PORT} ${REMOTE_PORT} ${keyPath} ${sshLogOutputPath}`;
 };
 
 const getSshLogOutputPath = (connectionId: string): string =>`${LOG_PATH}/${connectionId}${SSH_LOG_OUTPUT_EXTENSION}`;
@@ -344,7 +358,7 @@ const getSshLogOutputPath = (connectionId: string): string =>`${LOG_PATH}/${conn
 const init = async () => {
     const connection = db
         .chain
-        .get('connections')
+        .get(DB_SELECTOR)
         .filter((connection: Connection) => !connection.isDeleted)
         .sortBy('createdTime')
         .reverse()
@@ -359,7 +373,7 @@ const tunnel = async (
     port: number,
     proxyUrl: string = '',
 ) => {
-    const connectionString = connection.connectionString
+    connection.connectionString = getConnectionString(connection)
         .replace(` ${LOCAL_PORT} `, ` ${port} `)
         .replace('\n', '');
     let isConnected = false;
@@ -373,7 +387,7 @@ const tunnel = async (
 
             // @ts-ignore: because
             const openSshProxyTunnelTestProcess = Deno.run({
-                cmd: connectionString.split(' '),
+                cmd: connection.connectionString.split(' '),
                 stdout: 'piped',
                 stderr: 'piped',
                 stdin: 'null',
@@ -388,6 +402,9 @@ const tunnel = async (
                 await apiTest(proxyUrl);
                 console.log('Successfully finished DigitalOcean API test.');
                 console.log(`Connected SSH test tunnel to ${connection.dropletIp}.`);
+
+                await updateDb(db, connection);
+
                 isConnected = true;
             }
         }
@@ -534,7 +551,6 @@ const rotate = async () => {
             modifiedTime: null,
             deletedTime: null,
         };
-        connection = getConnectionString(connection);
         connection = await updateHostKey(connection);
 
         db.data.connections.push(connection);
