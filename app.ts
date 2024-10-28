@@ -13,7 +13,6 @@ import {
     Connection,
     CreateDroplet,
     DatabaseData,
-    StrictHostKeyChecking,
 } from './src/types.ts';
 
 import {
@@ -336,7 +335,7 @@ const getConnectionString = (
         keyPath,
         sshLogOutputPath
     } = connection;
-    connection.connectionString = `${SRC_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${dropletIp} ${USER} ${LOCAL_PORT} ${REMOTE_PORT} ${keyPath} ${StrictHostKeyChecking.Yes} ${sshLogOutputPath}`;
+    connection.connectionString = `${SRC_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${dropletIp} ${USER} ${LOCAL_PORT} ${REMOTE_PORT} ${keyPath} ${sshLogOutputPath}`;
     return connection;
 };
 

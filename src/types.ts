@@ -1,8 +1,3 @@
-export enum StrictHostKeyChecking {
-	Yes = 'StrictHostKeyChecking=yes',
-	No = 'StrictHostKeyChecking=no'
-}
-
 export enum ConnectionTypes {
 	A = 'a'
 }
