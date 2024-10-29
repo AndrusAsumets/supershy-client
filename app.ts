@@ -107,14 +107,14 @@ runcmd:
     - tinyproxy -d -c tinyproxy.conf
 
     - DROPLET_ID=$(echo \`curl http://169.254.169.254/metadata/v1/id\`)
-    - KEY_ALGORITHM=$(cat /etc/ssh/ssh_host_${KEY_ALGORITHM}_key.pub | cut -d ' ' -f 1)
-    - HOST_KEY=$(cat /etc/ssh/ssh_host_${KEY_ALGORITHM}_key.pub | cut -d ' ' -f 2)
-    - curl --request PUT -H 'Content-Type=*\/*' --data $KEY_ALGORITHM:$HOST_KEY --url ${CLOUDFLARE_BASE_URL}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${CLOUDFLARE_KV_NAMESPACE}/values/$DROPLET_ID --oauth2-bearer ${CLOUDFLARE_API_KEY}
+    - HOST_KEY_ALGORITHM=$(cat /etc/ssh/ssh_host_ed25519_key.pub | cut -d ' ' -f 1)
+    - HOST_KEY=$(cat /etc/ssh/ssh_host_ed25519_key.pub | cut -d ' ' -f 2)
+    - curl --request PUT -H 'Content-Type=*\/*' --data $HOST_KEY_ALGORITHM:$HOST_KEY --url ${CLOUDFLARE_BASE_URL}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${CLOUDFLARE_KV_NAMESPACE}/values/$DROPLET_ID --oauth2-bearer ${CLOUDFLARE_API_KEY}
 `;
 };
 
 const getHostKey = async (dropletId: number, proxyUrl = '') => {
-    const prefix = `ssh-${KEY_ALGORITHM}:`;
+    const prefix = 'ssh-ed25519:';
     let hostKey: string = '';
 
     while (!hostKey) {
