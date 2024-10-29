@@ -5,6 +5,7 @@ import { exists } from 'https://deno.land/std@0.224.0/fs/mod.ts';
 import * as crypto from 'node:crypto';
 import { JSONFile } from 'npm:lowdb/node';
 import { v7 as uuidv7 } from 'npm:uuid';
+import jwt from 'npm:jsonwebtoken';
 
 import { Low } from 'npm:lowdb';
 import lodash from 'npm:lodash';
@@ -95,25 +96,29 @@ const ensureFolder= async (path: string) => {
     }
 };
 
-const getUserData = () => {
+const getUserData = (jwtSecret: string) => {
     return `
 #cloud-config
 runcmd:
     - sudo apt install tinyproxy -y
-    - echo 'Port ${REMOTE_PORT}' > nano tinyproxy.conf
-    - echo 'Listen 0.0.0.0' > nano tinyproxy.conf
-    - echo 'Timeout 600' > nano tinyproxy.conf
-    - echo 'Allow 0.0.0.0' > nano tinyproxy.conf
+    - echo 'Port ${REMOTE_PORT}' >> tinyproxy.conf
+    - echo 'Listen 0.0.0.0' >> tinyproxy.conf
+    - echo 'Timeout 600' >> tinyproxy.conf
+    - echo 'Allow 0.0.0.0' >> tinyproxy.conf
     - tinyproxy -d -c tinyproxy.conf
 
     - DROPLET_ID=$(echo \`curl http://169.254.169.254/metadata/v1/id\`)
     - HOST_KEY_ALGORITHM=$(cat /etc/ssh/ssh_host_ed25519_key.pub | cut -d ' ' -f 1)
     - HOST_KEY=$(cat /etc/ssh/ssh_host_ed25519_key.pub | cut -d ' ' -f 2)
-    - curl --request PUT -H 'Content-Type=*\/*' --data $HOST_KEY_ALGORITHM:$HOST_KEY --url ${CLOUDFLARE_BASE_URL}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${CLOUDFLARE_KV_NAMESPACE}/values/$DROPLET_ID --oauth2-bearer ${CLOUDFLARE_API_KEY}
+    - ENCODED_HOST_KEY=$(python3 -c 'import sys;import jwt;payload={};payload[\"hostKey\"]=sys.argv[1];print(jwt.encode(payload, sys.argv[2], algorithm=\"HS256\"))' $HOST_KEY ${jwtSecret})
+    - curl --request PUT -H 'Content-Type=*\/*' --data $HOST_KEY_ALGORITHM:$ENCODED_HOST_KEY --url ${CLOUDFLARE_BASE_URL}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${CLOUDFLARE_KV_NAMESPACE}/values/$DROPLET_ID --oauth2-bearer ${CLOUDFLARE_API_KEY}
 `;
 };
 
-const getHostKey = async (dropletId: number, proxyUrl = '') => {
+const getHostKey = async (
+    dropletId: number,
+    jwtSecret: string,
+) => {
     const prefix = 'ssh-ed25519:';
     let hostKey: string = '';
 
@@ -123,20 +128,15 @@ const getHostKey = async (dropletId: number, proxyUrl = '') => {
                 Authorization: `Bearer ${CLOUDFLARE_API_KEY}`,
             };
             const options: any = { method: 'GET', headers };
-            if (proxyUrl) {
-                options.client = Deno.createHttpClient({
-                    proxy: {
-                        url: proxyUrl,
-                    },
-                });
-            }
             const url =
                 `${CLOUDFLARE_BASE_URL}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${CLOUDFLARE_KV_NAMESPACE}/values/${dropletId}`;
             const res = await fetch(url, options);
             const text = await res.text();
 
             if (text && text.startsWith(prefix)) {
-                hostKey = text.replace(prefix, '');
+                const encoded = text.replace(prefix, '');
+                const decoded = jwt.verify(encoded, jwtSecret);
+                hostKey = decoded.hostKey;
             }
         } catch (_) {
             await sleep(1000);
@@ -275,11 +275,11 @@ const pkill = async (input: string) => {
 
 const updateHostKey = async (
     connection: Connection,
-    proxyUrl = '',
+    jwtSecret: string,
 ) => {
     const { dropletId, dropletIp } = connection;
 
-    connection.hostKey = await getHostKey(dropletId, proxyUrl);
+    connection.hostKey = await getHostKey(dropletId, jwtSecret);
     console.log(`Fetched host key for droplet ${dropletId}.`);
 
     Deno.writeTextFileSync(
@@ -507,13 +507,14 @@ const rotate = async () => {
         const keyPath = `${KEY_PATH}/${dropletName}`;
         const passphrase = crypto.randomBytes(64).toString('hex');
         const publicKeyId = await createKey(keyPath, dropletName, passphrase);
+        const jwtSecret = crypto.randomBytes(64).toString('hex');
 
         const dropletId = await createDroplet({
             region: dropletRegion,
             name: dropletName,
             size: DROPLET_SIZE,
             publicKeyId,
-            userData: getUserData(),
+            userData: getUserData(jwtSecret),
         });
         console.log('Created droplet.', {
             dropletName,
@@ -553,7 +554,7 @@ const rotate = async () => {
             modifiedTime: null,
             deletedTime: null,
         };
-        connection = await updateHostKey(connection);
+        connection = await updateHostKey(connection, jwtSecret);
 
         db.data.connections.push(connection);
         db.write();
