@@ -496,7 +496,9 @@ const rotate = async () => {
         const dropletRegion = (await listRegions())
             .filter((region: any) =>
                 DROPLET_REGIONS.length
-                    ? DROPLET_REGIONS.includes(region.slug)
+                    ? DROPLET_REGIONS
+                        .map(dropletRegion => dropletRegion.toLowerCase())
+                        .includes(region.slug)
                     : true
             )
             .filter((region: any) => region.sizes.includes(DROPLET_SIZE))
