@@ -6,6 +6,7 @@ import * as crypto from 'node:crypto';
 import { JSONFile } from 'npm:lowdb/node';
 import { v7 as uuidv7 } from 'npm:uuid';
 import jwt from 'npm:jsonwebtoken';
+import Logger from 'https://deno.land/x/logger@v1.1.6/logger.ts';
 
 import { Low } from 'npm:lowdb';
 import lodash from 'npm:lodash';
@@ -20,7 +21,6 @@ import {
     ENV,
     APP_ID,
     LOOP_INTERVAL_MIN,
-    LOOP_TIMEOUT_MIN,
     TUNNEL_CONNECT_TIMEOUT_SEC,
     LOCAL_TEST_PORT,
     LOCAL_PORT,
@@ -52,12 +52,13 @@ import {
     CONNECTION_TYPES,
 } from './src/constants.ts';
 
+const logger = new Logger();
+await logger.initFileLogger(`${LOG_PATH}`);
+logger.disableConsole();
+
 const defaultData: DatabaseData = {
     [DB_SELECTOR]: [],
 };
-
-let secondsLeftForLoopRetrigger = 0;
-let timeout = 0;
 
 class LowWithLodash<T> extends Low<T> {
     chain: lodash.ExpChain<this['data']> = lodash.chain(this).get('data');
@@ -225,7 +226,7 @@ const deleteDroplets = async (ids: number[]) => {
             method: 'DELETE',
             headers,
         });
-        console.log(`Deleted droplet: ${id}.`);
+        logger.info(`Deleted droplet: ${id}.`);
         index = index + 1;
     }
 };
@@ -243,7 +244,7 @@ const deleteKeys = async (ids: number[]) => {
             method: 'DELETE',
             headers,
         });
-        console.log(`Deleted key: ${id}.`);
+        logger.info(`Deleted key: ${id}.`);
         index = index + 1;
     }
 };
@@ -280,26 +281,16 @@ const updateHostKey = async (
     const { dropletId, dropletIp } = connection;
 
     connection.hostKey = await getHostKey(dropletId, jwtSecret);
-    console.log(`Fetched host key for droplet ${dropletId}.`);
+    logger.info(`Fetched host key for droplet ${dropletId}.`);
 
     Deno.writeTextFileSync(
         KNOWN_HOSTS_PATH,
         `${dropletIp} ssh-${KEY_ALGORITHM} ${connection.hostKey}\n`,
         { append: true },
     );
-    console.log(`Added host key for ${dropletIp} to known hosts.`);
+    logger.info(`Added host key for ${dropletIp} to known hosts.`);
 
     return connection;
-};
-
-const retrySleep = async () => {
-    const sleepingTimeSeconds = secondsLeftForLoopRetrigger;
-    if (sleepingTimeSeconds > 0) {
-        console.log(
-            `Waiting for ${sleepingTimeSeconds} seconds to start again.`,
-        );
-        await sleep(sleepingTimeSeconds * 1000);
-    }
 };
 
 const getDropletIp = async (dropletId: string) => {
@@ -322,7 +313,7 @@ const getDropletIp = async (dropletId: string) => {
         }
     }
 
-    console.log(`Found network at ${dropletIp}.`);
+    logger.info(`Found network at ${dropletIp}.`);
 
     return dropletIp;
 };
@@ -380,7 +371,7 @@ const tunnel = async (
         .replace('\n', '');
     let isConnected = false;
 
-    console.log(`Starting SSH tunnel connection to ${connection.dropletIp}:${port}.`);
+    logger.info(`Starting SSH tunnel connection to ${connection.dropletIp}:${port}.`);
 
     while (!isConnected) {
         try {
@@ -400,10 +391,10 @@ const tunnel = async (
             const hasNetwork = sshLogOutput.includes('pledge: network');
 
             if (hasNetwork) {
-                console.log('Starting DigitalOcean API test.');
+                logger.info('Starting DigitalOcean API test.');
                 await apiTest(proxyUrl);
-                console.log('Successfully finished DigitalOcean API test.');
-                console.log(`Connected SSH test tunnel to ${connection.dropletIp}.`);
+                logger.info('Successfully finished DigitalOcean API test.');
+                logger.info(`Connected SSH test tunnel to ${connection.dropletIp}.`);
 
                 await updateDb(db, connection);
 
@@ -411,8 +402,8 @@ const tunnel = async (
             }
         }
         catch(err) {
-            console.log(err);
-            console.log(`Restarting SSH tunnel connection to ${connection.dropletIp}:${port}.`);
+            logger.warn(err);
+            logger.warn(`Restarting SSH tunnel connection to ${connection.dropletIp}:${port}.`);
         }
     }
 };
@@ -445,42 +436,6 @@ const cleanup = async (dropletIdsToKeep: number[]) => {
     await deleteDroplets(deletableDropletIds);
 };
 
-const loop = () => {
-    clearTimeout(timeout);
-
-    timeout = setTimeout(async () => {
-        try {
-            const startTime = performance.now();
-            secondsLeftForLoopRetrigger = LOOP_INTERVAL_MIN * 60;
-            await rotate();
-            const endTime = performance.now();
-            console.log(
-                `Proxy loop finished in ${
-                    Number((endTime - startTime) / 1000).toFixed(0)
-                } seconds.`,
-            );
-        } catch (err) {
-            console.log(`Proxy loop caught an error.`, err);
-        }
-
-        await retrySleep();
-        loop();
-    });
-};
-
-setInterval(() => {
-    secondsLeftForLoopRetrigger = secondsLeftForLoopRetrigger - 1;
-    const secondsLeftForLoopTimeout = LOOP_TIMEOUT_MIN * 60 +
-        secondsLeftForLoopRetrigger;
-
-    if (secondsLeftForLoopTimeout < 0) {
-        console.log(
-            `Reached timeout interval of ${LOOP_TIMEOUT_MIN} minutes, restarting the loop.`,
-        );
-        loop();
-    }
-}, 1000);
-
 const rotate = async () => {
     const activeConnections: Connection[] = [];
     const initConnection = await init();
@@ -489,6 +444,10 @@ const rotate = async () => {
         ? [ConnectionTypes.A]
         : CONNECTION_TYPES;
     let connectionIndex = 0;
+
+    await cleanup(
+        activeConnections.map(connection => connection.dropletId)
+    );
 
     while (connectionIndex < connectionTypes.length) {
         const connectionId = uuidv7();
@@ -518,7 +477,7 @@ const rotate = async () => {
             publicKeyId,
             userData: getUserData(jwtSecret),
         });
-        console.log('Created droplet.', {
+        logger.info('Created droplet.', {
             dropletName,
             dropletRegion,
             dropletSize: DROPLET_SIZE,
@@ -542,7 +501,6 @@ const rotate = async () => {
             user: USER,
             passphrase,
             loopIntervalMin: LOOP_INTERVAL_MIN,
-            loopTimeoutMin: LOOP_TIMEOUT_MIN,
             keyAlgorithm: KEY_ALGORITHM,
             localTestPort: LOCAL_TEST_PORT,
             localPort: LOCAL_PORT,
@@ -568,14 +526,39 @@ const rotate = async () => {
     if (!initConnection) {
         await connect(activeConnections[0]);
     }
+};
 
-    await cleanup(
-        activeConnections.map(connection => connection.dropletId)
-    );
+const loop = async () => {
+    let isFinished = false;
+
+    setTimeout(async () => {
+        if (!isFinished) {
+            logger.error(`Timeout after passing ${LOOP_INTERVAL_MIN} minutes.`);
+            await sleep(1000);
+            throw new Error();
+        }
+        else {
+            await loop();
+        }
+    }, LOOP_INTERVAL_MIN * 60 * 1000);
+
+    try {
+        const startTime = performance.now();
+        await rotate();
+        const endTime = performance.now();
+        isFinished = true;
+
+        logger.info(
+            `Loop finished in ${
+                Number((endTime - startTime) / 1000).toFixed(0)
+            } seconds.`,
+        );
+    } catch (err) {
+        logger.error(`Proxy loop caught an error.`, err);
+    }
 };
 
 await ensureFolder(DATA_PATH);
 await ensureFolder(KEY_PATH);
 await ensureFolder(LOG_PATH);
-
-loop();
+await loop();

@@ -22,7 +22,6 @@ export interface Connection {
 	connectionString: string
 	appId: string
 	loopIntervalMin: number
-	loopTimeoutMin: number
 	hostKey: string
 	sshLogOutputPath: string
 	isDeleted: false

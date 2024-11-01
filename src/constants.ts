@@ -12,9 +12,6 @@ const ENV = Deno.env.get('ENV')
 const LOOP_INTERVAL_MIN = Deno.env.get('LOOP_INTERVAL_MIN')
     ? Number(Deno.env.get('LOOP_INTERVAL_MIN'))
     : 30;
-const LOOP_TIMEOUT_MIN = Deno.env.get('LOOP_TIMEOUT_MIN')
-    ? Number(Deno.env.get('LOOP_TIMEOUT_MIN'))
-    : 5;
 const TUNNEL_CONNECT_TIMEOUT_SEC = Deno.env.get('TUNNEL_CONNECT_TIMEOUT_SEC')
     ? Number(Deno.env.get('TUNNEL_CONNECT_TIMEOUT_SEC'))
     : 10;
@@ -86,7 +83,6 @@ export {
     ENV,
     APP_ID,
     LOOP_INTERVAL_MIN,
-    LOOP_TIMEOUT_MIN,
     TUNNEL_CONNECT_TIMEOUT_SEC,
     LOCAL_TEST_PORT,
     LOCAL_PORT,
