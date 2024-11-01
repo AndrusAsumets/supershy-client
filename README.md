@@ -67,6 +67,7 @@ cp sample.env .env
 LOOP_INTERVAL_MIN=how often you would like to recycle the exit nodes in minutes, defaults to 30.
 
 SSH_PORT=Port for the SSH server, defaults to 22.
+
 SSH_PORT_RANGE=colon separated [from:to] range of numbers for a random selection, overrides SSH_PORT if set.
 
 DROPLET_REGIONS=comma separated list of Digital Ocean's regions (e.g, AMS3,FRA1,NYC1,SFO3,SGP1,SYD1).
