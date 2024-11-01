@@ -15,6 +15,14 @@ const LOOP_INTERVAL_MIN = Deno.env.get('LOOP_INTERVAL_MIN')
 const TUNNEL_CONNECT_TIMEOUT_SEC = Deno.env.get('TUNNEL_CONNECT_TIMEOUT_SEC')
     ? Number(Deno.env.get('TUNNEL_CONNECT_TIMEOUT_SEC'))
     : 10;
+const SSH_PORT = Deno.env.get('SSH_PORT')
+    ? Number(Deno.env.get('SSH_PORT'))
+    : 22;
+const SSH_PORT_RANGE: number[] = Deno.env.get('SSH_PORT_RANGE')
+    ? String(Deno.env.get('SSH_PORT_RANGE'))
+        .split(':')
+        .map(item => Number(item))
+    : [SSH_PORT, SSH_PORT]
 const LOCAL_TEST_PORT = Deno.env.get('LOCAL_TEST_PORT')
     ? Number(Deno.env.get('LOCAL_TEST_PORT'))
     : 8887
@@ -84,6 +92,7 @@ export {
     APP_ID,
     LOOP_INTERVAL_MIN,
     TUNNEL_CONNECT_TIMEOUT_SEC,
+    SSH_PORT_RANGE,
     LOCAL_TEST_PORT,
     LOCAL_PORT,
     REMOTE_PORT,

@@ -22,6 +22,7 @@ import {
     APP_ID,
     LOOP_INTERVAL_MIN,
     TUNNEL_CONNECT_TIMEOUT_SEC,
+    SSH_PORT_RANGE,
     LOCAL_TEST_PORT,
     LOCAL_PORT,
     REMOTE_PORT,
@@ -66,6 +67,8 @@ class LowWithLodash<T> extends Low<T> {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+const randomNumberFromRange = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1) + min);
+
 const getDatabase = async (): Promise<LowWithLodash<DatabaseData>> => {
     const adapter = new JSONFile<DatabaseData>(DB_FILE_NAME);
     const db = new LowWithLodash(adapter, defaultData);
@@ -97,10 +100,13 @@ const ensureFolder= async (path: string) => {
     }
 };
 
-const getUserData = (jwtSecret: string) => {
+const getUserData = (sshPort: number, jwtSecret: string) => {
     return `
 #cloud-config
 runcmd:
+    - echo 'Port ${sshPort}' >> /etc/ssh/sshd_config
+    - sudo systemctl restart ssh
+
     - sudo apt install tinyproxy -y
     - echo 'Port ${REMOTE_PORT}' >> tinyproxy.conf
     - echo 'Listen 0.0.0.0' >> tinyproxy.conf
@@ -340,10 +346,11 @@ const getConnectionString = (
     const {
         passphrase,
         dropletIp,
+        sshPort,
         keyPath,
         sshLogOutputPath
     } = connection;
-    return `${SRC_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${dropletIp} ${USER} ${LOCAL_PORT} ${REMOTE_PORT} ${keyPath} ${sshLogOutputPath}`;
+    return `${SRC_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${dropletIp} ${USER} ${sshPort} ${LOCAL_PORT} ${REMOTE_PORT} ${keyPath} ${sshLogOutputPath}`;
 };
 
 const getSshLogOutputPath = (connectionId: string): string =>`${LOG_PATH}/${connectionId}${SSH_LOG_OUTPUT_EXTENSION}`;
@@ -469,13 +476,14 @@ const rotate = async () => {
         const passphrase = crypto.randomBytes(64).toString('hex');
         const publicKeyId = await createKey(keyPath, dropletName, passphrase);
         const jwtSecret = crypto.randomBytes(64).toString('hex');
+        const sshPort = randomNumberFromRange(SSH_PORT_RANGE[0], SSH_PORT_RANGE[1]);
 
         const dropletId = await createDroplet({
             region: dropletRegion,
             name: dropletName,
             size: DROPLET_SIZE,
             publicKeyId,
-            userData: getUserData(jwtSecret),
+            userData: getUserData(sshPort, jwtSecret),
         });
         logger.info('Created droplet.', {
             dropletName,
@@ -506,6 +514,7 @@ const rotate = async () => {
             localPort: LOCAL_PORT,
             remotePort: REMOTE_PORT,
             keyPath,
+            sshPort,
             hostKey: '',
             sshLogOutputPath: getSshLogOutputPath(connectionId),
             connectionString: '',
