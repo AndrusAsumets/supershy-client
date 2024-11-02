@@ -93,7 +93,7 @@ const updateDb = async (
     await db.write();
 };
 
-const ensureFolder= async (path: string) => {
+const ensureFolder = async (path: string) => {
     if (!await exists(path)) {
         await Deno.mkdir(path);
     }
