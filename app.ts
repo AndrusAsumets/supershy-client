@@ -114,10 +114,9 @@ runcmd:
     - tinyproxy -d -c tinyproxy.conf
 
     - DROPLET_ID=$(echo \`curl http://169.254.169.254/metadata/v1/id\`)
-    - HOST_KEY_ALGORITHM=$(cat /etc/ssh/ssh_host_ed25519_key.pub | cut -d ' ' -f 1)
     - HOST_KEY=$(cat /etc/ssh/ssh_host_ed25519_key.pub | cut -d ' ' -f 2)
     - ENCODED_HOST_KEY=$(python3 -c 'import sys;import jwt;payload={};payload[\"hostKey\"]=sys.argv[1];print(jwt.encode(payload, sys.argv[2], algorithm=\"HS256\"))' $HOST_KEY ${jwtSecret})
-    - curl --request PUT -H 'Content-Type=*\/*' --data $HOST_KEY_ALGORITHM:$ENCODED_HOST_KEY --url ${CLOUDFLARE_BASE_URL}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${CLOUDFLARE_KV_NAMESPACE}/values/$DROPLET_ID --oauth2-bearer ${CLOUDFLARE_API_KEY}
+    - curl --request PUT -H 'Content-Type=*\/*' --data $ENCODED_HOST_KEY --url ${CLOUDFLARE_BASE_URL}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${CLOUDFLARE_KV_NAMESPACE}/values/$DROPLET_ID --oauth2-bearer ${CLOUDFLARE_API_KEY}
 `;
 };
 
@@ -125,7 +124,6 @@ const getHostKey = async (
     dropletId: number,
     jwtSecret: string,
 ) => {
-    const prefix = 'ssh-ed25519:';
     let hostKey: string = '';
 
     while (!hostKey) {
@@ -138,12 +136,8 @@ const getHostKey = async (
                 `${CLOUDFLARE_BASE_URL}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${CLOUDFLARE_KV_NAMESPACE}/values/${dropletId}`;
             const res = await fetch(url, options);
             const text = await res.text();
-
-            if (text && text.startsWith(prefix)) {
-                const encoded = text.replace(prefix, '');
-                const decoded = jwt.verify(encoded, jwtSecret);
-                hostKey = decoded.hostKey;
-            }
+            const decoded = jwt.verify(text, jwtSecret);
+            hostKey = decoded.hostKey;
         } catch (_) {
             await sleep(1000);
         }
