@@ -44,7 +44,7 @@ import {
     LOG_PATH,
     KNOWN_HOSTS_PATH,
     DB_FILE_NAME,
-    DB_SELECTOR,
+    DB_TABLE,
     SSH_LOG_OUTPUT_EXTENSION,
     GENERATE_SSH_KEY_FILE_NAME,
     CONNECT_SSH_TUNNEL_FILE_NAME,
@@ -57,7 +57,7 @@ await logger.initFileLogger(`${LOG_PATH}`);
 logger.disableConsole();
 
 const defaultData: DatabaseData = {
-    [DB_SELECTOR]: [],
+    [DB_TABLE]: [],
 };
 
 class LowWithLodash<T> extends Low<T> {
@@ -85,7 +85,7 @@ const updateDb = async (
 ) => {
     await db
         .chain
-        .get(DB_SELECTOR)
+        .get(DB_TABLE)
         .find({ connectionId: connection.connectionId })
         .assign(connection)
         .value();
@@ -99,7 +99,11 @@ const ensureFolder = async (path: string) => {
     }
 };
 
-const getUserData = (sshPort: number, jwtSecret: string) => {
+const getUserData = (
+    connectionId: string,
+    sshPort: number,
+    jwtSecret: string,
+) => {
     return `
 #cloud-config
 runcmd:
@@ -113,15 +117,14 @@ runcmd:
     - echo 'Allow 0.0.0.0' >> tinyproxy.conf
     - tinyproxy -d -c tinyproxy.conf
 
-    - DROPLET_ID=$(echo \`curl http://169.254.169.254/metadata/v1/id\`)
     - HOST_KEY=$(cat /etc/ssh/ssh_host_ed25519_key.pub | cut -d ' ' -f 2)
     - ENCODED_HOST_KEY=$(python3 -c 'import sys;import jwt;payload={};payload[\"hostKey\"]=sys.argv[1];print(jwt.encode(payload, sys.argv[2], algorithm=\"HS256\"))' $HOST_KEY ${jwtSecret})
-    - curl --request PUT -H 'Content-Type=*\/*' --data $ENCODED_HOST_KEY --url ${CLOUDFLARE_BASE_URL}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${CLOUDFLARE_KV_NAMESPACE}/values/$DROPLET_ID --oauth2-bearer ${CLOUDFLARE_API_KEY}
+    - curl --request PUT -H 'Content-Type=*\/*' --data $ENCODED_HOST_KEY --url ${CLOUDFLARE_BASE_URL}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${CLOUDFLARE_KV_NAMESPACE}/values/${connectionId} --oauth2-bearer ${CLOUDFLARE_API_KEY}
 `;
 };
 
 const getHostKey = async (
-    dropletId: number,
+    connectionId: string,
     jwtSecret: string,
 ) => {
     let hostKey: string = '';
@@ -133,7 +136,7 @@ const getHostKey = async (
             };
             const options: any = { method: 'GET', headers };
             const url =
-                `${CLOUDFLARE_BASE_URL}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${CLOUDFLARE_KV_NAMESPACE}/values/${dropletId}`;
+                `${CLOUDFLARE_BASE_URL}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${CLOUDFLARE_KV_NAMESPACE}/values/${connectionId}`;
             const res = await fetch(url, options);
             const text = await res.text();
             const decoded = jwt.verify(text, jwtSecret);
@@ -277,10 +280,10 @@ const updateHostKey = async (
     connection: Connection,
     jwtSecret: string,
 ) => {
-    const { dropletId, dropletIp } = connection;
+    const { connectionId, dropletIp } = connection;
 
-    connection.hostKey = await getHostKey(dropletId, jwtSecret);
-    logger.info(`Fetched host key for droplet ${dropletId}.`);
+    connection.hostKey = await getHostKey(connection.connectionId, jwtSecret);
+    logger.info(`Fetched host key for connection ${connectionId}.`);
 
     Deno.writeTextFileSync(
         KNOWN_HOSTS_PATH,
@@ -325,9 +328,8 @@ const createKey = async (
     const cmd =
         `${SRC_PATH}/${GENERATE_SSH_KEY_FILE_NAME} ${passphrase} ${keyPath} ${KEY_ALGORITHM} ${KEY_LENGTH}`;
     // @ts-ignore: because
-    const createSshKeyProcess = Deno.run({ cmd: cmd.split(' ') });
-    await createSshKeyProcess.status();
-
+    const process = Deno.run({ cmd: cmd.split(' ') });
+    await process.status();
     const publicKey = await Deno.readTextFile(`${keyPath}.pub`);
     const publicKeyId = await addKey(publicKey, dropletName);
     return publicKeyId;
@@ -351,7 +353,7 @@ const getSshLogOutputPath = (connectionId: string): string =>`${LOG_PATH}/${conn
 const init = async () => {
     const connection = db
         .chain
-        .get(DB_SELECTOR)
+        .get(DB_TABLE)
         .filter((connection: Connection) => !connection.isDeleted)
         .sortBy('createdTime')
         .reverse()
@@ -379,14 +381,14 @@ const tunnel = async (
             await sleep(1000);
 
             // @ts-ignore: because
-            const openSshProxyTunnelTestProcess = Deno.run({
+            const process = Deno.run({
                 cmd: connection.connectionString.split(' '),
                 stdout: 'piped',
                 stderr: 'piped',
                 stdin: 'null',
             });
             await sleep(TUNNEL_CONNECT_TIMEOUT_SEC * 1000);
-            await openSshProxyTunnelTestProcess.stderrOutput();
+            await process.stderrOutput();
             const sshLogOutput = await Deno.readTextFile(connection.sshLogOutputPath);
             const hasNetwork = sshLogOutput.includes('pledge: network');
 
@@ -424,12 +426,14 @@ const connect = async (
 };
 
 const cleanup = async (dropletIdsToKeep: number[]) => {
-    const deletableKeyIds = (await listKeys())['ssh_keys']
+    const deletableKeyIds = (await listKeys())
+        ['ssh_keys']
         .filter((key: any) => key.name.includes(`${APP_ID}-${ENV}`))
         .map((key: any) => key.id);
     await deleteKeys(deletableKeyIds);
 
-    const deletableDropletIds = (await listDroplets()).droplets
+    const deletableDropletIds = (await listDroplets())
+        .droplets
         .filter((droplet: any) => droplet.name.includes(`${APP_ID}-${ENV}`))
         .map((droplet: any) => droplet.id)
         .filter((id: number) => !dropletIdsToKeep.includes(id));
@@ -476,7 +480,7 @@ const rotate = async () => {
             name: dropletName,
             size: DROPLET_SIZE,
             publicKeyId,
-            userData: getUserData(sshPort, jwtSecret),
+            userData: getUserData(connectionId, sshPort, jwtSecret),
         });
         logger.info('Created droplet.', {
             dropletName,
