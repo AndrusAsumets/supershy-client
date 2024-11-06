@@ -16,21 +16,21 @@ import {
     CLOUDFLARE_KV_NAMESPACE,
     CLOUDFLARE_API_KEY,
     CLOUDFLARE_BASE_URL,
-    DROPLET_IMAGE,
+    INSTANCE_IMAGE,
     DIGITAL_OCEAN_API_KEY,
     DIGITAL_OCEAN_BASE_URL,
 } from './constants.ts';
 
 import {
     Connection,
-    CreateDroplet,
+    CreateInstance,
 } from './types.ts';
 
 export const shell = {
 	private_key: {
 		create: async function (
             keyPath: string,
-            dropletName: string,
+            instanceName: string,
             passphrase: string,
         ) {
             const cmd =
@@ -39,7 +39,7 @@ export const shell = {
             const process = Deno.run({ cmd: cmd.split(' ') });
             await process.status();
             const publicKey = await Deno.readTextFile(`${keyPath}.pub`);
-            const publicKeyId = await compute.digital_ocean.addKey(publicKey, dropletName);
+            const publicKeyId = await compute.digital_ocean.addKey(publicKey, instanceName);
             return publicKeyId;
         }
     },
@@ -59,7 +59,7 @@ export const shell = {
 export const kv = {
     cloudflare: {
         getHostKey: async function (
-            connectionId: string,
+            connectionUuid: string,
             jwtSecret: string,
         ) {
             let hostKey: string = '';
@@ -71,7 +71,7 @@ export const kv = {
                     };
                     const options: any = { method: 'GET', headers };
                     const url =
-                        `${CLOUDFLARE_BASE_URL}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${CLOUDFLARE_KV_NAMESPACE}/values/${connectionId}`;
+                        `${CLOUDFLARE_BASE_URL}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${CLOUDFLARE_KV_NAMESPACE}/values/${connectionUuid}`;
                     const res = await fetch(url, options);
                     const text = await res.text();
                     const decoded = jwt.verify(text, jwtSecret);
@@ -87,17 +87,17 @@ export const kv = {
             connection: Connection,
             jwtSecret: string,
         ) {
-            const { connectionId, dropletIp } = connection;
+            const { connectionUuid, instanceIp } = connection;
         
-            connection.hostKey = await kv.cloudflare.getHostKey(connection.connectionId, jwtSecret);
-            logger.info(`Fetched host key for connection ${connectionId}.`);
+            connection.hostKey = await kv.cloudflare.getHostKey(connection.connectionUuid, jwtSecret);
+            logger.info(`Fetched host key for connection ${connectionUuid}.`);
         
             Deno.writeTextFileSync(
                 KNOWN_HOSTS_PATH,
-                `${dropletIp} ssh-${KEY_ALGORITHM} ${connection.hostKey}\n`,
+                `${instanceIp} ssh-${KEY_ALGORITHM} ${connection.hostKey}\n`,
                 { append: true },
             );
-            logger.info(`Added host key for ${dropletIp} to known hosts.`);
+            logger.info(`Added host key for ${instanceIp} to known hosts.`);
         
             return connection;
         },
@@ -115,7 +115,7 @@ export const compute = {
             const json: any = await res.json();
             return json.regions;
 		},
-        createDroplet: async function (args: CreateDroplet) {
+        createDroplet: async function (args: CreateInstance) {
             const { region, name, size, publicKeyId, userData } = args;
             const headers = {
                 Authorization: `Bearer ${DIGITAL_OCEAN_API_KEY}`,
@@ -125,7 +125,7 @@ export const compute = {
                 name,
                 region,
                 size,
-                image: DROPLET_IMAGE,
+                image: INSTANCE_IMAGE,
                 ssh_keys: [publicKeyId],
                 user_data: userData,
             };
@@ -209,9 +209,9 @@ export const compute = {
             }
         },
         getDropletIp: async function (dropletId: string) {
-            let dropletIp = null;
+            let ip = null;
         
-            while (!dropletIp) {
+            while (!ip) {
                 const list = await compute.digital_ocean.listDroplets();
                 const droplets = list.droplets;
         
@@ -221,16 +221,16 @@ export const compute = {
                     );
         
                     if (droplet && droplet.networks.v4.length) {
-                        dropletIp = droplet.networks.v4.filter((network: any) =>
+                        ip = droplet.networks.v4.filter((network: any) =>
                             network.type == 'public'
                         )[0]['ip_address'];
                     }
                 }
             }
         
-            logger.info(`Found network at ${dropletIp}.`);
+            logger.info(`Found network at ${ip}.`);
         
-            return dropletIp;
+            return ip;
         },
     },
 };

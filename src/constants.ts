@@ -32,11 +32,11 @@ const LOCAL_PORT = Deno.env.get('LOCAL_PORT')
 const REMOTE_PORT = Deno.env.get('REMOTE_PORT')
     ? Number(Deno.env.get('REMOTE_PORT'))
     : 8888;
-const DROPLET_SIZE = Deno.env.get('DROPLET_SIZE')
-    ? String(Deno.env.get('DROPLET_SIZE'))
+const INSTANCE_SIZE = Deno.env.get('INSTANCE_SIZE')
+    ? String(Deno.env.get('INSTANCE_SIZE'))
     : 's-1vcpu-512mb-10gb';
-const DROPLET_IMAGE = Deno.env.get('DROPLET_IMAGE')
-    ? String(Deno.env.get('DROPLET_IMAGE'))
+const INSTANCE_IMAGE = Deno.env.get('INSTANCE_IMAGE')
+    ? String(Deno.env.get('INSTANCE_IMAGE'))
     : 'debian-12-x64';
 const KEY_ALGORITHM = Deno.env.get('KEY_ALGORITHM')
     ? String(Deno.env.get('KEY_ALGORITHM'))
@@ -48,8 +48,8 @@ const DIGITAL_OCEAN_API_KEY = Deno.env.get('DIGITAL_OCEAN_API_KEY');
 const CLOUDFLARE_ACCOUNT_ID = Deno.env.get('CLOUDFLARE_ACCOUNT_ID');
 const CLOUDFLARE_API_KEY = Deno.env.get('CLOUDFLARE_API_KEY');
 const CLOUDFLARE_KV_NAMESPACE = Deno.env.get('CLOUDFLARE_KV_NAMESPACE');
-const DROPLET_REGIONS = Deno.env.get('DROPLET_REGIONS')
-    ? String(Deno.env.get('DROPLET_REGIONS'))
+const INSTANCE_REGIONS = Deno.env.get('INSTANCE_REGIONS')
+    ? String(Deno.env.get('INSTANCE_REGIONS'))
         .split(',')
         .filter(region => region.length)
     : [];
@@ -101,9 +101,9 @@ export {
     CLOUDFLARE_ACCOUNT_ID,
     CLOUDFLARE_API_KEY,
     CLOUDFLARE_KV_NAMESPACE,
-    DROPLET_SIZE,
-    DROPLET_IMAGE,
-    DROPLET_REGIONS,
+    INSTANCE_SIZE,
+    INSTANCE_IMAGE,
+    INSTANCE_REGIONS,
     DIGITAL_OCEAN_BASE_URL,
     CLOUDFLARE_BASE_URL,
     __DIRNAME,

@@ -21,9 +21,9 @@ import {
     LOCAL_PORT,
     REMOTE_PORT,
     KEY_ALGORITHM,
-    DROPLET_SIZE,
-    DROPLET_IMAGE,
-    DROPLET_REGIONS,
+    INSTANCE_SIZE,
+    INSTANCE_IMAGE,
+    INSTANCE_REGIONS,
     __DIRNAME,
     DATA_PATH,
     KEY_PATH,
@@ -59,7 +59,7 @@ const tunnel = async (
         .replace('\n', '');
     let isConnected = false;
 
-    logger.info(`Starting SSH tunnel connection to ${connection.dropletIp}:${port}.`);
+    logger.info(`Starting SSH tunnel connection to ${connection.instanceIp}:${port}.`);
 
     while (!isConnected) {
         try {
@@ -79,13 +79,13 @@ const tunnel = async (
             isConnected = output.includes('pledge: network');
 
             if (isConnected) {
-                logger.info(`Connected SSH test tunnel to ${connection.dropletIp}.`);
+                logger.info(`Connected SSH test tunnel to ${connection.instanceIp}:${port}.`);
                 await lib.db.update(connection);
             }
         }
         catch(err) {
             logger.warn(err);
-            logger.warn(`Restarting SSH tunnel connection to ${connection.dropletIp}:${port}.`);
+            logger.warn(`Restarting SSH tunnel connection to ${connection.instanceIp}:${port}.`);
         }
     }
 };
@@ -123,59 +123,55 @@ const rotate = async () => {
         : CONNECTION_TYPES;
     let connectionIndex = 0;
 
-    await cleanup(
-        activeConnections.map(connection => connection.dropletId)
-    );
-
     while (connectionIndex < connectionTypes.length) {
-        const connectionId = uuidv7();
+        const connectionUuid = uuidv7();
         const connectionType = connectionTypes[connectionIndex];
-        const dropletRegion = (await integrations.compute.digital_ocean.listRegions())
+        const instanceRegion = (await integrations.compute.digital_ocean.listRegions())
             .filter((region: any) =>
-                DROPLET_REGIONS.length
-                    ? DROPLET_REGIONS
-                        .map(dropletRegion => dropletRegion.toLowerCase())
+                INSTANCE_REGIONS.length
+                    ? INSTANCE_REGIONS
+                        .map(instanceRegion => instanceRegion.toLowerCase())
                         .includes(region.slug)
                     : true
             )
-            .filter((region: any) => region.sizes.includes(DROPLET_SIZE))
+            .filter((region: any) => region.sizes.includes(INSTANCE_SIZE))
             .map((region: any) => region.slug)
             .sort(() => (Math.random() > 0.5) ? 1 : -1)[0];
-        const dropletName = `${APP_ID}-${ENV}-${connectionType}-${connectionId}`;
+        const instanceName = `${APP_ID}-${ENV}-${connectionType}-${connectionUuid}`;
 
-        const keyPath = `${KEY_PATH}/${dropletName}`;
+        const keyPath = `${KEY_PATH}/${instanceName}`;
         const passphrase = crypto.randomBytes(64).toString('hex');
-        const publicKeyId = await integrations.shell.private_key.create(keyPath, dropletName, passphrase);
+        const publicKeyId = await integrations.shell.private_key.create(keyPath, instanceName, passphrase);
         const jwtSecret = crypto.randomBytes(64).toString('hex');
         const sshPort = lib.randomNumberFromRange(SSH_PORT_RANGE[0], SSH_PORT_RANGE[1]);
 
-        const dropletId = await integrations.compute.digital_ocean.createDroplet({
-            region: dropletRegion,
-            name: dropletName,
-            size: DROPLET_SIZE,
+        const instanceId = await integrations.compute.digital_ocean.createDroplet({
+            region: instanceRegion,
+            name: instanceName,
+            size: INSTANCE_SIZE,
             publicKeyId,
-            userData: core.getUserData(connectionId, sshPort, jwtSecret),
+            userData: core.getUserData(connectionUuid, sshPort, jwtSecret),
         });
-        logger.info('Created droplet.', {
-            dropletName,
-            dropletRegion,
-            dropletSize: DROPLET_SIZE,
-            dropletId,
-            dropletPublicKeyId: publicKeyId,
+        logger.info('Created instance.', {
+            instanceName,
+            instanceRegion,
+            instanceSize: INSTANCE_SIZE,
+            instanceId,
+            instancePublicKeyId: publicKeyId,
         });
 
-        const dropletIp = await integrations.compute.digital_ocean.getDropletIp(dropletId);
+        const instanceIp = await integrations.compute.digital_ocean.getDropletIp(instanceId);
 
         let connection: Connection = {
-            connectionId,
+            connectionUuid,
             appId: APP_ID,
-            dropletId,
-            dropletName,
-            dropletIp,
-            dropletRegion,
-            dropletSize: DROPLET_SIZE,
-            dropletImage: DROPLET_IMAGE,
-            dropletPublicKeyId: publicKeyId,
+            instanceId,
+            instanceName,
+            instanceIp,
+            instanceRegion,
+            instanceSize: INSTANCE_SIZE,
+            instanceImage: INSTANCE_IMAGE,
+            instancePublicKeyId: publicKeyId,
             connectionType,
             user: USER,
             passphrase,
@@ -187,7 +183,7 @@ const rotate = async () => {
             keyPath,
             sshPort,
             hostKey: '',
-            sshLogOutputPath: core.getSshLogOutputPath(connectionId),
+            sshLogOutputPath: core.getSshLogOutputPath(connectionUuid),
             connectionString: '',
             isDeleted: false,
             createdTime: new Date().toISOString(),
@@ -206,6 +202,10 @@ const rotate = async () => {
     if (!initConnection) {
         await connect(activeConnections[0]);
     }
+
+    await cleanup(
+        activeConnections.map(connection => connection.instanceId)
+    );
 };
 
 const loop = async () => {

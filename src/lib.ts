@@ -54,7 +54,7 @@ export const db = {
             .get()
             .chain
             .get(DB_TABLE)
-            .find({ connectionId: connection.connectionId })
+            .find({ connectionUuid: connection.connectionUuid })
             .assign(connection)
             .value();
     

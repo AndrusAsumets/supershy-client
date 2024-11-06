@@ -70,7 +70,7 @@ SSH_PORT=Port for the SSH server, defaults to 22.
 
 SSH_PORT_RANGE=colon separated [from:to] range of numbers for a random selection, overrides SSH_PORT if set.
 
-DROPLET_REGIONS=comma separated list of Digital Ocean's regions (e.g, AMS3,FRA1,NYC1,SFO3,SGP1,SYD1).
+INSTANCE_REGIONS=comma separated list of Digital Ocean's regions (e.g, AMS3,FRA1,NYC1,SFO3,SGP1,SYD1).
 Will default to randomize between all they have available if left empty.
 
 DIGITAL_OCEAN_API_KEY=
@@ -108,7 +108,12 @@ CLOUDFLARE_API_KEY=
 
 ```
 # Start supershy
-forever start -c "deno run --allow-all app.ts" ./ && tail -f ~/.supershy/logs/*.log
+forever start -c "deno run --allow-all app.ts" ./
+```
+
+```
+# Log
+tail -f ~/.supershy/logs/*.log
 ```
 
 ```
@@ -130,6 +135,11 @@ Firefox
 # Test that it's all working
  -> Open https://ipleak.net
  -> Make sure countries of both IP and DNS match with the region of Digital Ocean your supershy is currently connected to.
+```
+
+```
+# Uninstall
+rm  ~/.supershy
 ```
 
 Safe travels!

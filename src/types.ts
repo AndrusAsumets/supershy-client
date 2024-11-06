@@ -3,15 +3,15 @@ export enum ConnectionTypes {
 }
 
 export interface Connection {
-	connectionId: string
+	connectionUuid: string
 	connectionType: ConnectionTypes
-	dropletId: number
-	dropletName: string
-	dropletIp: string
-	dropletRegion: string
-	dropletSize: string
-	dropletImage: string
-	dropletPublicKeyId: number
+	instanceId: number
+	instanceName: string
+	instanceIp: string
+	instanceRegion: string
+	instanceSize: string
+	instanceImage: string
+	instancePublicKeyId: number
 	user: string
 	passphrase: string
 	localTestPort: number
@@ -35,7 +35,7 @@ export type DatabaseData = {
 	connections: Connection[];
 }
 
-export interface CreateDroplet {
+export interface CreateInstance {
 	region: string
 	name: string
 	size: string
