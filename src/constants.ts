@@ -53,7 +53,6 @@ const DROPLET_REGIONS = Deno.env.get('DROPLET_REGIONS')
         .split(',')
         .filter(region => region.length)
     : [];
-const TEST_PROXY_URL = `http://localhost:${LOCAL_TEST_PORT}`;
 const DIGITAL_OCEAN_BASE_URL = 'https://api.digitalocean.com/v2';
 const CLOUDFLARE_BASE_URL = 'https://api.cloudflare.com/client/v4';
 const __DIRNAME = path.dirname(path.fromFileUrl(import.meta.url));
@@ -105,7 +104,6 @@ export {
     DROPLET_SIZE,
     DROPLET_IMAGE,
     DROPLET_REGIONS,
-    TEST_PROXY_URL,
     DIGITAL_OCEAN_BASE_URL,
     CLOUDFLARE_BASE_URL,
     __DIRNAME,
@@ -122,4 +120,4 @@ export {
     CONNECT_SSH_TUNNEL_FILE_NAME,
     USER,
     CONNECTION_TYPES,
-}
+};
