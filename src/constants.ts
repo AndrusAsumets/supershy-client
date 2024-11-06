@@ -9,9 +9,9 @@ const APP_ID = Deno.env.get('APP_ID')
 const ENV = Deno.env.get('ENV')
     ? String(Deno.env.get('ENV'))
     : 'dev';
-const LOOP_INTERVAL_MIN = Deno.env.get('LOOP_INTERVAL_MIN')
-    ? Number(Deno.env.get('LOOP_INTERVAL_MIN'))
-    : 30;
+const LOOP_INTERVAL_SEC = Deno.env.get('LOOP_INTERVAL_SEC')
+    ? Number(Deno.env.get('LOOP_INTERVAL_SEC'))
+    : 1800;
 const TUNNEL_CONNECT_TIMEOUT_SEC = Deno.env.get('TUNNEL_CONNECT_TIMEOUT_SEC')
     ? Number(Deno.env.get('TUNNEL_CONNECT_TIMEOUT_SEC'))
     : 10;
@@ -89,7 +89,7 @@ if (!CLOUDFLARE_KV_NAMESPACE) {
 export {
     ENV,
     APP_ID,
-    LOOP_INTERVAL_MIN,
+    LOOP_INTERVAL_SEC,
     TUNNEL_CONNECT_TIMEOUT_SEC,
     SSH_PORT_RANGE,
     LOCAL_TEST_PORT,

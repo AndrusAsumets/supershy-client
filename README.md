@@ -64,7 +64,7 @@ cp sample.env .env
 
 ```
 # .env
-LOOP_INTERVAL_MIN=how often you would like to recycle the exit nodes in minutes, defaults to 30.
+LOOP_INTERVAL_SEC=how often you would like to recycle the exit nodes in seconds, defaults to 1800.
 
 SSH_PORT=Port for the SSH server, defaults to 22.
 

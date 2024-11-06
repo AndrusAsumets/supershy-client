@@ -21,7 +21,7 @@ export interface Connection {
 	keyPath: string
 	connectionString: string
 	appId: string
-	loopIntervalMin: number
+	loopIntervalSec: number
 	sshPort: number
 	hostKey: string
 	sshLogOutputPath: string

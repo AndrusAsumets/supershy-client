@@ -14,7 +14,7 @@ import * as integrations from './src/integrations.ts';
 import {
     ENV,
     APP_ID,
-    LOOP_INTERVAL_MIN,
+    LOOP_INTERVAL_SEC,
     TUNNEL_CONNECT_TIMEOUT_SEC,
     SSH_PORT_RANGE,
     LOCAL_TEST_PORT,
@@ -53,7 +53,8 @@ const tunnel = async (
     connection: Connection,
     port: number,
 ) => {
-    connection.connectionString = core.getConnectionString(connection)
+    connection.connectionString = core
+        .getConnectionString(connection)
         .replace(` ${LOCAL_PORT} `, ` ${port} `)
         .replace('\n', '');
     let isConnected = false;
@@ -74,15 +75,12 @@ const tunnel = async (
             });
             await lib.sleep(TUNNEL_CONNECT_TIMEOUT_SEC * 1000);
             await process.stderrOutput();
-            const sshLogOutput = await Deno.readTextFile(connection.sshLogOutputPath);
-            const hasNetwork = sshLogOutput.includes('pledge: network');
+            const output = await Deno.readTextFile(connection.sshLogOutputPath);
+            isConnected = output.includes('pledge: network');
 
-            if (hasNetwork) {
+            if (isConnected) {
                 logger.info(`Connected SSH test tunnel to ${connection.dropletIp}.`);
-
                 await lib.db.update(connection);
-
-                isConnected = true;
             }
         }
         catch(err) {
@@ -181,7 +179,7 @@ const rotate = async () => {
             connectionType,
             user: USER,
             passphrase,
-            loopIntervalMin: LOOP_INTERVAL_MIN,
+            loopIntervalSec: LOOP_INTERVAL_SEC,
             keyAlgorithm: KEY_ALGORITHM,
             localTestPort: LOCAL_TEST_PORT,
             localPort: LOCAL_PORT,
@@ -215,14 +213,14 @@ const loop = async () => {
 
     setTimeout(async () => {
         if (!isFinished) {
-            logger.error(`Timeout after passing ${LOOP_INTERVAL_MIN} minutes.`);
+            logger.error(`Timeout after passing ${LOOP_INTERVAL_SEC * 60} minutes.`);
             await lib.sleep(1000);
             throw new Error();
         }
         else {
             await loop();
         }
-    }, LOOP_INTERVAL_MIN * 60 * 1000);
+    }, LOOP_INTERVAL_SEC * 1000);
 
     try {
         const startTime = performance.now();
