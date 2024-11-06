@@ -18,12 +18,6 @@ const _logger = new Logger();
 await _logger.initFileLogger(`${LOG_PATH}`);
 _logger.disableConsole();
 
-export const logger = {
-	get: function () {
-        return _logger;
-    }
-};
-
 const defaultData: DatabaseData = {
     [DB_TABLE]: [],
 };
@@ -43,6 +37,16 @@ const getDatabase = async (): Promise<LowWithLodash<DatabaseData>> => {
 
 const _db: LowWithLodash<DatabaseData> = await getDatabase();
 
+export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+export const randomNumberFromRange = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1) + min);
+
+export const logger = {
+	get: function () {
+        return _logger;
+    }
+};
+
 export const db = {
 	get: function () {
         return _db;
@@ -61,7 +65,3 @@ export const db = {
         await db.get().write();
     },
 };
-
-export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-export const randomNumberFromRange = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1) + min);

@@ -53,6 +53,7 @@ const INSTANCE_REGIONS = Deno.env.get('INSTANCE_REGIONS')
         .split(',')
         .filter(region => region.length)
     : [];
+const TEST_PROXY_URL = `http://localhost:${LOCAL_TEST_PORT}`;
 const DIGITAL_OCEAN_BASE_URL = 'https://api.digitalocean.com/v2';
 const CLOUDFLARE_BASE_URL = 'https://api.cloudflare.com/client/v4';
 const __DIRNAME = path.dirname(path.fromFileUrl(import.meta.url));
@@ -104,6 +105,7 @@ export {
     INSTANCE_SIZE,
     INSTANCE_IMAGE,
     INSTANCE_REGIONS,
+    TEST_PROXY_URL,
     DIGITAL_OCEAN_BASE_URL,
     CLOUDFLARE_BASE_URL,
     __DIRNAME,

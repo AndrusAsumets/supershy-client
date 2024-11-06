@@ -139,7 +139,7 @@ Firefox
 
 ```
 # Uninstall
-rm  ~/.supershy
+rm -rf ~/.supershy
 ```
 
 Safe travels!

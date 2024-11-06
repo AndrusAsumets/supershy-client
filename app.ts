@@ -21,6 +21,7 @@ import {
     LOCAL_PORT,
     REMOTE_PORT,
     KEY_ALGORITHM,
+    TEST_PROXY_URL,
     INSTANCE_SIZE,
     INSTANCE_IMAGE,
     INSTANCE_REGIONS,
@@ -52,15 +53,16 @@ const init = async () => {
 const tunnel = async (
     connection: Connection,
     port: number,
+    proxy: any = null,
 ) => {
     connection.connectionString = core
         .getConnectionString(connection)
         .replace(` ${LOCAL_PORT} `, ` ${port} `)
         .replace('\n', '');
-    let isConnected = false;
 
     logger.info(`Starting SSH tunnel connection to ${connection.instanceIp}:${port}.`);
 
+    let isConnected = false;
     while (!isConnected) {
         try {
             await integrations.shell.pkill(`${port}:`);
@@ -79,6 +81,7 @@ const tunnel = async (
             isConnected = output.includes('pledge: network');
 
             if (isConnected) {
+                await integrations.compute.digital_ocean.test(proxy);
                 logger.info(`Connected SSH test tunnel to ${connection.instanceIp}:${port}.`);
                 await lib.db.update(connection);
             }
@@ -93,25 +96,28 @@ const tunnel = async (
 const connect = async (
     connection: Connection,
 ) => {
-    await tunnel(connection, LOCAL_TEST_PORT);
+    const proxy = {
+        url: TEST_PROXY_URL,
+    };
+    await tunnel(connection, LOCAL_TEST_PORT, proxy);
     await integrations.shell.pkill(`${LOCAL_TEST_PORT}:`);
     await lib.sleep(1000);
     await tunnel(connection, LOCAL_PORT);
 };
 
 const cleanup = async (dropletIdsToKeep: number[]) => {
-    const deletableKeyIds = (await integrations.compute.digital_ocean.listKeys())
+    const deletableKeyIds = (await integrations.compute.digital_ocean.keys.list())
         ['ssh_keys']
         .filter((key: any) => key.name.includes(`${APP_ID}-${ENV}`))
         .map((key: any) => key.id);
-    await integrations.compute.digital_ocean.deleteKeys(deletableKeyIds);
+    await integrations.compute.digital_ocean.keys.delete(deletableKeyIds);
 
-    const deletableDropletIds = (await integrations.compute.digital_ocean.listDroplets())
+    const deletableDropletIds = (await integrations.compute.digital_ocean.instances.list())
         .droplets
         .filter((droplet: any) => droplet.name.includes(`${APP_ID}-${ENV}`))
         .map((droplet: any) => droplet.id)
         .filter((id: number) => !dropletIdsToKeep.includes(id));
-    await integrations.compute.digital_ocean.deleteDroplets(deletableDropletIds);
+    await integrations.compute.digital_ocean.instances.delete(deletableDropletIds);
 };
 
 const rotate = async () => {
@@ -126,7 +132,7 @@ const rotate = async () => {
     while (connectionIndex < connectionTypes.length) {
         const connectionUuid = uuidv7();
         const connectionType = connectionTypes[connectionIndex];
-        const instanceRegion = (await integrations.compute.digital_ocean.listRegions())
+        const instanceRegion = (await integrations.compute.digital_ocean.regions.list())
             .filter((region: any) =>
                 INSTANCE_REGIONS.length
                     ? INSTANCE_REGIONS
@@ -138,14 +144,13 @@ const rotate = async () => {
             .map((region: any) => region.slug)
             .sort(() => (Math.random() > 0.5) ? 1 : -1)[0];
         const instanceName = `${APP_ID}-${ENV}-${connectionType}-${connectionUuid}`;
-
         const keyPath = `${KEY_PATH}/${instanceName}`;
         const passphrase = crypto.randomBytes(64).toString('hex');
         const publicKeyId = await integrations.shell.private_key.create(keyPath, instanceName, passphrase);
         const jwtSecret = crypto.randomBytes(64).toString('hex');
         const sshPort = lib.randomNumberFromRange(SSH_PORT_RANGE[0], SSH_PORT_RANGE[1]);
 
-        const instanceId = await integrations.compute.digital_ocean.createDroplet({
+        const instanceId = await integrations.compute.digital_ocean.instances.create({
             region: instanceRegion,
             name: instanceName,
             size: INSTANCE_SIZE,
@@ -160,7 +165,8 @@ const rotate = async () => {
             instancePublicKeyId: publicKeyId,
         });
 
-        const instanceIp = await integrations.compute.digital_ocean.getDropletIp(instanceId);
+        const instanceIp = await integrations.compute.digital_ocean.ips.get(instanceId);
+        logger.info(`Found network at ${instanceIp}.`);
 
         let connection: Connection = {
             connectionUuid,
@@ -190,7 +196,7 @@ const rotate = async () => {
             modifiedTime: null,
             deletedTime: null,
         };
-        connection = await integrations.kv.cloudflare.updateHostKey(connection, jwtSecret);
+        connection = await integrations.kv.cloudflare.hostKey.update(connection, jwtSecret);
 
         db.data.connections.push(connection);
         db.write();
@@ -213,7 +219,7 @@ const loop = async () => {
 
     setTimeout(async () => {
         if (!isFinished) {
-            logger.error(`Timeout after passing ${LOOP_INTERVAL_SEC * 60} minutes.`);
+            logger.error(`Timeout after passing ${LOOP_INTERVAL_SEC} seconds.`);
             await lib.sleep(1000);
             throw new Error();
         }
@@ -238,7 +244,7 @@ const loop = async () => {
     }
 };
 
-await integrations.shell.ensureFolder(DATA_PATH);
-await integrations.shell.ensureFolder(KEY_PATH);
-await integrations.shell.ensureFolder(LOG_PATH);
+await integrations.fs.ensureFolder(DATA_PATH);
+await integrations.fs.ensureFolder(KEY_PATH);
+await integrations.fs.ensureFolder(LOG_PATH);
 await loop();
