@@ -81,7 +81,11 @@ const tunnel = async (
             isConnected = output.includes('pledge: network');
 
             if (isConnected) {
-                await integrations.compute.digital_ocean.test(proxy);
+                if (proxy) {
+                    logger.info(`Starting API test for ${proxy.url}.`);
+                    await integrations.compute.digital_ocean.regions.list(INSTANCE_SIZE, proxy);
+                    logger.info(`Finished API test for ${proxy.url}.`);
+                }
                 logger.info(`Connected SSH test tunnel to ${connection.instanceIp}:${port}.`);
                 await lib.db.update(connection);
             }
@@ -132,16 +136,16 @@ const rotate = async () => {
     while (connectionIndex < connectionTypes.length) {
         const connectionUuid = uuidv7();
         const connectionType = connectionTypes[connectionIndex];
-        const instanceRegion = (await integrations.compute.digital_ocean.regions.list())
+        logger.info(1, await integrations.compute.digital_ocean.regions.list(INSTANCE_SIZE));
+        logger.info(2, await integrations.compute.ovh.regions.list());
+        const instanceRegion = (await integrations.compute.digital_ocean.regions.list(INSTANCE_SIZE))
             .filter((region: any) =>
                 INSTANCE_REGIONS.length
                     ? INSTANCE_REGIONS
                         .map(instanceRegion => instanceRegion.toLowerCase())
-                        .includes(region.slug)
+                        .includes(region)
                     : true
             )
-            .filter((region: any) => region.sizes.includes(INSTANCE_SIZE))
-            .map((region: any) => region.slug)
             .sort(() => (Math.random() > 0.5) ? 1 : -1)[0];
         const instanceName = `${APP_ID}-${ENV}-${connectionType}-${connectionUuid}`;
         const keyPath = `${KEY_PATH}/${instanceName}`;

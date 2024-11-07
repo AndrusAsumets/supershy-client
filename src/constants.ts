@@ -1,7 +1,7 @@
 import * as path from 'https://deno.land/std@0.224.0/path/mod.ts';
 import { homedir } from 'node:os';
 
-import { ConnectionTypes } from './types.ts';
+import { Providers, ConnectionTypes } from './types.ts';
 
 const APP_ID = Deno.env.get('APP_ID')
     ? String(Deno.env.get('APP_ID'))
@@ -32,12 +32,6 @@ const LOCAL_PORT = Deno.env.get('LOCAL_PORT')
 const REMOTE_PORT = Deno.env.get('REMOTE_PORT')
     ? Number(Deno.env.get('REMOTE_PORT'))
     : 8888;
-const INSTANCE_SIZE = Deno.env.get('INSTANCE_SIZE')
-    ? String(Deno.env.get('INSTANCE_SIZE'))
-    : 's-1vcpu-512mb-10gb';
-const INSTANCE_IMAGE = Deno.env.get('INSTANCE_IMAGE')
-    ? String(Deno.env.get('INSTANCE_IMAGE'))
-    : 'debian-12-x64';
 const KEY_ALGORITHM = Deno.env.get('KEY_ALGORITHM')
     ? String(Deno.env.get('KEY_ALGORITHM'))
     : 'ed25519';
@@ -70,6 +64,22 @@ const GENERATE_SSH_KEY_FILE_NAME = 'generate-ssh-key.exp';
 const CONNECT_SSH_TUNNEL_FILE_NAME = 'connect-ssh-tunnel.exp';
 const USER = 'root';
 const CONNECTION_TYPES = [ConnectionTypes.A, ConnectionTypes.A];
+const PROVIDERS: Providers = {
+    'digital_ocean': {
+        instanceImage: 'debian-12-x64',
+        instanceSize: 's-1vcpu-512mb-10gb',
+    },
+    'ovh': {
+        instanceImage: 'Debian+12',
+        instanceSize: 'vps-starter-1-2-20',
+    }
+}
+const INSTANCE_SIZE = Deno.env.get('INSTANCE_SIZE')
+    ? String(Deno.env.get('INSTANCE_SIZE'))
+    : 's-1vcpu-512mb-10gb';
+const INSTANCE_IMAGE = Deno.env.get('INSTANCE_IMAGE')
+    ? String(Deno.env.get('INSTANCE_IMAGE'))
+    : 'debian-12-x64';
 
 if (!DIGITAL_OCEAN_API_KEY) {
     throw `DIGITAL_OCEAN_API_KEY env variable was not provided.`;

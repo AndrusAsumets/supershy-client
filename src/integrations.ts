@@ -16,6 +16,7 @@ import {
     CLOUDFLARE_KV_NAMESPACE,
     CLOUDFLARE_API_KEY,
     CLOUDFLARE_BASE_URL,
+    INSTANCE_SIZE,
     INSTANCE_IMAGE,
     DIGITAL_OCEAN_API_KEY,
     DIGITAL_OCEAN_BASE_URL,
@@ -111,7 +112,7 @@ export const kv = {
 export const compute = {
 	digital_ocean: {
         regions: {
-            list: async function (proxy: any = null) {
+            list: async function (instanceSize: string, proxy: any = null) {
                 const headers = {
                     Authorization: `Bearer ${DIGITAL_OCEAN_API_KEY}`,
                 };
@@ -122,7 +123,11 @@ export const compute = {
 
                 const res = await fetch(`${DIGITAL_OCEAN_BASE_URL}/regions`, options);
                 const json: any = await res.json();
-                return json.regions;
+                const regions = json
+                    .regions
+                    .filter((region: any) => region.sizes.includes(instanceSize))
+                    .map((region: any) => region.slug)
+                return regions;
             },
         },
         instances: {
@@ -245,10 +250,27 @@ export const compute = {
                 return ip;
             },
         },
-        test: async function (proxy: any) {
-            logger.info(`Starting API test for ${proxy.url}.`);
-            await compute.digital_ocean.regions.list(proxy);
-            logger.info(`Finished API test for ${proxy.url}.`);
-        },
     },
+	ovh: {
+        regions: {
+            list: async function (proxy: any = null) {
+                const instanceImage = 'Debian+12';
+                const instanceSize = 'vps-starter-1-2-20';
+                const headers = {
+                    Accept: 'application/json',
+                };
+                const options: any = { method: 'GET', headers };
+                if (proxy) {
+                    options.client = Deno.createHttpClient({ proxy });
+                }
+                const res = await fetch(`https://us.ovh.com/engine/apiv6/vps/order/rule/datacenter?os=${instanceImage}&ovhSubsidiary=WE&planCode=${instanceSize}`, options);
+                const json: any = await res.json();
+                const regions = json
+                    .datacenters
+                    .filter((datacenter: any) => datacenter.status === 'available')
+                    .map((datacenter: any) => datacenter.datacenter.toLowerCase());
+                return regions;
+            },
+        },
+    }
 };

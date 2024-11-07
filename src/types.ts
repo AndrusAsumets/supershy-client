@@ -1,3 +1,10 @@
+export interface Provider {
+	instanceSize: string
+	instanceImage: string
+}
+
+export type Providers = Record<string, Provider>;
+
 export enum ConnectionTypes {
 	A = 'a'
 }
