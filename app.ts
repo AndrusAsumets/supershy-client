@@ -8,6 +8,9 @@ import {
     Connection,
 } from './src/types.ts';
 import * as core from './src/core.ts';
+import { logger as _logger } from './src/logger.ts';
+import { db as _db } from './src/db.ts';
+
 import * as lib from './src/lib.ts';
 import * as integrations from './src/integrations.ts';
 
@@ -34,8 +37,8 @@ import {
     CONNECTION_TYPES,
 } from './src/constants.ts';
 
-const logger = lib.logger.get();
-const db = lib.db.get();
+const logger = _logger.get();
+const db = _db.get();
 
 const init = async () => {
     const connection = db

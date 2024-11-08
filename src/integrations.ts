@@ -3,8 +3,9 @@
 import jwt from 'npm:jsonwebtoken';
 import * as lib from './lib.ts';
 import { exists } from 'https://deno.land/std@0.224.0/fs/mod.ts';
+import { logger as _logger } from './logger.ts';
 
-const logger = lib.logger.get();
+const logger = _logger.get();
 
 import {
     SRC_PATH,
@@ -16,7 +17,6 @@ import {
     CLOUDFLARE_KV_NAMESPACE,
     CLOUDFLARE_API_KEY,
     CLOUDFLARE_BASE_URL,
-    INSTANCE_SIZE,
     INSTANCE_IMAGE,
     DIGITAL_OCEAN_API_KEY,
     DIGITAL_OCEAN_BASE_URL,
