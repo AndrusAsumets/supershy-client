@@ -3,6 +3,7 @@
 import jwt from 'npm:jsonwebtoken';
 import * as lib from './lib.ts';
 import { exists } from 'https://deno.land/std@0.224.0/fs/mod.ts';
+import { URLSearchParams } from 'node:url';
 import { logger as _logger } from './logger.ts';
 
 const logger = _logger.get();
@@ -20,6 +21,11 @@ import {
     INSTANCE_IMAGE,
     DIGITAL_OCEAN_API_KEY,
     DIGITAL_OCEAN_BASE_URL,
+    CONTABO_BASE_URL,
+    CONTABO_CLIENT_ID,
+    CONTABO_CLIENT_SECRET,
+    CONTABO_API_USER,
+    CONTABO_API_PASSWORD,
 } from './constants.ts';
 
 import {
@@ -251,24 +257,41 @@ export const compute = {
             },
         },
     },
-	ovh: {
+	contabo: {
+        access_token: {
+            get: async function () {
+                const body = new URLSearchParams();
+                body.set('client_id', CONTABO_CLIENT_ID);
+                body.set('client_secret', CONTABO_CLIENT_SECRET);
+                body.set('username', CONTABO_API_USER);
+                body.set('password', CONTABO_API_PASSWORD);
+                body.set('grant_type', 'password');
+                const res = await fetch('https://auth.contabo.com/auth/realms/contabo/protocol/openid-connect/token', {
+                    method: 'POST',
+                    body,
+                });
+                const json = await res.json();
+                return json.access_token;
+            },
+        },
         regions: {
             list: async function (proxy: any = null) {
-                const instanceImage = 'Debian+12';
-                const instanceSize = 'vps-starter-1-2-20';
                 const headers = {
                     Accept: 'application/json',
+                    Authorization: `Bearer ${await compute.contabo.access_token.get()}`,
+                    'x-request-id': '51A87ECD-754E-4104-9C54-D01AD0F83406',
+                    'x-trace-id': '123213'
                 };
                 const options: any = { method: 'GET', headers };
                 if (proxy) {
                     options.client = Deno.createHttpClient({ proxy });
                 }
-                const res = await fetch(`https://us.ovh.com/engine/apiv6/vps/order/rule/datacenter?os=${instanceImage}&ovhSubsidiary=WE&planCode=${instanceSize}`, options);
+                const res = await fetch(`${CONTABO_BASE_URL}/data-centers?size=100`, options);
                 const json: any = await res.json();
                 const regions = json
-                    .datacenters
-                    .filter((datacenter: any) => datacenter.status === 'available')
-                    .map((datacenter: any) => datacenter.datacenter.toLowerCase());
+                    .data
+                    .filter((data: any) => data.capabilities.includes('VPS'))
+                    .map((data: any) => data.slug);
                 return regions;
             },
         },

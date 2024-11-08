@@ -9,7 +9,7 @@ import {
 } from './src/types.ts';
 import * as core from './src/core.ts';
 import { logger as _logger } from './src/logger.ts';
-import { db as _db } from './src/db.ts';
+import { db } from './src/db.ts';
 
 import * as lib from './src/lib.ts';
 import * as integrations from './src/integrations.ts';
@@ -38,10 +38,10 @@ import {
 } from './src/constants.ts';
 
 const logger = _logger.get();
-const db = _db.get();
 
 const init = async () => {
     const connection = db
+        .get()
         .chain
         .get(DB_TABLE)
         .filter((connection: Connection) => !connection.isDeleted)
@@ -90,7 +90,7 @@ const tunnel = async (
                     logger.info(`Finished API test for ${proxy.url}.`);
                 }
                 logger.info(`Connected SSH test tunnel to ${connection.instanceIp}:${port}.`);
-                await lib.db.update(connection);
+                await db.update(connection);
             }
         }
         catch(err) {
@@ -140,7 +140,7 @@ const rotate = async () => {
         const connectionUuid = uuidv7();
         const connectionType = connectionTypes[connectionIndex];
         logger.info(1, await integrations.compute.digital_ocean.regions.list(INSTANCE_SIZE));
-        logger.info(2, await integrations.compute.ovh.regions.list());
+        logger.info(2, await integrations.compute.contabo.regions.list());
         const instanceRegion = (await integrations.compute.digital_ocean.regions.list(INSTANCE_SIZE))
             .filter((region: any) =>
                 INSTANCE_REGIONS.length
@@ -205,8 +205,8 @@ const rotate = async () => {
         };
         connection = await integrations.kv.cloudflare.hostKey.update(connection, jwtSecret);
 
-        db.data.connections.push(connection);
-        db.write();
+        db.get().data.connections.push(connection);
+        db.get().write();
 
         activeConnections.push(connection);
         connectionIndex = connectionIndex + 1;

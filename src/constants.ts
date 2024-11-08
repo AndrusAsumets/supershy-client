@@ -39,6 +39,10 @@ const KEY_LENGTH = Deno.env.get('KEY_LENGTH')
     ? Number(Deno.env.get('KEY_LENGTH'))
     : 32768;
 const DIGITAL_OCEAN_API_KEY = Deno.env.get('DIGITAL_OCEAN_API_KEY');
+const CONTABO_CLIENT_ID = String(Deno.env.get('CONTABO_CLIENT_ID'));
+const CONTABO_CLIENT_SECRET = String(Deno.env.get('CONTABO_CLIENT_SECRET'));
+const CONTABO_API_USER = String(Deno.env.get('CONTABO_API_USER'));
+const CONTABO_API_PASSWORD = String(Deno.env.get('CONTABO_API_PASSWORD'));
 const CLOUDFLARE_ACCOUNT_ID = Deno.env.get('CLOUDFLARE_ACCOUNT_ID');
 const CLOUDFLARE_API_KEY = Deno.env.get('CLOUDFLARE_API_KEY');
 const CLOUDFLARE_KV_NAMESPACE = Deno.env.get('CLOUDFLARE_KV_NAMESPACE');
@@ -49,6 +53,7 @@ const INSTANCE_REGIONS = Deno.env.get('INSTANCE_REGIONS')
     : [];
 const TEST_PROXY_URL = `http://localhost:${LOCAL_TEST_PORT}`;
 const DIGITAL_OCEAN_BASE_URL = 'https://api.digitalocean.com/v2';
+const CONTABO_BASE_URL = 'https://api.contabo.com/v1';
 const CLOUDFLARE_BASE_URL = 'https://api.cloudflare.com/client/v4';
 const __DIRNAME = path.dirname(path.fromFileUrl(import.meta.url));
 const HOME_PATH = homedir();
@@ -109,6 +114,10 @@ export {
     KEY_ALGORITHM,
     KEY_LENGTH,
     DIGITAL_OCEAN_API_KEY,
+    CONTABO_CLIENT_ID,
+    CONTABO_CLIENT_SECRET,
+    CONTABO_API_USER,
+    CONTABO_API_PASSWORD,
     CLOUDFLARE_ACCOUNT_ID,
     CLOUDFLARE_API_KEY,
     CLOUDFLARE_KV_NAMESPACE,
@@ -117,6 +126,7 @@ export {
     INSTANCE_REGIONS,
     TEST_PROXY_URL,
     DIGITAL_OCEAN_BASE_URL,
+    CONTABO_BASE_URL,
     CLOUDFLARE_BASE_URL,
     __DIRNAME,
     HOME_PATH,
