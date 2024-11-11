@@ -21,11 +21,8 @@ import {
     INSTANCE_IMAGE,
     DIGITAL_OCEAN_API_KEY,
     DIGITAL_OCEAN_BASE_URL,
-    CONTABO_BASE_URL,
-    CONTABO_CLIENT_ID,
-    CONTABO_CLIENT_SECRET,
-    CONTABO_API_USER,
-    CONTABO_API_PASSWORD,
+    VPSSERVER_CLIENT_ID,
+    VPSSERVER_SECRET,
 } from './constants.ts';
 
 import {
@@ -257,41 +254,40 @@ export const compute = {
             },
         },
     },
-	contabo: {
+	vpsserver: {
         access_token: {
             get: async function () {
-                const body = new URLSearchParams();
-                body.set('client_id', CONTABO_CLIENT_ID);
-                body.set('client_secret', CONTABO_CLIENT_SECRET);
-                body.set('username', CONTABO_API_USER);
-                body.set('password', CONTABO_API_PASSWORD);
-                body.set('grant_type', 'password');
-                const res = await fetch('https://auth.contabo.com/auth/realms/contabo/protocol/openid-connect/token', {
+                const headers = {
+                    'Content-Type': 'application/json',
+                };
+                const body = {
+                    'clientId': VPSSERVER_CLIENT_ID,
+                    'secret': VPSSERVER_SECRET,
+                };
+                const res = await fetch('https://console.vpsserver.com/service/authenticate', {
                     method: 'POST',
-                    body,
+                    headers,
+                    body: JSON.stringify(body)
                 });
                 const json = await res.json();
-                return json.access_token;
+                return json.authentication;
             },
         },
         regions: {
             list: async function (proxy: any = null) {
+                const accessToken = await compute.vpsserver.access_token.get();
                 const headers = {
                     Accept: 'application/json',
-                    Authorization: `Bearer ${await compute.contabo.access_token.get()}`,
-                    'x-request-id': '51A87ECD-754E-4104-9C54-D01AD0F83406',
-                    'x-trace-id': '123213'
+                    Authorization: `Bearer ${accessToken}`
                 };
                 const options: any = { method: 'GET', headers };
                 if (proxy) {
                     options.client = Deno.createHttpClient({ proxy });
                 }
-                const res = await fetch(`${CONTABO_BASE_URL}/data-centers?size=100`, options);
+                const res = await fetch(`https://console.vpsserver.com/svc/serverCreate/V2/datacenters`, options);
                 const json: any = await res.json();
                 const regions = json
-                    .data
-                    .filter((data: any) => data.capabilities.includes('VPS'))
-                    .map((data: any) => data.slug);
+                    .map((data: any) => data.id);
                 return regions;
             },
         },

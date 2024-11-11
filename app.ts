@@ -140,7 +140,7 @@ const rotate = async () => {
         const connectionUuid = uuidv7();
         const connectionType = connectionTypes[connectionIndex];
         logger.info(1, await integrations.compute.digital_ocean.regions.list(INSTANCE_SIZE));
-        logger.info(2, await integrations.compute.contabo.regions.list());
+        logger.info(2, await integrations.compute.vpsserver.regions.list());
         const instanceRegion = (await integrations.compute.digital_ocean.regions.list(INSTANCE_SIZE))
             .filter((region: any) =>
                 INSTANCE_REGIONS.length
