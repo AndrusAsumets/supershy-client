@@ -2,6 +2,7 @@
 
 import 'jsr:@std/dotenv/load';
 import * as crypto from 'node:crypto';
+import password from 'npm:secure-random-password';
 import { v7 as uuidv7 } from 'npm:uuid';
 import {
     ConnectionTypes,
@@ -150,21 +151,41 @@ const rotate = async () => {
                     : true
             )
             .sort(() => (Math.random() > 0.5) ? 1 : -1)[0];
-        const instanceName = `${APP_ID}-${ENV}-${connectionType}-${connectionUuid}`;
+        const instanceName = `${APP_ID}-${connectionType}-${connectionUuid}`.substring(0, 40);
         const keyPath = `${KEY_PATH}/${instanceName}`;
-        const passphrase = crypto.randomBytes(64).toString('hex');
-        const publicKeyId = await integrations.shell.private_key.create(keyPath, instanceName, passphrase);
+        const passphrase = password.randomPassword({ length: 32, characters: password.lower + password.upper + password.digits });
+        const publicKey = await integrations.shell.private_key.create(keyPath, passphrase);
+        const publicKeyId = await integrations.compute.digital_ocean.keys.add(publicKey, instanceName);
         const jwtSecret = crypto.randomBytes(64).toString('hex');
         const sshPort = lib.randomNumberFromRange(SSH_PORT_RANGE[0], SSH_PORT_RANGE[1]);
 
+        const data = {
+            "disk_src_0": "EU:6000C295933dc37683c407e8674fe145",
+            "datacenter": "EU",
+            "name": instanceName,
+            "cpu": "1A",
+            "ram": "1024",
+            "password": passphrase,
+            "managed": false,
+            "backup": false,
+            "power": true,
+            "billing": "hourly",
+            "disk_size_0": "5",
+            "network_name_0": "wan",
+            "selectedSSHKeyValue": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCyGRmSGEd8zs+iR7jqGXwRzqdDYqXeP1xnU1l80X9B8vE4whv3C/7ah0oQRWHHMbyn5FWm8e4HyU7t2SaTgR4kD3nAFtvlrfJHFG6BStpYw7DznLivbyn0L407AMu3WcCrMiQqAnB2Ys+omsqxB7DlvdEDMRTw3OpWUvBipXjA4rF31cLlZnpPAmIUJ3sdCs1I0I727dInyA296d5VvS4uv7qq6YJodVXqbLn9rXBGKqlfCf91z/oyqtL1Ew/Zgaeq6vEIE/UfrF/Ah69z2Z4808dp2wbUyNtpHu/HKPbxEY8FsDzQrRbfPy+CwTYpnKUOz4+IZbxWBalY+ErynR49 rsa-key-20230814"
+        }
+        console.log(data)
+        //const instance = await integrations.compute.vpsserver.instances.create(data);
+        //logger.info('Created VPSServer instance', instance);
         const instanceId = await integrations.compute.digital_ocean.instances.create({
-            region: instanceRegion,
             name: instanceName,
+            region: instanceRegion,
             size: INSTANCE_SIZE,
-            publicKeyId,
-            userData: core.getUserData(connectionUuid, sshPort, jwtSecret),
+            image: INSTANCE_IMAGE,
+            ssh_keys: [publicKeyId],
+            user_data: core.getUserData(connectionUuid, sshPort, jwtSecret),
         });
-        logger.info('Created instance.', {
+        logger.info('Created DigitalOcean instance.', {
             instanceName,
             instanceRegion,
             instanceSize: INSTANCE_SIZE,

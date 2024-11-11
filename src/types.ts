@@ -42,10 +42,23 @@ export type DatabaseData = {
 	connections: Connection[];
 }
 
-export interface CreateInstance {
+export interface CreateDigitalOceanInstance {
 	region: string
 	name: string
 	size: string
-	publicKeyId: string
-	userData: string
+	image: string
+	ssh_keys: [string]
+	user_data: string
+}
+
+export interface CreateVPSserverInstance {
+	datacenter: string;
+	name: string
+	cpu: string
+	password: string
+	managed: boolean
+	backup: boolean
+	power: boolean
+	billing: string
+	selectedSSHKeyValue: string
 }

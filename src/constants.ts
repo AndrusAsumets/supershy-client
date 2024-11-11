@@ -52,7 +52,7 @@ const INSTANCE_REGIONS = Deno.env.get('INSTANCE_REGIONS')
     : [];
 const TEST_PROXY_URL = `http://localhost:${LOCAL_TEST_PORT}`;
 const DIGITAL_OCEAN_BASE_URL = 'https://api.digitalocean.com/v2';
-const CONTABO_BASE_URL = 'https://api.contabo.com/v1';
+const VPSSERVER_BASE_URL = 'https://console.vpsserver.com/service';
 const CLOUDFLARE_BASE_URL = 'https://api.cloudflare.com/client/v4';
 const __DIRNAME = path.dirname(path.fromFileUrl(import.meta.url));
 const HOME_PATH = homedir();
@@ -124,7 +124,7 @@ export {
     INSTANCE_REGIONS,
     TEST_PROXY_URL,
     DIGITAL_OCEAN_BASE_URL,
-    CONTABO_BASE_URL,
+    VPSSERVER_BASE_URL,
     CLOUDFLARE_BASE_URL,
     __DIRNAME,
     HOME_PATH,

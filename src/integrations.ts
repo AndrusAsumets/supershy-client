@@ -18,23 +18,23 @@ import {
     CLOUDFLARE_KV_NAMESPACE,
     CLOUDFLARE_API_KEY,
     CLOUDFLARE_BASE_URL,
-    INSTANCE_IMAGE,
     DIGITAL_OCEAN_API_KEY,
     DIGITAL_OCEAN_BASE_URL,
     VPSSERVER_CLIENT_ID,
     VPSSERVER_SECRET,
+    VPSSERVER_BASE_URL,
 } from './constants.ts';
 
 import {
     Connection,
-    CreateInstance,
+    CreateDigitalOceanInstance,
+    CreateVPSserverInstance,
 } from './types.ts';
 
 export const shell = {
 	private_key: {
 		create: async function (
             keyPath: string,
-            instanceName: string,
             passphrase: string,
         ) {
             const cmd =
@@ -43,8 +43,7 @@ export const shell = {
             const process = Deno.run({ cmd: cmd.split(' ') });
             await process.status();
             const publicKey = await Deno.readTextFile(`${keyPath}.pub`);
-            const publicKeyId = await compute.digital_ocean.keys.add(publicKey, instanceName);
-            return publicKeyId;
+            return publicKey;
         }
     },
     pkill: async function (input: string) {
@@ -134,24 +133,15 @@ export const compute = {
             },
         },
         instances: {
-            create: async function (args: CreateInstance) {
-                const { region, name, size, publicKeyId, userData } = args;
+            create: async function (args: CreateDigitalOceanInstance) {
                 const headers = {
                     Authorization: `Bearer ${DIGITAL_OCEAN_API_KEY}`,
                     'Content-Type': 'application/json',
                 };
-                const body = {
-                    name,
-                    region,
-                    size,
-                    image: INSTANCE_IMAGE,
-                    ssh_keys: [publicKeyId],
-                    user_data: userData,
-                };
                 const res = await fetch(`${DIGITAL_OCEAN_BASE_URL}/droplets`, {
                     method: 'POST',
                     headers,
-                    body: JSON.stringify(body),
+                    body: JSON.stringify(args),
                 });
                 const json: any = await res.json();
                 return json.droplet.id;
@@ -264,7 +254,7 @@ export const compute = {
                     'clientId': VPSSERVER_CLIENT_ID,
                     'secret': VPSSERVER_SECRET,
                 };
-                const res = await fetch('https://console.vpsserver.com/service/authenticate', {
+                const res = await fetch(`${VPSSERVER_BASE_URL}/authenticate`, {
                     method: 'POST',
                     headers,
                     body: JSON.stringify(body)
@@ -289,6 +279,23 @@ export const compute = {
                 const regions = json
                     .map((data: any) => data.id);
                 return regions;
+            },
+        },
+        instances: {
+            create: async function (args: CreateVPSserverInstance) {
+                const accessToken = await compute.vpsserver.access_token.get();
+                const headers = {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    Authorization: `Bearer ${accessToken}`
+                };
+                const res = await fetch(`${VPSSERVER_BASE_URL}/server`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(args),
+                });
+                const json: any = await res.json();
+                return json[0];
             },
         },
     }
