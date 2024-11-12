@@ -9,9 +9,15 @@ export enum ConnectionTypes {
 	A = 'a'
 }
 
+export enum InstanceProviders {
+	DIGITAL_OCEAN = 'digital_ocean',
+	HETZNER = 'hetzner',
+}
+
 export interface Connection {
 	connectionUuid: string
 	connectionType: ConnectionTypes
+	instanceProvider: InstanceProviders
 	instanceId: number
 	instanceName: string
 	instanceIp: string
@@ -51,14 +57,10 @@ export interface CreateDigitalOceanInstance {
 	user_data: string
 }
 
-export interface CreateVPSserverInstance {
-	datacenter: string;
+export interface CreateHetznerInstance {
+	datacenter: string
+	image: string
 	name: string
-	cpu: string
-	password: string
-	managed: boolean
-	backup: boolean
-	power: boolean
-	billing: string
-	selectedSSHKeyValue: string
+	server_type: string
+	user_data: string
 }

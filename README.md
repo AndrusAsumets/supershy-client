@@ -81,11 +81,6 @@ DIGITAL_OCEAN_API_KEY=
  -> ssh_key: create, read, delete.
  -> Click to copy the API key.
 
-CONTABO_CLIENT_ID=
-CONTABO_CLIENT_SECRET=
-CONTABO_API_USER=
-CONTABO_API_PASSWORD=
-
 CLOUDFLARE_ACCOUNT_ID=
  -> Open https://dash.cloudflare.com
  -> Workers & Pages.

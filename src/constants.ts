@@ -1,7 +1,7 @@
 import * as path from 'https://deno.land/std@0.224.0/path/mod.ts';
 import { homedir } from 'node:os';
 
-import { Providers, ConnectionTypes } from './types.ts';
+import { ConnectionTypes } from './types.ts';
 
 const APP_ID = Deno.env.get('APP_ID')
     ? String(Deno.env.get('APP_ID'))
@@ -39,9 +39,7 @@ const KEY_LENGTH = Deno.env.get('KEY_LENGTH')
     ? Number(Deno.env.get('KEY_LENGTH'))
     : 32768;
 const DIGITAL_OCEAN_API_KEY = Deno.env.get('DIGITAL_OCEAN_API_KEY');
-const CONTABO_CLIENT_ID = String(Deno.env.get('CONTABO_CLIENT_ID'));
-const VPSSERVER_CLIENT_ID = String(Deno.env.get('VPSSERVER_CLIENT_ID'));
-const VPSSERVER_SECRET = String(Deno.env.get('VPSSERVER_SECRET'));
+const HETZNER_API_KEY = String(Deno.env.get('HETZNER_API_KEY'));
 const CLOUDFLARE_ACCOUNT_ID = Deno.env.get('CLOUDFLARE_ACCOUNT_ID');
 const CLOUDFLARE_API_KEY = Deno.env.get('CLOUDFLARE_API_KEY');
 const CLOUDFLARE_KV_NAMESPACE = Deno.env.get('CLOUDFLARE_KV_NAMESPACE');
@@ -52,7 +50,7 @@ const INSTANCE_REGIONS = Deno.env.get('INSTANCE_REGIONS')
     : [];
 const TEST_PROXY_URL = `http://localhost:${LOCAL_TEST_PORT}`;
 const DIGITAL_OCEAN_BASE_URL = 'https://api.digitalocean.com/v2';
-const VPSSERVER_BASE_URL = 'https://console.vpsserver.com/service';
+const HETZNER_BASE_URL = 'https://api.hetzner.cloud/v1';
 const CLOUDFLARE_BASE_URL = 'https://api.cloudflare.com/client/v4';
 const __DIRNAME = path.dirname(path.fromFileUrl(import.meta.url));
 const HOME_PATH = homedir();
@@ -68,22 +66,18 @@ const GENERATE_SSH_KEY_FILE_NAME = 'generate-ssh-key.exp';
 const CONNECT_SSH_TUNNEL_FILE_NAME = 'connect-ssh-tunnel.exp';
 const USER = 'root';
 const CONNECTION_TYPES = [ConnectionTypes.A, ConnectionTypes.A];
-const PROVIDERS: Providers = {
-    'digital_ocean': {
-        instanceImage: 'debian-12-x64',
-        instanceSize: 's-1vcpu-512mb-10gb',
-    },
-    'ovh': {
-        instanceImage: 'Debian+12',
-        instanceSize: 'vps-starter-1-2-20',
-    }
-}
-const INSTANCE_SIZE = Deno.env.get('INSTANCE_SIZE')
-    ? String(Deno.env.get('INSTANCE_SIZE'))
+const DIGITAL_OCEAN_INSTANCE_SIZE = Deno.env.get('DIGITAL_OCEAN_INSTANCE_SIZE')
+    ? String(Deno.env.get('DIGITAL_OCEAN_INSTANCE_SIZE'))
     : 's-1vcpu-512mb-10gb';
-const INSTANCE_IMAGE = Deno.env.get('INSTANCE_IMAGE')
-    ? String(Deno.env.get('INSTANCE_IMAGE'))
+const HETZNER_SERVER_TYPE = Deno.env.get('HETZNER_SERVER_TYPE')
+    ? String(Deno.env.get('HETZNER_SERVER_TYPE'))
+    : 'cax11';
+const DIGITAL_OCEAN_INSTANCE_IMAGE = Deno.env.get('DIGITAL_OCEAN_INSTANCE_IMAGE')
+    ? String(Deno.env.get('DIGITAL_OCEAN_INSTANCE_IMAGE'))
     : 'debian-12-x64';
+const HETZNER_INSTANCE_IMAGE = Deno.env.get('HETZNER_INSTANCE_IMAGE')
+    ? String(Deno.env.get('HETZNER_INSTANCE_IMAGE'))
+    : 'debian-12';
 
 if (!DIGITAL_OCEAN_API_KEY) {
     throw `DIGITAL_OCEAN_API_KEY env variable was not provided.`;
@@ -113,18 +107,18 @@ export {
     KEY_ALGORITHM,
     KEY_LENGTH,
     DIGITAL_OCEAN_API_KEY,
-    CONTABO_CLIENT_ID,
-    VPSSERVER_CLIENT_ID,
-    VPSSERVER_SECRET,
+    HETZNER_API_KEY,
     CLOUDFLARE_ACCOUNT_ID,
     CLOUDFLARE_API_KEY,
     CLOUDFLARE_KV_NAMESPACE,
-    INSTANCE_SIZE,
-    INSTANCE_IMAGE,
+    DIGITAL_OCEAN_INSTANCE_SIZE,
+    DIGITAL_OCEAN_INSTANCE_IMAGE,
     INSTANCE_REGIONS,
     TEST_PROXY_URL,
     DIGITAL_OCEAN_BASE_URL,
-    VPSSERVER_BASE_URL,
+    HETZNER_BASE_URL,
+    HETZNER_SERVER_TYPE,
+    HETZNER_INSTANCE_IMAGE,
     CLOUDFLARE_BASE_URL,
     __DIRNAME,
     HOME_PATH,

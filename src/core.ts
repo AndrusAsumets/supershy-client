@@ -26,6 +26,8 @@ runcmd:
     - echo 'Port ${sshPort}' >> /etc/ssh/sshd_config
     - sudo systemctl restart ssh
 
+    - sudo apt update
+    - sudo apt dist-upgrade -y
     - sudo apt install tinyproxy -y
     - echo 'Port ${REMOTE_PORT}' >> tinyproxy.conf
     - echo 'Listen 0.0.0.0' >> tinyproxy.conf

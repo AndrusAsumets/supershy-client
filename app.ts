@@ -7,6 +7,7 @@ import { v7 as uuidv7 } from 'npm:uuid';
 import {
     ConnectionTypes,
     Connection,
+    InstanceProviders,
 } from './src/types.ts';
 import * as core from './src/core.ts';
 import { logger as _logger } from './src/logger.ts';
@@ -26,9 +27,6 @@ import {
     REMOTE_PORT,
     KEY_ALGORITHM,
     TEST_PROXY_URL,
-    INSTANCE_SIZE,
-    INSTANCE_IMAGE,
-    INSTANCE_REGIONS,
     __DIRNAME,
     DATA_PATH,
     KEY_PATH,
@@ -87,7 +85,7 @@ const tunnel = async (
             if (isConnected) {
                 if (proxy) {
                     logger.info(`Starting API test for ${proxy.url}.`);
-                    await integrations.compute.digital_ocean.regions.list(INSTANCE_SIZE, proxy);
+                    await integrations.compute[connection.instanceProvider].regions.list(proxy);
                     logger.info(`Finished API test for ${proxy.url}.`);
                 }
                 logger.info(`Connected SSH test tunnel to ${connection.instanceIp}:${port}.`);
@@ -129,20 +127,21 @@ const cleanup = async (dropletIdsToKeep: number[]) => {
 };
 
 const rotate = async () => {
+    const instanceProvider = InstanceProviders.HETZNER;
     const activeConnections: Connection[] = [];
     const initConnection = await init();
     initConnection && activeConnections.push(initConnection);
     const connectionTypes: ConnectionTypes[] = initConnection
         ? [ConnectionTypes.A]
         : CONNECTION_TYPES;
-    let connectionIndex = 0;
 
+    let connectionIndex = 0;
     while (connectionIndex < connectionTypes.length) {
         const connectionUuid = uuidv7();
         const connectionType = connectionTypes[connectionIndex];
-        logger.info(1, await integrations.compute.digital_ocean.regions.list(INSTANCE_SIZE));
-        logger.info(2, await integrations.compute.vpsserver.regions.list());
-        const instanceRegion = (await integrations.compute.digital_ocean.regions.list(INSTANCE_SIZE))
+        const instanceRegion = (await integrations.compute[instanceProvider].regions.list())
+            .sort(() => (Math.random() > 0.5) ? 1 : -1)[0];
+        /*
             .filter((region: any) =>
                 INSTANCE_REGIONS.length
                     ? INSTANCE_REGIONS
@@ -150,61 +149,44 @@ const rotate = async () => {
                         .includes(region)
                     : true
             )
-            .sort(() => (Math.random() > 0.5) ? 1 : -1)[0];
-        const instanceName = `${APP_ID}-${connectionType}-${connectionUuid}`.substring(0, 40);
+        */
+
+        const instanceName = `${APP_ID}-${ENV}-${connectionType}-${connectionUuid}`;
+        const { instanceSize, instanceImage } = integrations.compute[instanceProvider];
         const keyPath = `${KEY_PATH}/${instanceName}`;
         const passphrase = password.randomPassword({ length: 32, characters: password.lower + password.upper + password.digits });
         const publicKey = await integrations.shell.private_key.create(keyPath, passphrase);
-        const publicKeyId = await integrations.compute.digital_ocean.keys.add(publicKey, instanceName);
+        const publicKeyId = await integrations.compute[instanceProvider].keys.add(publicKey, instanceName);
         const jwtSecret = crypto.randomBytes(64).toString('hex');
         const sshPort = lib.randomNumberFromRange(SSH_PORT_RANGE[0], SSH_PORT_RANGE[1]);
-
-        const data = {
-            "disk_src_0": "EU:6000C295933dc37683c407e8674fe145",
-            "datacenter": "EU",
-            "name": instanceName,
-            "cpu": "1A",
-            "ram": "1024",
-            "password": passphrase,
-            "managed": false,
-            "backup": false,
-            "power": true,
-            "billing": "hourly",
-            "disk_size_0": "5",
-            "network_name_0": "wan",
-            "selectedSSHKeyValue": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCyGRmSGEd8zs+iR7jqGXwRzqdDYqXeP1xnU1l80X9B8vE4whv3C/7ah0oQRWHHMbyn5FWm8e4HyU7t2SaTgR4kD3nAFtvlrfJHFG6BStpYw7DznLivbyn0L407AMu3WcCrMiQqAnB2Ys+omsqxB7DlvdEDMRTw3OpWUvBipXjA4rF31cLlZnpPAmIUJ3sdCs1I0I727dInyA296d5VvS4uv7qq6YJodVXqbLn9rXBGKqlfCf91z/oyqtL1Ew/Zgaeq6vEIE/UfrF/Ah69z2Z4808dp2wbUyNtpHu/HKPbxEY8FsDzQrRbfPy+CwTYpnKUOz4+IZbxWBalY+ErynR49 rsa-key-20230814"
-        }
-        console.log(data)
-        //const instance = await integrations.compute.vpsserver.instances.create(data);
-        //logger.info('Created VPSServer instance', instance);
-        const instanceId = await integrations.compute.digital_ocean.instances.create({
-            name: instanceName,
+        const userData = core.getUserData(connectionUuid, sshPort, jwtSecret);
+        const instanceCreate = {
+            datacenter: instanceRegion,
             region: instanceRegion,
-            size: INSTANCE_SIZE,
-            image: INSTANCE_IMAGE,
+            image: instanceImage,
+            name: instanceName,
+            size: instanceSize,
+            server_type: instanceSize,
             ssh_keys: [publicKeyId],
-            user_data: core.getUserData(connectionUuid, sshPort, jwtSecret),
-        });
-        logger.info('Created DigitalOcean instance.', {
-            instanceName,
-            instanceRegion,
-            instanceSize: INSTANCE_SIZE,
-            instanceId,
-            instancePublicKeyId: publicKeyId,
-        });
-
-        const instanceIp = await integrations.compute.digital_ocean.ips.get(instanceId);
+            user_data: userData
+        }
+        const instance = await integrations.compute[instanceProvider].instances.create(instanceCreate);
+        logger.info(`Created ${instanceProvider} instance.`, instanceCreate, instance);
+        const instanceIp = instance.ip
+            ? instance.ip
+            : await integrations.compute.digital_ocean.ips.get(instance.id);
         logger.info(`Found network at ${instanceIp}.`);
 
         let connection: Connection = {
             connectionUuid,
             appId: APP_ID,
-            instanceId,
+            instanceProvider,
+            instanceId: instance.id,
             instanceName,
             instanceIp,
             instanceRegion,
-            instanceSize: INSTANCE_SIZE,
-            instanceImage: INSTANCE_IMAGE,
+            instanceSize,
+            instanceImage,
             instancePublicKeyId: publicKeyId,
             connectionType,
             user: USER,

@@ -3,7 +3,6 @@
 import jwt from 'npm:jsonwebtoken';
 import * as lib from './lib.ts';
 import { exists } from 'https://deno.land/std@0.224.0/fs/mod.ts';
-import { URLSearchParams } from 'node:url';
 import { logger as _logger } from './logger.ts';
 
 const logger = _logger.get();
@@ -18,17 +17,20 @@ import {
     CLOUDFLARE_KV_NAMESPACE,
     CLOUDFLARE_API_KEY,
     CLOUDFLARE_BASE_URL,
+    HETZNER_API_KEY,
+    HETZNER_BASE_URL,
+    HETZNER_SERVER_TYPE,
+    HETZNER_INSTANCE_IMAGE,
     DIGITAL_OCEAN_API_KEY,
     DIGITAL_OCEAN_BASE_URL,
-    VPSSERVER_CLIENT_ID,
-    VPSSERVER_SECRET,
-    VPSSERVER_BASE_URL,
+    DIGITAL_OCEAN_INSTANCE_SIZE,
+    DIGITAL_OCEAN_INSTANCE_IMAGE,
 } from './constants.ts';
 
 import {
     Connection,
     CreateDigitalOceanInstance,
-    CreateVPSserverInstance,
+    CreateHetznerInstance,
 } from './types.ts';
 
 export const shell = {
@@ -113,8 +115,10 @@ export const kv = {
 
 export const compute = {
 	digital_ocean: {
+        instanceSize: DIGITAL_OCEAN_INSTANCE_SIZE,
+        instanceImage: DIGITAL_OCEAN_INSTANCE_IMAGE,
         regions: {
-            list: async function (instanceSize: string, proxy: any = null) {
+            list: async function (proxy: any = null) {
                 const headers = {
                     Authorization: `Bearer ${DIGITAL_OCEAN_API_KEY}`,
                 };
@@ -122,12 +126,11 @@ export const compute = {
                 if (proxy) {
                     options.client = Deno.createHttpClient({ proxy });
                 }
-
                 const res = await fetch(`${DIGITAL_OCEAN_BASE_URL}/regions`, options);
                 const json: any = await res.json();
                 const regions = json
                     .regions
-                    .filter((region: any) => region.sizes.includes(instanceSize))
+                    .filter((region: any) => region.sizes.includes(compute.digital_ocean.instanceSize))
                     .map((region: any) => region.slug)
                 return regions;
             },
@@ -144,7 +147,10 @@ export const compute = {
                     body: JSON.stringify(args),
                 });
                 const json: any = await res.json();
-                return json.droplet.id;
+                return {
+                    id: json.droplet.id,
+                    ip: null,
+                };
             },
             list: async function () {
                 const headers = {
@@ -244,58 +250,63 @@ export const compute = {
             },
         },
     },
-	vpsserver: {
-        access_token: {
-            get: async function () {
-                const headers = {
-                    'Content-Type': 'application/json',
-                };
-                const body = {
-                    'clientId': VPSSERVER_CLIENT_ID,
-                    'secret': VPSSERVER_SECRET,
-                };
-                const res = await fetch(`${VPSSERVER_BASE_URL}/authenticate`, {
-                    method: 'POST',
-                    headers,
-                    body: JSON.stringify(body)
-                });
-                const json = await res.json();
-                return json.authentication;
-            },
-        },
+	hetzner: {
+        instanceSize: HETZNER_SERVER_TYPE,
+        instanceImage: HETZNER_INSTANCE_IMAGE,
         regions: {
             list: async function (proxy: any = null) {
-                const accessToken = await compute.vpsserver.access_token.get();
                 const headers = {
-                    Accept: 'application/json',
-                    Authorization: `Bearer ${accessToken}`
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${HETZNER_API_KEY}`
                 };
                 const options: any = { method: 'GET', headers };
                 if (proxy) {
                     options.client = Deno.createHttpClient({ proxy });
                 }
-                const res = await fetch(`https://console.vpsserver.com/svc/serverCreate/V2/datacenters`, options);
+                const res = await fetch(`${HETZNER_BASE_URL}/datacenters`, options);
                 const json: any = await res.json();
                 const regions = json
-                    .map((data: any) => data.id);
+                    .datacenters
+                    .map((data: any) => data.name);
                 return regions;
             },
         },
         instances: {
-            create: async function (args: CreateVPSserverInstance) {
-                const accessToken = await compute.vpsserver.access_token.get();
+            create: async function (args: CreateHetznerInstance) {
                 const headers = {
                     'Content-Type': 'application/json',
-                    Accept: 'application/json',
-                    Authorization: `Bearer ${accessToken}`
+                    Authorization: `Bearer ${HETZNER_API_KEY}`
                 };
-                const res = await fetch(`${VPSSERVER_BASE_URL}/server`, {
+                const res = await fetch(`${HETZNER_BASE_URL}/servers`, {
                     method: 'POST',
                     headers,
                     body: JSON.stringify(args),
                 });
                 const json: any = await res.json();
-                return json[0];
+                console.log(json)
+                return {
+                    id: json.server.id,
+                    ip: json.server.public_net.ipv4.ip,
+                };
+            },
+        },
+        keys: {
+            add: async function(publicKey: string, name: string) {
+                const headers = {
+                    Authorization: `Bearer ${HETZNER_API_KEY}`,
+                    'Content-Type': 'application/json',
+                };
+                const body = {
+                    name: name,
+                    'public_key': publicKey,
+                };
+                const res = await fetch(`${HETZNER_BASE_URL}/ssh_keys`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(body),
+                });
+                const json: any = await res.json();
+                return json['ssh_key']['id'];
             },
         },
     }
