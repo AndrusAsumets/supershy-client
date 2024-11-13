@@ -144,7 +144,7 @@ const cleanup = async (instanceIdsToKeep: number[]) => {
 };
 
 const rotate = async () => {
-    const instanceProvider: InstanceProvider = lib.randChoice(INSTANCE_PROVIDERS);
+    const instanceProvider: InstanceProvider = lib.randomChoice(INSTANCE_PROVIDERS);
     const activeConnections: Connection[] = [];
     const initConnection = await init();
     initConnection && activeConnections.push(initConnection);
@@ -157,7 +157,7 @@ const rotate = async () => {
         const connectionUuid = uuidv7();
         const connectionType = connectionTypes[connectionIndex];
         const instanceRegions = await integrations.compute[instanceProvider].regions.list();
-        const instanceRegion: string = lib.randChoice(instanceRegions);
+        const instanceRegion: string = lib.randomChoice(instanceRegions);
         const instanceName = `${APP_ID}-${ENV}-${connectionType}-${connectionUuid}`;
         const { instanceSize, instanceImage } = integrations.compute[instanceProvider];
         const keyPath = `${KEY_PATH}/${instanceName}`;
