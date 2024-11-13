@@ -265,7 +265,7 @@ export const compute = {
                 }
                 const res = await fetch(`${HETZNER_BASE_URL}/datacenters`, options);
                 const json: any = await res.json();
-                const serverTypeId = await compute.hetzner.serverTypes.getId(compute.hetzner.instanceSize);
+                const serverTypeId = await compute.hetzner.serverTypes.getId(proxy, compute.hetzner.instanceSize);
                 const regions = json
                     .datacenters
                     .filter((data: any) => data.server_types.available.includes(serverTypeId))
@@ -274,15 +274,16 @@ export const compute = {
             },
         },
         serverTypes: {
-            getId: async function (instanceSize: string) {
+            getId: async function (proxy: any = null, instanceSize: string) {
                 const headers = {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${HETZNER_API_KEY}`
                 };
-                const res = await fetch(`${HETZNER_BASE_URL}/server_types?per_page=50`, {
-                    method: 'GET',
-                    headers,
-                });
+                const options: any = { method: 'GET', headers };
+                if (proxy) {
+                    options.client = Deno.createHttpClient({ proxy });
+                }
+                const res = await fetch(`${HETZNER_BASE_URL}/server_types?per_page=50`, options);
                 const json: any = await res.json();
                 const serverTypeId = json.server_types
                     .filter((serverType: any) => serverType.name === instanceSize)[0].id;
