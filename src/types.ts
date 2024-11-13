@@ -1,27 +1,40 @@
-export enum ConnectionTypes {
+export interface Provider {
+	instanceSize: string
+	instanceImage: string
+}
+
+export type Providers = Record<string, Provider>;
+
+export enum ConnectionType {
 	A = 'a'
 }
 
+export enum InstanceProvider {
+	DIGITAL_OCEAN = 'digital_ocean',
+	HETZNER = 'hetzner',
+}
+
 export interface Connection {
-	connectionId: string
-	connectionType: ConnectionTypes
-	dropletId: number
-	dropletName: string
-	dropletIp: string
-	dropletRegion: string
-	dropletSize: string
-	dropletImage: string
-	dropletPublicKeyId: number
+	connectionUuid: string
+	connectionType: ConnectionType
+	instanceProvider: InstanceProvider
+	instanceId: number
+	instanceName: string
+	instanceIp: string
+	instanceRegion: string
+	instanceSize: string
+	instanceImage: string
+	instancePublicKeyId: number
 	user: string
 	passphrase: string
-	localTestPort: number
-	localPort: number
-	remotePort: number
+	proxyLocalTestPort: number
+	proxyLocalPort: number
+	proxyRemotePort: number
 	keyAlgorithm: string
 	keyPath: string
 	connectionString: string
 	appId: string
-	loopIntervalMin: number
+	loopIntervalSec: number
 	sshPort: number
 	hostKey: string
 	sshLogOutputPath: string
@@ -35,10 +48,19 @@ export type DatabaseData = {
 	connections: Connection[];
 }
 
-export interface CreateDroplet {
+export interface CreateDigitalOceanInstance {
 	region: string
 	name: string
 	size: string
-	publicKeyId: string
-	userData: string
+	image: string
+	ssh_keys: [string]
+	user_data: string
+}
+
+export interface CreateHetznerInstance {
+	datacenter: string
+	image: string
+	name: string
+	server_type: string
+	user_data: string
 }

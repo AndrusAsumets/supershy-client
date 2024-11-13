@@ -1,23 +1,24 @@
 Supershy is a DIY SSH tunnel proxy with a rotating exit node.
 
-During its initiation, the client creates two new Droplets (let's call them
-First Node and Second Node) inside Digital Ocean containing nothing else but a
-simple Tinyproxy proxy daemon. Next up, it creates a SSH tunnel from your
-machine to the First Node. If you then change your browser's (or any other app
-or a system which has basic support for proxying) proxy settings to
-http://localhost:8888, all of your network activity will be routed using Droplet
-via SSH tunnel. After 30 minutes, the client will automatically connect to the
-Second Node, then creates a new fresh First Node instance for future use, and
-then eventually sunsets the original First Node by destrying it for good. The
-cycle of renewing your exit nodes (and thus IP addresses) will keep repeating
-itself as long as you have the client running. This way you can get stay pretty
-private, but still enjoy decent internet speeds.
+During its initiation, the client creates two new VPS instances (let's call them
+First Node and Second Node) inside Digital Ocean and/or Hetzner containing
+nothing else but a simple Tinyproxy proxy daemon. Next up, it creates a SSH
+tunnel from your machine to the First Node. If you then change your browser's
+(or any other app or a system which has basic support for proxying) proxy
+settings to http://localhost:8888, all of your network activity will be routed
+through the instance via a SSH tunnel. After 30 minutes, the client will
+automatically connect to the Second Node, then creates a new fresh First Node
+instance for future use, and then eventually sunsets the original First Node by
+destrying it for good. The cycle of renewing your exit nodes (and thus IP
+addresses) will keep repeating itself as long as you have the client running.
+This way you can get stay pretty private, but still enjoy decent internet
+speeds.
 
-Each time a Droplet is created, a phonehome call is made from it to Cloudflare
-KV containing Droplet's public host key, which will be then queried by supershy,
-and henceforth added to your SSH's known_hosts file. When SSH client is
-connecting to the SSH server, strict_host_key_checking will be enabled. This
-adds a layer of security against possible MITM attacks.
+Each time a new instance is created, a phonehome call is made from it to
+Cloudflare KV containing instance's public host key, which will be then queried
+by supershy, and henceforth added to your SSH's known_hosts file. When SSH
+client is connecting to the SSH server, strict_host_key_checking will be
+enabled. This adds a layer of security against possible MITM attacks.
 
 The logic behind jumping from one exit node to another is that it helps you to
 keep your communications safe. Should anyone try to pinpoint you using your exit
@@ -64,14 +65,11 @@ cp sample.env .env
 
 ```
 # .env
-LOOP_INTERVAL_MIN=how often you would like to recycle the exit nodes in minutes, defaults to 30.
+LOOP_INTERVAL_SEC=how often you would like to recycle the exit nodes in seconds, defaults to 1800.
 
 SSH_PORT=Port for the SSH server, defaults to 22.
 
 SSH_PORT_RANGE=colon separated [from:to] range of numbers for a random selection, overrides SSH_PORT if set.
-
-DROPLET_REGIONS=comma separated list of Digital Ocean's regions (e.g, AMS3,FRA1,NYC1,SFO3,SGP1,SYD1).
-Will default to randomize between all they have available if left empty.
 
 DIGITAL_OCEAN_API_KEY=
  -> Open https://cloud.digitalocean.com/account/api/tokens
@@ -80,6 +78,20 @@ DIGITAL_OCEAN_API_KEY=
  -> Droplet: create, read, delete.
  -> ssh_key: create, read, delete.
  -> Click to copy the API key.
+
+HETZNER_API_KEY=
+ -> Open https://console.hetzner.cloud/projects
+ -> Select your Project.
+ -> Security.
+ -> API Tokens.
+ -> Generate API token.
+ -> Name it.
+ -> Generate API token.
+ -> Click to show.
+ -> Click to copy.
+
+The client will expect an API_KEY from at least one of the VPS providers,
+but it will pick a random one if both keys were set.
 
 CLOUDFLARE_ACCOUNT_ID=
  -> Open https://dash.cloudflare.com
@@ -108,7 +120,12 @@ CLOUDFLARE_API_KEY=
 
 ```
 # Start supershy
-forever start -c "deno run --allow-all app.ts" ./ && tail -f ~/.supershy/logs/*.log
+forever start -c "deno run --allow-all app.ts" ./
+```
+
+```
+# Log
+tail -f ~/.supershy/logs/*.log
 ```
 
 ```
@@ -130,6 +147,11 @@ Firefox
 # Test that it's all working
  -> Open https://ipleak.net
  -> Make sure countries of both IP and DNS match with the region of Digital Ocean your supershy is currently connected to.
+```
+
+```
+# Uninstall
+rm -rf ~/.supershy
 ```
 
 Safe travels!
