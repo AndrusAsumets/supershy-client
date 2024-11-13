@@ -5,19 +5,19 @@ export interface Provider {
 
 export type Providers = Record<string, Provider>;
 
-export enum ConnectionTypes {
+export enum ConnectionType {
 	A = 'a'
 }
 
-export enum InstanceProviders {
+export enum InstanceProvider {
 	DIGITAL_OCEAN = 'digital_ocean',
 	HETZNER = 'hetzner',
 }
 
 export interface Connection {
 	connectionUuid: string
-	connectionType: ConnectionTypes
-	instanceProvider: InstanceProviders
+	connectionType: ConnectionType
+	instanceProvider: InstanceProvider
 	instanceId: number
 	instanceName: string
 	instanceIp: string
@@ -27,9 +27,9 @@ export interface Connection {
 	instancePublicKeyId: number
 	user: string
 	passphrase: string
-	localTestPort: number
-	localPort: number
-	remotePort: number
+	proxyLocalTestPort: number
+	proxyLocalPort: number
+	proxyRemotePort: number
 	keyAlgorithm: string
 	keyPath: string
 	connectionString: string

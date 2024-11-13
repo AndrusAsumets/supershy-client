@@ -1,6 +1,6 @@
 import {
-    LOCAL_PORT,
-    REMOTE_PORT,
+    PROXY_LOCAL_PORT,
+    PROXY_REMOTE_PORT,
     CLOUDFLARE_ACCOUNT_ID,
     CLOUDFLARE_API_KEY,
     CLOUDFLARE_KV_NAMESPACE,
@@ -29,7 +29,7 @@ runcmd:
     - sudo apt update
     - sudo apt dist-upgrade -y
     - sudo apt install tinyproxy -y
-    - echo 'Port ${REMOTE_PORT}' >> tinyproxy.conf
+    - echo 'Port ${PROXY_REMOTE_PORT}' >> tinyproxy.conf
     - echo 'Listen 0.0.0.0' >> tinyproxy.conf
     - echo 'Timeout 600' >> tinyproxy.conf
     - echo 'Allow 0.0.0.0' >> tinyproxy.conf
@@ -51,7 +51,7 @@ export const getConnectionString = (
         keyPath,
         sshLogOutputPath
     } = connection;
-    return `${SRC_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${instanceIp} ${USER} ${sshPort} ${LOCAL_PORT} ${REMOTE_PORT} ${keyPath} ${sshLogOutputPath}`;
+    return `${SRC_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${instanceIp} ${USER} ${sshPort} ${PROXY_LOCAL_PORT} ${PROXY_REMOTE_PORT} ${keyPath} ${sshLogOutputPath}`;
 };
 
 export const getSshLogOutputPath = (connectionUuid: string): string =>`${LOG_PATH}/${connectionUuid}${SSH_LOG_OUTPUT_EXTENSION}`;

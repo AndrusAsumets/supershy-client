@@ -1,7 +1,7 @@
 import * as path from 'https://deno.land/std@0.224.0/path/mod.ts';
 import { homedir } from 'node:os';
 
-import { ConnectionTypes } from './types.ts';
+import { InstanceProvider, ConnectionType } from './types.ts';
 
 const APP_ID = Deno.env.get('APP_ID')
     ? String(Deno.env.get('APP_ID'))
@@ -23,14 +23,14 @@ const SSH_PORT_RANGE: number[] = Deno.env.get('SSH_PORT_RANGE')
         .split(':')
         .map(item => Number(item))
     : [SSH_PORT, SSH_PORT]
-const LOCAL_TEST_PORT = Deno.env.get('LOCAL_TEST_PORT')
-    ? Number(Deno.env.get('LOCAL_TEST_PORT'))
+const PROXY_LOCAL_TEST_PORT = Deno.env.get('PROXY_LOCAL_TEST_PORT')
+    ? Number(Deno.env.get('PROXY_LOCAL_TEST_PORT'))
     : 8887
-const LOCAL_PORT = Deno.env.get('LOCAL_PORT')
-    ? Number(Deno.env.get('LOCAL_PORT'))
+const PROXY_LOCAL_PORT = Deno.env.get('PROXY_LOCAL_PORT')
+    ? Number(Deno.env.get('PROXY_LOCAL_PORT'))
     : 8888;
-const REMOTE_PORT = Deno.env.get('REMOTE_PORT')
-    ? Number(Deno.env.get('REMOTE_PORT'))
+const PROXY_REMOTE_PORT = Deno.env.get('PROXY_REMOTE_PORT')
+    ? Number(Deno.env.get('PROXY_REMOTE_PORT'))
     : 8888;
 const KEY_ALGORITHM = Deno.env.get('KEY_ALGORITHM')
     ? String(Deno.env.get('KEY_ALGORITHM'))
@@ -38,17 +38,26 @@ const KEY_ALGORITHM = Deno.env.get('KEY_ALGORITHM')
 const KEY_LENGTH = Deno.env.get('KEY_LENGTH')
     ? Number(Deno.env.get('KEY_LENGTH'))
     : 32768;
+const INSTANCE_PROVIDERS: InstanceProvider[] = [];
+
 const DIGITAL_OCEAN_API_KEY = Deno.env.get('DIGITAL_OCEAN_API_KEY');
-const HETZNER_API_KEY = String(Deno.env.get('HETZNER_API_KEY'));
+if (DIGITAL_OCEAN_API_KEY) {
+    INSTANCE_PROVIDERS.push(InstanceProvider.DIGITAL_OCEAN)
+}
+
+const HETZNER_API_KEY = Deno.env.get('HETZNER_API_KEY');
+if (HETZNER_API_KEY) {
+    INSTANCE_PROVIDERS.push(InstanceProvider.HETZNER)
+}
+
+if (!INSTANCE_PROVIDERS.length) {
+    throw `DIGITAL_OCEAN_API_KEY and/or HETZNER_API_KEY env variable was not provided.`;
+}
+
 const CLOUDFLARE_ACCOUNT_ID = Deno.env.get('CLOUDFLARE_ACCOUNT_ID');
 const CLOUDFLARE_API_KEY = Deno.env.get('CLOUDFLARE_API_KEY');
 const CLOUDFLARE_KV_NAMESPACE = Deno.env.get('CLOUDFLARE_KV_NAMESPACE');
-const INSTANCE_REGIONS = Deno.env.get('INSTANCE_REGIONS')
-    ? String(Deno.env.get('INSTANCE_REGIONS'))
-        .split(',')
-        .filter(region => region.length)
-    : [];
-const TEST_PROXY_URL = `http://localhost:${LOCAL_TEST_PORT}`;
+const TEST_PROXY_URL = `http://localhost:${PROXY_LOCAL_TEST_PORT}`;
 const DIGITAL_OCEAN_BASE_URL = 'https://api.digitalocean.com/v2';
 const HETZNER_BASE_URL = 'https://api.hetzner.cloud/v1';
 const CLOUDFLARE_BASE_URL = 'https://api.cloudflare.com/client/v4';
@@ -65,23 +74,19 @@ const SSH_LOG_OUTPUT_EXTENSION = '.ssh.out';
 const GENERATE_SSH_KEY_FILE_NAME = 'generate-ssh-key.exp';
 const CONNECT_SSH_TUNNEL_FILE_NAME = 'connect-ssh-tunnel.exp';
 const USER = 'root';
-const CONNECTION_TYPES = [ConnectionTypes.A, ConnectionTypes.A];
+const CONNECTION_TYPES = [ConnectionType.A, ConnectionType.A];
 const DIGITAL_OCEAN_INSTANCE_SIZE = Deno.env.get('DIGITAL_OCEAN_INSTANCE_SIZE')
     ? String(Deno.env.get('DIGITAL_OCEAN_INSTANCE_SIZE'))
     : 's-1vcpu-512mb-10gb';
 const HETZNER_SERVER_TYPE = Deno.env.get('HETZNER_SERVER_TYPE')
     ? String(Deno.env.get('HETZNER_SERVER_TYPE'))
-    : 'cax11';
+    : 'cx22';
 const DIGITAL_OCEAN_INSTANCE_IMAGE = Deno.env.get('DIGITAL_OCEAN_INSTANCE_IMAGE')
     ? String(Deno.env.get('DIGITAL_OCEAN_INSTANCE_IMAGE'))
     : 'debian-12-x64';
 const HETZNER_INSTANCE_IMAGE = Deno.env.get('HETZNER_INSTANCE_IMAGE')
     ? String(Deno.env.get('HETZNER_INSTANCE_IMAGE'))
     : 'debian-12';
-
-if (!DIGITAL_OCEAN_API_KEY) {
-    throw `DIGITAL_OCEAN_API_KEY env variable was not provided.`;
-}
 
 if (!CLOUDFLARE_ACCOUNT_ID) {
     throw `CLOUDFLARE_ACCOUNT_ID env variable was not provided.`;
@@ -101,19 +106,19 @@ export {
     LOOP_INTERVAL_SEC,
     TUNNEL_CONNECT_TIMEOUT_SEC,
     SSH_PORT_RANGE,
-    LOCAL_TEST_PORT,
-    LOCAL_PORT,
-    REMOTE_PORT,
+    PROXY_LOCAL_TEST_PORT,
+    PROXY_LOCAL_PORT,
+    PROXY_REMOTE_PORT,
     KEY_ALGORITHM,
     KEY_LENGTH,
     DIGITAL_OCEAN_API_KEY,
     HETZNER_API_KEY,
+    INSTANCE_PROVIDERS,
     CLOUDFLARE_ACCOUNT_ID,
     CLOUDFLARE_API_KEY,
     CLOUDFLARE_KV_NAMESPACE,
     DIGITAL_OCEAN_INSTANCE_SIZE,
     DIGITAL_OCEAN_INSTANCE_IMAGE,
-    INSTANCE_REGIONS,
     TEST_PROXY_URL,
     DIGITAL_OCEAN_BASE_URL,
     HETZNER_BASE_URL,

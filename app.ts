@@ -2,12 +2,13 @@
 
 import 'jsr:@std/dotenv/load';
 import * as crypto from 'node:crypto';
-import password from 'npm:secure-random-password';
 import { v7 as uuidv7 } from 'npm:uuid';
 import {
-    ConnectionTypes,
+    ConnectionType,
     Connection,
-    InstanceProviders,
+    InstanceProvider,
+    CreateDigitalOceanInstance,
+    CreateHetznerInstance,
 } from './src/types.ts';
 import * as core from './src/core.ts';
 import { logger as _logger } from './src/logger.ts';
@@ -22,9 +23,9 @@ import {
     LOOP_INTERVAL_SEC,
     TUNNEL_CONNECT_TIMEOUT_SEC,
     SSH_PORT_RANGE,
-    LOCAL_TEST_PORT,
-    LOCAL_PORT,
-    REMOTE_PORT,
+    PROXY_LOCAL_TEST_PORT,
+    PROXY_LOCAL_PORT,
+    PROXY_REMOTE_PORT,
     KEY_ALGORITHM,
     TEST_PROXY_URL,
     __DIRNAME,
@@ -34,6 +35,7 @@ import {
     DB_TABLE,
     USER,
     CONNECTION_TYPES,
+    INSTANCE_PROVIDERS,
 } from './src/constants.ts';
 
 const logger = _logger.get();
@@ -59,7 +61,7 @@ const tunnel = async (
 ) => {
     connection.connectionString = core
         .getConnectionString(connection)
-        .replace(` ${LOCAL_PORT} `, ` ${port} `)
+        .replace(` ${PROXY_LOCAL_PORT} `, ` ${port} `)
         .replace('\n', '');
 
     logger.info(`Starting SSH tunnel connection to ${connection.instanceIp}:${port}.`);
@@ -105,97 +107,99 @@ const connect = async (
     const proxy = {
         url: TEST_PROXY_URL,
     };
-    await tunnel(connection, LOCAL_TEST_PORT, proxy);
-    await integrations.shell.pkill(`${LOCAL_TEST_PORT}:`);
+    await tunnel(connection, PROXY_LOCAL_TEST_PORT, proxy);
+    await integrations.shell.pkill(`${PROXY_LOCAL_TEST_PORT}:`);
     await lib.sleep(1000);
-    await tunnel(connection, LOCAL_PORT);
+    await tunnel(connection, PROXY_LOCAL_PORT);
 };
 
-const cleanup = async (dropletIdsToKeep: number[]) => {
-    const deletableKeyIds = (await integrations.compute.digital_ocean.keys.list())
-        ['ssh_keys']
-        .filter((key: any) => key.name.includes(`${APP_ID}-${ENV}`))
-        .map((key: any) => key.id);
-    await integrations.compute.digital_ocean.keys.delete(deletableKeyIds);
+const cleanup = async (instanceIdsToKeep: number[]) => {
+    const instanceProviders = Object.values(InstanceProvider);
 
-    const deletableDropletIds = (await integrations.compute.digital_ocean.instances.list())
-        .droplets
-        .filter((droplet: any) => droplet.name.includes(`${APP_ID}-${ENV}`))
-        .map((droplet: any) => droplet.id)
-        .filter((id: number) => !dropletIdsToKeep.includes(id));
-    await integrations.compute.digital_ocean.instances.delete(deletableDropletIds);
+    let index = 0;
+    while (index < instanceProviders.length) {
+        const instanceProvider = instanceProviders[index];
+
+        const deletableKeyIds = await integrations.compute[instanceProvider].keys.list()
+        if (deletableKeyIds) {
+            await integrations.compute[instanceProvider].keys.delete(
+                deletableKeyIds
+                    .filter((key: any) => key.name.includes(`${APP_ID}-${ENV}`))
+                    .map((key: any) => key.id)
+            );
+        }
+
+        const deletableInstanceIds = await integrations.compute[instanceProvider].instances.list()
+        if (deletableInstanceIds) {
+            await integrations.compute[instanceProvider].instances.delete(
+                deletableInstanceIds
+                    .filter((instance: any) => instance.name.includes(`${APP_ID}-${ENV}`))
+                    .map((instance: any) => instance.id)
+                    .filter((id: number) => !instanceIdsToKeep.includes(id))
+            );
+        }
+
+        index = index + 1;
+    }
 };
 
 const rotate = async () => {
-    const instanceProvider = InstanceProviders.HETZNER;
+    const instanceProvider: InstanceProvider = lib.randChoice(INSTANCE_PROVIDERS);
     const activeConnections: Connection[] = [];
     const initConnection = await init();
     initConnection && activeConnections.push(initConnection);
-    const connectionTypes: ConnectionTypes[] = initConnection
-        ? [ConnectionTypes.A]
+    const connectionTypes: ConnectionType[] = initConnection
+        ? [ConnectionType.A]
         : CONNECTION_TYPES;
 
     let connectionIndex = 0;
     while (connectionIndex < connectionTypes.length) {
         const connectionUuid = uuidv7();
         const connectionType = connectionTypes[connectionIndex];
-        const instanceRegion = (await integrations.compute[instanceProvider].regions.list())
-            .sort(() => (Math.random() > 0.5) ? 1 : -1)[0];
-        /*
-            .filter((region: any) =>
-                INSTANCE_REGIONS.length
-                    ? INSTANCE_REGIONS
-                        .map(instanceRegion => instanceRegion.toLowerCase())
-                        .includes(region)
-                    : true
-            )
-        */
-
+        const instanceRegions = await integrations.compute[instanceProvider].regions.list();
+        const instanceRegion: string = lib.randChoice(instanceRegions);
         const instanceName = `${APP_ID}-${ENV}-${connectionType}-${connectionUuid}`;
         const { instanceSize, instanceImage } = integrations.compute[instanceProvider];
         const keyPath = `${KEY_PATH}/${instanceName}`;
-        const passphrase = password.randomPassword({ length: 32, characters: password.lower + password.upper + password.digits });
+        const passphrase = crypto.randomBytes(64).toString('hex');
         const publicKey = await integrations.shell.private_key.create(keyPath, passphrase);
-        const publicKeyId = await integrations.compute[instanceProvider].keys.add(publicKey, instanceName);
+        const instancePublicKeyId = await integrations.compute[instanceProvider].keys.add(publicKey, instanceName);
         const jwtSecret = crypto.randomBytes(64).toString('hex');
         const sshPort = lib.randomNumberFromRange(SSH_PORT_RANGE[0], SSH_PORT_RANGE[1]);
         const userData = core.getUserData(connectionUuid, sshPort, jwtSecret);
-        const instanceCreate = {
+        const instancePayload: CreateDigitalOceanInstance & CreateHetznerInstance = {
             datacenter: instanceRegion,
             region: instanceRegion,
             image: instanceImage,
             name: instanceName,
             size: instanceSize,
             server_type: instanceSize,
-            ssh_keys: [publicKeyId],
+            ssh_keys: [instancePublicKeyId],
             user_data: userData
-        }
-        const instance = await integrations.compute[instanceProvider].instances.create(instanceCreate);
-        logger.info(`Created ${instanceProvider} instance.`, instanceCreate, instance);
-        const instanceIp = instance.ip
-            ? instance.ip
-            : await integrations.compute.digital_ocean.ips.get(instance.id);
+        };
+        const { instanceId, instanceIp } = await integrations.compute[instanceProvider].instances.create(instancePayload);
+        logger.info(`Created ${instanceProvider} instance.`, instancePayload);
         logger.info(`Found network at ${instanceIp}.`);
 
         let connection: Connection = {
             connectionUuid,
             appId: APP_ID,
             instanceProvider,
-            instanceId: instance.id,
             instanceName,
+            instanceId,
             instanceIp,
             instanceRegion,
             instanceSize,
             instanceImage,
-            instancePublicKeyId: publicKeyId,
+            instancePublicKeyId,
             connectionType,
             user: USER,
             passphrase,
             loopIntervalSec: LOOP_INTERVAL_SEC,
             keyAlgorithm: KEY_ALGORITHM,
-            localTestPort: LOCAL_TEST_PORT,
-            localPort: LOCAL_PORT,
-            remotePort: REMOTE_PORT,
+            proxyLocalTestPort: PROXY_LOCAL_TEST_PORT,
+            proxyLocalPort: PROXY_LOCAL_PORT,
+            proxyRemotePort: PROXY_REMOTE_PORT,
             keyPath,
             sshPort,
             hostKey: '',

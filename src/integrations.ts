@@ -147,9 +147,10 @@ export const compute = {
                     body: JSON.stringify(args),
                 });
                 const json: any = await res.json();
+                const instanceIp = await compute.digital_ocean.ips.get(json.droplet.id);
                 return {
-                    id: json.droplet.id,
-                    ip: null,
+                    instanceId: json.droplet.id,
+                    instanceIp,
                 };
             },
             list: async function () {
@@ -158,7 +159,7 @@ export const compute = {
                 };
                 const res = await fetch(`${DIGITAL_OCEAN_BASE_URL}/droplets`, { method: 'GET', headers });
                 const json: any = await res.json();
-                return json;
+                return json.droplets;
             },
             delete: async function (ids: number[]) {
                 let index = 0;
@@ -173,7 +174,7 @@ export const compute = {
                         method: 'DELETE',
                         headers,
                     });
-                    logger.info(`Deleted droplet: ${id}.`);
+                    logger.info(`Deleted Digital Ocean instance: ${id}.`);
                     index = index + 1;
                 }
             },
@@ -205,7 +206,7 @@ export const compute = {
                     headers,
                 });
                 const json: any = await res.json();
-                return json;
+                return json['ssh_keys'];
             },
             delete: async function (ids: number[]) {
                 let index = 0;
@@ -220,7 +221,7 @@ export const compute = {
                         method: 'DELETE',
                         headers,
                     });
-                    logger.info(`Deleted key: ${id}.`);
+                    logger.info(`Deleted Digital Ocean ssh_key: ${id}.`);
                     index = index + 1;
                 }
             },
@@ -231,10 +232,9 @@ export const compute = {
 
                 while (!ip) {
                     const list = await compute.digital_ocean.instances.list();
-                    const droplets = list.droplets;
 
-                    if (list && droplets) {
-                        const droplet = droplets.find((droplet: any) =>
+                    if (list) {
+                        const droplet = list.find((droplet: any) =>
                             droplet.id == dropletId
                         );
 
@@ -265,10 +265,28 @@ export const compute = {
                 }
                 const res = await fetch(`${HETZNER_BASE_URL}/datacenters`, options);
                 const json: any = await res.json();
+                const serverTypeId = await compute.hetzner.serverTypes.getId(compute.hetzner.instanceSize);
                 const regions = json
                     .datacenters
+                    .filter((data: any) => data.server_types.available.includes(serverTypeId))
                     .map((data: any) => data.name);
                 return regions;
+            },
+        },
+        serverTypes: {
+            getId: async function (instanceSize: string) {
+                const headers = {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${HETZNER_API_KEY}`
+                };
+                const res = await fetch(`${HETZNER_BASE_URL}/server_types?per_page=50`, {
+                    method: 'GET',
+                    headers,
+                });
+                const json: any = await res.json();
+                const serverTypeId = json.server_types
+                    .filter((serverType: any) => serverType.name === instanceSize)[0].id;
+                return serverTypeId;
             },
         },
         instances: {
@@ -283,11 +301,36 @@ export const compute = {
                     body: JSON.stringify(args),
                 });
                 const json: any = await res.json();
-                console.log(json)
                 return {
-                    id: json.server.id,
-                    ip: json.server.public_net.ipv4.ip,
+                    instanceId: json.server.id,
+                    instanceIp: json.server.public_net.ipv4.ip,
+                }
+            },
+            list: async function () {
+                const headers = {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${HETZNER_API_KEY}`
                 };
+                const res = await fetch(`${HETZNER_BASE_URL}/servers`, { method: 'GET', headers });
+                const json: any = await res.json();
+                return json.servers;
+            },
+            delete: async function (ids: number[]) {
+                let index = 0;
+
+                while (index < ids.length) {
+                    const id = ids[index];
+                    const headers = {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${HETZNER_API_KEY}`
+                    };
+                    await fetch(`${HETZNER_BASE_URL}/servers/${id}`, {
+                        method: 'DELETE',
+                        headers,
+                    });
+                    logger.info(`Deleted Hetzner instance: ${id}.`);
+                    index = index + 1;
+                }
             },
         },
         keys: {
@@ -307,6 +350,35 @@ export const compute = {
                 });
                 const json: any = await res.json();
                 return json['ssh_key']['id'];
+            },
+            list: async function () {
+                const headers = {
+                    Authorization: `Bearer ${HETZNER_API_KEY}`,
+                    'Content-Type': 'application/json',
+                };
+                const res = await fetch(`${HETZNER_BASE_URL}/ssh_keys`, {
+                    method: 'GET',
+                    headers,
+                });
+                const json: any = await res.json();
+                return json['ssh_keys'];
+            },
+            delete: async function (ids: number[]) {
+                let index = 0;
+
+                while (index < ids.length) {
+                    const id = ids[index];
+                    const headers = {
+                        Authorization: `Bearer ${HETZNER_API_KEY}`,
+                        'Content-Type': 'application/json',
+                    };
+                    await fetch(`${HETZNER_BASE_URL}/ssh_keys/${id}`, {
+                        method: 'DELETE',
+                        headers,
+                    });
+                    logger.info(`Deleted Hetzner ssh_key: ${id}.`);
+                    index = index + 1;
+                }
             },
         },
     }
