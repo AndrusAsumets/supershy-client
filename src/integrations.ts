@@ -8,7 +8,7 @@ import { logger as _logger } from './logger.ts';
 const logger = _logger.get();
 
 import {
-    SRC_PATH,
+    TMP_PATH,
     KEY_ALGORITHM,
     KEY_LENGTH,
     KNOWN_HOSTS_PATH,
@@ -40,7 +40,7 @@ export const shell = {
             passphrase: string,
         ) {
             const cmd =
-                `${SRC_PATH}/${GENERATE_SSH_KEY_FILE_NAME} ${passphrase} ${keyPath} ${KEY_ALGORITHM} ${KEY_LENGTH}`;
+                `${TMP_PATH}/${GENERATE_SSH_KEY_FILE_NAME} ${passphrase} ${keyPath} ${KEY_ALGORITHM} ${KEY_LENGTH}`;
             // @ts-ignore: because
             const process = Deno.run({ cmd: cmd.split(' ') });
             await process.status();

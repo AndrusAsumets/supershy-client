@@ -11,7 +11,7 @@ const ENV = Deno.env.get('ENV')
     : 'dev';
 const LOOP_INTERVAL_SEC = Deno.env.get('LOOP_INTERVAL_SEC')
     ? Number(Deno.env.get('LOOP_INTERVAL_SEC'))
-    : 1800;
+    : 600;
 const TUNNEL_CONNECT_TIMEOUT_SEC = Deno.env.get('TUNNEL_CONNECT_TIMEOUT_SEC')
     ? Number(Deno.env.get('TUNNEL_CONNECT_TIMEOUT_SEC'))
     : 10;
@@ -22,10 +22,10 @@ const SSH_PORT_RANGE: number[] = Deno.env.get('SSH_PORT_RANGE')
     ? String(Deno.env.get('SSH_PORT_RANGE'))
         .split(':')
         .map(item => Number(item))
-    : [SSH_PORT, SSH_PORT]
+    : [SSH_PORT, SSH_PORT];
 const PROXY_LOCAL_TEST_PORT = Deno.env.get('PROXY_LOCAL_TEST_PORT')
     ? Number(Deno.env.get('PROXY_LOCAL_TEST_PORT'))
-    : 8887
+    : 8887;
 const PROXY_LOCAL_PORT = Deno.env.get('PROXY_LOCAL_PORT')
     ? Number(Deno.env.get('PROXY_LOCAL_PORT'))
     : 8888;
@@ -65,14 +65,12 @@ const __DIRNAME = path.dirname(path.fromFileUrl(import.meta.url));
 const HOME_PATH = homedir();
 const DATA_PATH = `${HOME_PATH}/.${APP_ID}`;
 const KEY_PATH = `${DATA_PATH}/.keys`;
-const SRC_PATH = `${__DIRNAME}`;
+const TMP_PATH = '/tmp';
 const LOG_PATH = `${DATA_PATH}/logs`;
 const KNOWN_HOSTS_PATH = `${HOME_PATH}/.ssh/known_hosts`;
 const DB_FILE_NAME = `${DATA_PATH}/.database.${ENV}.json`;
 const DB_TABLE = 'connections';
 const SSH_LOG_OUTPUT_EXTENSION = '.ssh.out';
-const GENERATE_SSH_KEY_FILE_NAME = 'generate-ssh-key.exp';
-const CONNECT_SSH_TUNNEL_FILE_NAME = 'connect-ssh-tunnel.exp';
 const USER = 'root';
 const CONNECTION_TYPES = [ConnectionType.A, ConnectionType.A];
 const DIGITAL_OCEAN_INSTANCE_SIZE = Deno.env.get('DIGITAL_OCEAN_INSTANCE_SIZE')
@@ -99,6 +97,40 @@ if (!CLOUDFLARE_API_KEY) {
 if (!CLOUDFLARE_KV_NAMESPACE) {
     throw `CLOUDFLARE_KV_NAMESPACEY env variable was not provided.`;
 }
+
+const GENERATE_SSH_KEY_FILE_NAME = 'generate-ssh-key.exp';
+const CONNECT_SSH_TUNNEL_FILE_NAME = 'connect-ssh-tunnel.exp';
+const GENERATE_SSH_KEY_FILE = `#!/usr/bin/expect -f
+
+set passphrase [lrange $argv 0 0]
+set key_path [lrange $argv 1 1]
+set key_algorithm [lrange $argv 2 2]
+set key_length [lrange $argv 3 3]
+
+spawn ssh-keygen -t $key_algorithm -b $key_length -f $key_path
+expect "*passphrase*"
+send -- "$passphrase\r"
+expect "*?again:*"
+send -- "$passphrase\r"
+interact
+exit 0`;
+const CONNECT_SSH_TUNNEL_FILE = `#!/usr/bin/expect -f
+
+set passphrase [lrange $argv 0 0]
+set server [lrange $argv 1 1]
+set user [lrange $argv 2 2]
+set ssh_port [lrange $argv 3 3]
+set local_port [lrange $argv 4 4]
+set remote_port [lrange $argv 5 5]
+set key_path [lrange $argv 6 6]
+set output_path [lrange $argv 7 7]
+
+spawn -ignore HUP ssh -v $user@$server -f -N -L $local_port:0.0.0.0:$remote_port -p $ssh_port -i $key_path -o StrictHostKeyChecking=yes -E $output_path
+expect "*passphrase*"
+send -- "$passphrase\r"
+interact
+expect_background
+exit 0`;
 
 export {
     ENV,
@@ -129,7 +161,7 @@ export {
     HOME_PATH,
     DATA_PATH,
     KEY_PATH,
-    SRC_PATH,
+    TMP_PATH,
     LOG_PATH,
     KNOWN_HOSTS_PATH,
     DB_FILE_NAME,
@@ -137,6 +169,8 @@ export {
     SSH_LOG_OUTPUT_EXTENSION,
     GENERATE_SSH_KEY_FILE_NAME,
     CONNECT_SSH_TUNNEL_FILE_NAME,
+    GENERATE_SSH_KEY_FILE,
+    CONNECT_SSH_TUNNEL_FILE,
     USER,
     CONNECTION_TYPES,
 };

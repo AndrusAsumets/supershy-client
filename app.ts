@@ -29,9 +29,14 @@ import {
     KEY_ALGORITHM,
     TEST_PROXY_URL,
     __DIRNAME,
+    TMP_PATH,
     DATA_PATH,
     KEY_PATH,
     LOG_PATH,
+    GENERATE_SSH_KEY_FILE_NAME,
+    CONNECT_SSH_TUNNEL_FILE_NAME,
+    GENERATE_SSH_KEY_FILE,
+    CONNECT_SSH_TUNNEL_FILE,
     DB_TABLE,
     USER,
     CONNECTION_TYPES,
@@ -261,4 +266,14 @@ const loop = async () => {
 await integrations.fs.ensureFolder(DATA_PATH);
 await integrations.fs.ensureFolder(KEY_PATH);
 await integrations.fs.ensureFolder(LOG_PATH);
+
+await Deno.writeTextFileSync(`${TMP_PATH}/${GENERATE_SSH_KEY_FILE_NAME}`, GENERATE_SSH_KEY_FILE);
+await Deno.writeTextFileSync(`${TMP_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME}`, CONNECT_SSH_TUNNEL_FILE);
+
+await new Deno.Command('chmod', { args: `+x ${`${TMP_PATH}/${GENERATE_SSH_KEY_FILE_NAME}`}`.split(' ') });
+await new Deno.Command('chmod', { args: `+x ${`${TMP_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME}`}`.split(' ') });
+
+await Deno.chmod(`${TMP_PATH}/${GENERATE_SSH_KEY_FILE_NAME}`, 0o700);
+await Deno.chmod(`${TMP_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME}`, 0o700);
+
 await loop();

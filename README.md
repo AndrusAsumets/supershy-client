@@ -125,7 +125,7 @@ forever start -c "deno run --allow-all app.ts" ./
 
 ```
 # Log
-tail -f ~/.supershy/logs/*.log
+tail -f ~/.supershy-client/logs/*.log
 ```
 
 ```
@@ -151,7 +151,7 @@ Firefox
 
 ```
 # Uninstall
-rm -rf ~/.supershy
+rm -rf ~/.supershy-client
 ```
 
 Safe travels!
