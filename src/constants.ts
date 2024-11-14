@@ -11,7 +11,7 @@ const ENV = Deno.env.get('ENV')
     : 'dev';
 const LOOP_INTERVAL_SEC = Deno.env.get('LOOP_INTERVAL_SEC')
     ? Number(Deno.env.get('LOOP_INTERVAL_SEC'))
-    : 600;
+    : 1800;
 const TUNNEL_CONNECT_TIMEOUT_SEC = Deno.env.get('TUNNEL_CONNECT_TIMEOUT_SEC')
     ? Number(Deno.env.get('TUNNEL_CONNECT_TIMEOUT_SEC'))
     : 10;
