@@ -6,7 +6,6 @@ import {
 
 const _logger = new Logger();
 await _logger.initFileLogger(`${LOG_PATH}`);
-_logger.disableConsole();
 
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 

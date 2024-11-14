@@ -1,5 +1,5 @@
 {
     "tasks": {
-        "compile": "deno compile --allow-all app.ts"
+        "compile": "deno compile --allow-all --output dist/ app.ts"
     }
 }
