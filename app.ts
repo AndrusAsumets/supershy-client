@@ -13,10 +13,8 @@ import {
 import * as core from './src/core.ts';
 import { logger as _logger } from './src/logger.ts';
 import { db } from './src/db.ts';
-
 import * as lib from './src/lib.ts';
 import * as integrations from './src/integrations.ts';
-
 import {
     ENV,
     APP_ID,
@@ -35,13 +33,15 @@ import {
     LOG_PATH,
     GENERATE_SSH_KEY_FILE_NAME,
     CONNECT_SSH_TUNNEL_FILE_NAME,
-    GENERATE_SSH_KEY_FILE,
-    CONNECT_SSH_TUNNEL_FILE,
     DB_TABLE,
     USER,
     CONNECTION_TYPES,
     INSTANCE_PROVIDERS,
 } from './src/constants.ts';
+import {
+    GENERATE_SSH_KEY_FILE,
+    CONNECT_SSH_TUNNEL_FILE,
+} from './src/ssh.ts';
 
 const logger = _logger.get();
 
