@@ -25,6 +25,7 @@ import {
     DIGITAL_OCEAN_BASE_URL,
     DIGITAL_OCEAN_INSTANCE_SIZE,
     DIGITAL_OCEAN_INSTANCE_IMAGE,
+    HEARTBEAT_TIMEOUT_SEC,
 } from './constants.ts';
 
 import {
@@ -34,7 +35,7 @@ import {
 } from './types.ts';
 
 export const shell = {
-	private_key: {
+	privateKey: {
 		create: async function (
             keyPath: string,
             passphrase: string,
@@ -66,6 +67,18 @@ export const fs = {
 
 export const kv = {
     cloudflare: {
+        heartbeat: async function (proxy: any = null) {
+            const options: any = {
+                method: 'GET',
+                signal: AbortSignal.timeout(HEARTBEAT_TIMEOUT_SEC),
+            };
+            if (proxy) {
+                options.client = Deno.createHttpClient({ proxy });
+            }
+            const res = await fetch(CLOUDFLARE_BASE_URL, options);
+            await res.json();
+            logger.info('Heartbeat success.');
+        },
         hostKey: {
             get: async function (
                 connectionUuid: string,

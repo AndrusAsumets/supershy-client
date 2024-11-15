@@ -4,6 +4,7 @@ import 'jsr:@std/dotenv/load';
 import * as crypto from 'node:crypto';
 import { v7 as uuidv7 } from 'npm:uuid';
 import {
+    LoopStatus,
     ConnectionType,
     Connection,
     InstanceProvider,
@@ -13,10 +14,8 @@ import {
 import * as core from './src/core.ts';
 import { logger as _logger } from './src/logger.ts';
 import { db } from './src/db.ts';
-
 import * as lib from './src/lib.ts';
 import * as integrations from './src/integrations.ts';
-
 import {
     ENV,
     APP_ID,
@@ -27,6 +26,7 @@ import {
     PROXY_LOCAL_PORT,
     PROXY_REMOTE_PORT,
     KEY_ALGORITHM,
+    PROXY_URL,
     TEST_PROXY_URL,
     __DIRNAME,
     TMP_PATH,
@@ -35,15 +35,20 @@ import {
     LOG_PATH,
     GENERATE_SSH_KEY_FILE_NAME,
     CONNECT_SSH_TUNNEL_FILE_NAME,
-    GENERATE_SSH_KEY_FILE,
-    CONNECT_SSH_TUNNEL_FILE,
     DB_TABLE,
     USER,
     CONNECTION_TYPES,
     INSTANCE_PROVIDERS,
+    HEARTBEAT_INTERVAL_SEC,
 } from './src/constants.ts';
+import {
+    GENERATE_SSH_KEY_FILE,
+    CONNECT_SSH_TUNNEL_FILE,
+} from './src/ssh.ts';
 
 const logger = _logger.get();
+
+let loopStatus: LoopStatus = LoopStatus.INACTIVE;
 
 const init = async () => {
     const connection = db
@@ -90,11 +95,7 @@ const tunnel = async (
             isConnected = output.includes('pledge: network');
 
             if (isConnected) {
-                if (proxy) {
-                    logger.info(`Starting API test for ${proxy.url}.`);
-                    await integrations.compute[connection.instanceProvider].regions.list(proxy);
-                    logger.info(`Finished API test for ${proxy.url}.`);
-                }
+                await integrations.kv.cloudflare.heartbeat(proxy);
                 logger.info(`Connected SSH test tunnel to ${connection.instanceIp}:${port}.`);
                 await db.update(connection);
             }
@@ -109,10 +110,7 @@ const tunnel = async (
 const connect = async (
     connection: Connection,
 ) => {
-    const proxy = {
-        url: TEST_PROXY_URL,
-    };
-    await tunnel(connection, PROXY_LOCAL_TEST_PORT, proxy);
+    await tunnel(connection, PROXY_LOCAL_TEST_PORT, { url: TEST_PROXY_URL });
     await integrations.shell.pkill(`${PROXY_LOCAL_TEST_PORT}:`);
     await lib.sleep(1000);
     await tunnel(connection, PROXY_LOCAL_PORT);
@@ -167,7 +165,7 @@ const rotate = async () => {
         const { instanceSize, instanceImage } = integrations.compute[instanceProvider];
         const keyPath = `${KEY_PATH}/${instanceName}`;
         const passphrase = crypto.randomBytes(64).toString('hex');
-        const publicKey = await integrations.shell.private_key.create(keyPath, passphrase);
+        const publicKey = await integrations.shell.privateKey.create(keyPath, passphrase);
         const instancePublicKeyId = await integrations.compute[instanceProvider].keys.add(publicKey, instanceName);
         const jwtSecret = crypto.randomBytes(64).toString('hex');
         const sshPort = lib.randomNumberFromRange(SSH_PORT_RANGE[0], SSH_PORT_RANGE[1]);
@@ -233,25 +231,26 @@ const rotate = async () => {
     );
 };
 
-const loop = async () => {
-    let isFinished = false;
+const exit = async (message: string) => {
+    logger.error(message);
+    await lib.sleep(1000);
+    throw new Error();
+};
 
+const loop = async () => {
     setTimeout(async () => {
-        if (!isFinished) {
-            logger.error(`Timeout after passing ${LOOP_INTERVAL_SEC} seconds.`);
-            await lib.sleep(1000);
-            throw new Error();
-        }
-        else {
-            await loop();
-        }
+        const isStillWorking = loopStatus == LoopStatus.ACTIVE;
+        isStillWorking
+            ? await exit(`Timeout after passing ${LOOP_INTERVAL_SEC} seconds.`)
+            : await loop();
     }, LOOP_INTERVAL_SEC * 1000);
 
     try {
+        loopStatus = LoopStatus.ACTIVE;
         const startTime = performance.now();
         await rotate();
         const endTime = performance.now();
-        isFinished = true;
+        loopStatus = LoopStatus.FINISHED;
 
         logger.info(
             `Loop finished in ${
@@ -259,9 +258,22 @@ const loop = async () => {
             } seconds.`,
         );
     } catch (err) {
-        logger.error(`Proxy loop caught an error.`, err);
+        await exit(`Loop error: ${err}`);
     }
 };
+
+setInterval(async () => {
+    const isLooped = loopStatus == LoopStatus.FINISHED;
+
+    if (isLooped) {
+        try {
+            await integrations.kv.cloudflare.heartbeat({ url: PROXY_URL });
+        }
+        catch(err) {
+            await exit(`Heartbeat error: ${err}`);
+        }
+    }
+}, HEARTBEAT_INTERVAL_SEC);
 
 await integrations.fs.ensureFolder(DATA_PATH);
 await integrations.fs.ensureFolder(KEY_PATH);
