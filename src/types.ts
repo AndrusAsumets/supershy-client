@@ -3,10 +3,16 @@ export interface Provider {
 	instanceImage: string
 }
 
-export type Providers = Record<string, Provider>;
+export type Providers = Record<string, Provider>
 
 export enum ConnectionType {
 	A = 'a'
+}
+
+export enum LoopStatus {
+	ACTIVE = 'active',
+	INACTIVE = 'inactive',
+	FINISHED = 'finished',
 }
 
 export enum InstanceProvider {
@@ -45,7 +51,7 @@ export interface Connection {
 }
 
 export type DatabaseData = {
-	connections: Connection[];
+	connections: Connection[]
 }
 
 export interface CreateDigitalOceanInstance {

@@ -58,6 +58,7 @@ const CLOUDFLARE_ACCOUNT_ID = Deno.env.get('CLOUDFLARE_ACCOUNT_ID');
 const CLOUDFLARE_API_KEY = Deno.env.get('CLOUDFLARE_API_KEY');
 const CLOUDFLARE_KV_NAMESPACE = Deno.env.get('CLOUDFLARE_KV_NAMESPACE');
 const TEST_PROXY_URL = `http://localhost:${PROXY_LOCAL_TEST_PORT}`;
+const PROXY_URL = `http://localhost:${PROXY_LOCAL_PORT}`;
 const DIGITAL_OCEAN_BASE_URL = 'https://api.digitalocean.com/v2';
 const HETZNER_BASE_URL = 'https://api.hetzner.cloud/v1';
 const CLOUDFLARE_BASE_URL = 'https://api.cloudflare.com/client/v4';
@@ -85,6 +86,10 @@ const DIGITAL_OCEAN_INSTANCE_IMAGE = Deno.env.get('DIGITAL_OCEAN_INSTANCE_IMAGE'
 const HETZNER_INSTANCE_IMAGE = Deno.env.get('HETZNER_INSTANCE_IMAGE')
     ? String(Deno.env.get('HETZNER_INSTANCE_IMAGE'))
     : 'debian-12';
+const GENERATE_SSH_KEY_FILE_NAME = 'generate-ssh-key.exp';
+const CONNECT_SSH_TUNNEL_FILE_NAME = 'connect-ssh-tunnel.exp';
+const HEARTBEAT_INTERVAL_SEC = 15 * 1000;
+const HEARTBEAT_TIMEOUT_SEC = 10 * 1000;
 
 if (!CLOUDFLARE_ACCOUNT_ID) {
     throw `CLOUDFLARE_ACCOUNT_ID env variable was not provided.`;
@@ -97,9 +102,6 @@ if (!CLOUDFLARE_API_KEY) {
 if (!CLOUDFLARE_KV_NAMESPACE) {
     throw `CLOUDFLARE_KV_NAMESPACEY env variable was not provided.`;
 }
-
-const GENERATE_SSH_KEY_FILE_NAME = 'generate-ssh-key.exp';
-const CONNECT_SSH_TUNNEL_FILE_NAME = 'connect-ssh-tunnel.exp';
 
 export {
     ENV,
@@ -120,6 +122,7 @@ export {
     CLOUDFLARE_KV_NAMESPACE,
     DIGITAL_OCEAN_INSTANCE_SIZE,
     DIGITAL_OCEAN_INSTANCE_IMAGE,
+    PROXY_URL,
     TEST_PROXY_URL,
     DIGITAL_OCEAN_BASE_URL,
     HETZNER_BASE_URL,
@@ -136,8 +139,10 @@ export {
     DB_FILE_NAME,
     DB_TABLE,
     SSH_LOG_OUTPUT_EXTENSION,
-    GENERATE_SSH_KEY_FILE_NAME,
-    CONNECT_SSH_TUNNEL_FILE_NAME,
     USER,
     CONNECTION_TYPES,
+    GENERATE_SSH_KEY_FILE_NAME,
+    CONNECT_SSH_TUNNEL_FILE_NAME,
+    HEARTBEAT_INTERVAL_SEC,
+    HEARTBEAT_TIMEOUT_SEC,
 };
