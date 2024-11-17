@@ -25,7 +25,7 @@ import {
     DIGITAL_OCEAN_BASE_URL,
     DIGITAL_OCEAN_INSTANCE_SIZE,
     DIGITAL_OCEAN_INSTANCE_IMAGE,
-    HEARTBEAT_TIMEOUT_SEC,
+    HEARTBEAT_INTERVAL_SEC,
 } from './constants.ts';
 
 import {
@@ -70,7 +70,7 @@ export const kv = {
         heartbeat: async function (proxy: any = null) {
             const options: any = {
                 method: 'GET',
-                signal: AbortSignal.timeout(HEARTBEAT_TIMEOUT_SEC),
+                signal: AbortSignal.timeout(HEARTBEAT_INTERVAL_SEC),
             };
             if (proxy) {
                 options.client = Deno.createHttpClient({ proxy });

@@ -258,7 +258,7 @@ const loop = async () => {
             } seconds.`,
         );
     } catch (err) {
-        await exit(`Loop error: ${err}`);
+        await exit(`Loop failure: ${err}`);
     }
 };
 
@@ -270,7 +270,7 @@ setInterval(async () => {
             await integrations.kv.cloudflare.heartbeat({ url: PROXY_URL });
         }
         catch(err) {
-            await exit(`Heartbeat error: ${err}`);
+            await exit(`Heartbeat failure: ${err}`);
         }
     }
 }, HEARTBEAT_INTERVAL_SEC);
