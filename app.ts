@@ -10,6 +10,7 @@ import {
     InstanceProvider,
     CreateDigitalOceanInstance,
     CreateHetznerInstance,
+    CreateVultrInstance,
 } from './src/types.ts';
 import * as core from './src/core.ts';
 import { logger as _logger } from './src/logger.ts';
@@ -123,7 +124,7 @@ const cleanup = async (instanceIdsToKeep: number[]) => {
     while (index < instanceProviders.length) {
         const instanceProvider = instanceProviders[index];
 
-        const deletableKeyIds = await integrations.compute[instanceProvider].keys.list()
+        const deletableKeyIds = await integrations.compute[instanceProvider].keys.list();
         if (deletableKeyIds) {
             await integrations.compute[instanceProvider].keys.delete(
                 deletableKeyIds
@@ -132,11 +133,14 @@ const cleanup = async (instanceIdsToKeep: number[]) => {
             );
         }
 
-        const deletableInstanceIds = await integrations.compute[instanceProvider].instances.list()
+        const deletableInstanceIds = await integrations.compute[instanceProvider].instances.list();
         if (deletableInstanceIds) {
             await integrations.compute[instanceProvider].instances.delete(
                 deletableInstanceIds
-                    .filter((instance: any) => instance.name.includes(`${APP_ID}-${ENV}`))
+                    .filter((instance: any) => {
+                        if ('name' in instance && instance.name.includes(`${APP_ID}-${ENV}`)) return true;
+                        if ('label' in instance && instance.label.includes(`${APP_ID}-${ENV}`)) return true;
+                    })
                     .map((instance: any) => instance.id)
                     .filter((id: number) => !instanceIdsToKeep.includes(id))
             );
@@ -170,15 +174,21 @@ const rotate = async () => {
         const jwtSecret = crypto.randomBytes(64).toString('hex');
         const sshPort = lib.randomNumberFromRange(SSH_PORT_RANGE[0], SSH_PORT_RANGE[1]);
         const userData = core.getUserData(connectionUuid, sshPort, jwtSecret);
-        const instancePayload: CreateDigitalOceanInstance & CreateHetznerInstance = {
+        const formattedUserData = await integrations.compute[instanceProvider].userData.format(userData);
+        const instancePayload: CreateDigitalOceanInstance & CreateHetznerInstance & CreateVultrInstance = {
             datacenter: instanceRegion,
             region: instanceRegion,
             image: instanceImage,
+            os_id: -1,
             name: instanceName,
+            label: instanceName,
             size: instanceSize,
+            plan: instanceSize,
             server_type: instanceSize,
             ssh_keys: [instancePublicKeyId],
-            user_data: userData
+            sshkey_id: [instancePublicKeyId],
+            user_data: formattedUserData,
+            backups: 'disabled',
         };
         const { instanceId, instanceIp } = await integrations.compute[instanceProvider].instances.create(instancePayload);
         logger.info(`Created ${instanceProvider} instance.`, instancePayload);

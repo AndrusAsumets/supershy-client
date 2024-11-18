@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 import jwt from 'npm:jsonwebtoken';
+import { encodeBase64 } from 'jsr:@std/encoding/base64';
 import * as lib from './lib.ts';
 import { exists } from 'https://deno.land/std@0.224.0/fs/mod.ts';
 import { logger as _logger } from './logger.ts';
@@ -25,6 +26,10 @@ import {
     DIGITAL_OCEAN_BASE_URL,
     DIGITAL_OCEAN_INSTANCE_SIZE,
     DIGITAL_OCEAN_INSTANCE_IMAGE,
+    VULTR_API_KEY,
+    VULTR_BASE_URL,
+    VULTR_INSTANCE_PLAN,
+    VULTR_INSTANCE_IMAGE,
     HEARTBEAT_INTERVAL_SEC,
 } from './constants.ts';
 
@@ -32,6 +37,7 @@ import {
     Connection,
     CreateDigitalOceanInstance,
     CreateHetznerInstance,
+    CreateVultrInstance,
 } from './types.ts';
 
 export const shell = {
@@ -130,6 +136,11 @@ export const compute = {
 	digital_ocean: {
         instanceSize: DIGITAL_OCEAN_INSTANCE_SIZE,
         instanceImage: DIGITAL_OCEAN_INSTANCE_IMAGE,
+        userData: {
+            format: function (userData: string) {
+                return userData;
+            }
+        },
         regions: {
             list: async function (proxy: any = null) {
                 const headers = {
@@ -160,11 +171,19 @@ export const compute = {
                     body: JSON.stringify(args),
                 });
                 const json: any = await res.json();
-                const instanceIp = await compute.digital_ocean.ips.get(json.droplet.id);
+                const instanceIp = await compute.digital_ocean.ip.get(json.droplet.id);
                 return {
                     instanceId: json.droplet.id,
                     instanceIp,
                 };
+            },
+            get: async function (dropletId: string) {
+                const headers = {
+                    Authorization: `Bearer ${DIGITAL_OCEAN_API_KEY}`,
+                };
+                const res = await fetch(`${DIGITAL_OCEAN_BASE_URL}/droplets/${dropletId}`, { method: 'GET', headers });
+                const json: any = await res.json();
+                return json.droplet;
             },
             list: async function () {
                 const headers = {
@@ -239,23 +258,16 @@ export const compute = {
                 }
             },
         },
-        ips: {
+        ip: {
             get: async function (dropletId: string) {
                 let ip = null;
 
                 while (!ip) {
-                    const list = await compute.digital_ocean.instances.list();
-
-                    if (list) {
-                        const droplet = list.find((droplet: any) =>
-                            droplet.id == dropletId
-                        );
-
-                        if (droplet && droplet.networks.v4.length) {
-                            ip = droplet.networks.v4.filter((network: any) =>
-                                network.type == 'public'
-                            )[0]['ip_address'];
-                        }
+                    const droplet = await compute.digital_ocean.instances.get(dropletId);
+                    if (droplet && droplet.networks.v4.length) {
+                        ip = droplet.networks.v4.filter((network: any) =>
+                            network.type == 'public'
+                        )[0]['ip_address'];
                     }
                 }
 
@@ -266,6 +278,11 @@ export const compute = {
 	hetzner: {
         instanceSize: HETZNER_SERVER_TYPE,
         instanceImage: HETZNER_INSTANCE_IMAGE,
+        userData: {
+            format: function (userData: string) {
+                return userData;
+            }
+        },
         regions: {
             list: async function (proxy: any = null) {
                 const headers = {
@@ -393,6 +410,181 @@ export const compute = {
                     logger.info(`Deleted Hetzner ssh_key: ${id}.`);
                     index = index + 1;
                 }
+            },
+        },
+    },
+	vultr: {
+        instanceSize: VULTR_INSTANCE_PLAN,
+        instanceImage: VULTR_INSTANCE_IMAGE,
+        userData: {
+            format: function (userData: string) {
+                return encodeBase64(userData);
+            }
+        },
+        regions: {
+            list: async function (proxy: any = null) {
+                const headers = {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${VULTR_API_KEY}`
+                };
+                const options: any = { method: 'GET', headers };
+                if (proxy) {
+                    options.client = Deno.createHttpClient({ proxy });
+                }
+                const res = await fetch(`${VULTR_BASE_URL}/regions`, options);
+                const json: any = await res.json();
+                const regions = json
+                    .regions
+                    .map((data: any) => data.id);
+                return regions;
+            },
+        },
+        os: {
+            getId: async function (instanceImage: string) {
+                let results: any[] = [];
+                let cursor = '';
+                const headers = {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${VULTR_API_KEY}`
+                };
+                const options: any = { method: 'GET', headers };
+
+                let canLoop = true;
+                while (canLoop) {
+                    let url = `${VULTR_BASE_URL}/os?per_page=50`;
+                    if (cursor) {
+                        url = `${url}&cursor=${cursor}`;
+                    }
+
+                    const res = await fetch(url, options);
+                    const json: any = await res.json();
+
+                    results = results.concat(json.os);
+                    cursor = json.meta.links.next;
+                    canLoop = cursor.length > 0;
+                }
+                const osId = results
+                    .filter((os: any) => os.name === instanceImage)[0].id;
+                return osId;
+            },
+        },
+        instances: {
+            create: async function (args: CreateVultrInstance) {
+                const osId = await compute.vultr.os.getId(compute.vultr.instanceImage);
+                args.os_id = osId;
+                const headers = {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${VULTR_API_KEY}`
+                };
+                const res = await fetch(`${VULTR_BASE_URL}/instances`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(args),
+                });
+                const json: any = await res.json();
+                const instanceIp = await compute.vultr.ip.get(json.instance.id);
+                return {
+                    instanceId: json.instance.id,
+                    instanceIp,
+                }
+            },
+            get: async function (instanceId: string) {
+                const headers = {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${VULTR_API_KEY}`
+                };
+                const res = await fetch(`${VULTR_BASE_URL}/instances/${instanceId}`, { method: 'GET', headers });
+                const json: any = await res.json();
+                return json.instance;
+            },
+            list: async function () {
+                const headers = {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${VULTR_API_KEY}`
+                };
+                const res = await fetch(`${VULTR_BASE_URL}/instances`, { method: 'GET', headers });
+                const json: any = await res.json();
+                return json.instances;
+            },
+            delete: async function (ids: number[]) {
+                let index = 0;
+
+                while (index < ids.length) {
+                    const id = ids[index];
+                    const headers = {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${VULTR_API_KEY}`
+                    };
+                    await fetch(`${VULTR_BASE_URL}/instances/${id}`, {
+                        method: 'DELETE',
+                        headers,
+                    });
+                    logger.info(`Deleted Vultr instance: ${id}.`);
+                    index = index + 1;
+                }
+            },
+        },
+        keys: {
+            add: async function(publicKey: string, name: string) {
+                const headers = {
+                    Authorization: `Bearer ${VULTR_API_KEY}`,
+                    'Content-Type': 'application/json',
+                };
+                const body = {
+                    name: name,
+                    'ssh_key': publicKey,
+                };
+                const res = await fetch(`${VULTR_BASE_URL}/ssh-keys`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(body),
+                });
+                const json: any = await res.json();
+                return json['ssh_key']['id'];
+            },
+            list: async function () {
+                const headers = {
+                    Authorization: `Bearer ${VULTR_API_KEY}`,
+                    'Content-Type': 'application/json',
+                };
+                const res = await fetch(`${VULTR_BASE_URL}/ssh-keys`, {
+                    method: 'GET',
+                    headers,
+                });
+                const json: any = await res.json();
+                return json['ssh_keys'];
+            },
+            delete: async function (ids: number[]) {
+                let index = 0;
+
+                while (index < ids.length) {
+                    const id = ids[index];
+                    const headers = {
+                        Authorization: `Bearer ${VULTR_API_KEY}`,
+                        'Content-Type': 'application/json',
+                    };
+                    await fetch(`${VULTR_BASE_URL}/ssh-keys/${id}`, {
+                        method: 'DELETE',
+                        headers,
+                    });
+                    logger.info(`Deleted Vultr ssh_key: ${id}.`);
+                    index = index + 1;
+                }
+            },
+        },
+        ip: {
+            get: async function (instanceId: string) {
+                let ip = null;
+
+                while (!ip) {
+                    const instance = await compute.vultr.instances.get(instanceId);
+
+                    if (instance && instance.main_ip !== '0.0.0.0') {
+                        ip = instance.main_ip;
+                    }
+                }
+
+                return ip;
             },
         },
     }

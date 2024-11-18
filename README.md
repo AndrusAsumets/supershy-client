@@ -1,7 +1,7 @@
 Supershy is a DIY SSH tunnel proxy with a rotating exit node.
 
 During its initiation, the client creates two new VPS instances (let's call them
-First Node and Second Node) inside Digital Ocean and/or Hetzner containing
+First Node and Second Node) inside Digital Ocean, Hetzner and/or Vultr containing
 nothing else but a simple Tinyproxy proxy daemon. Next up, it creates a SSH
 tunnel from your machine to the First Node. If you then change your browser's
 (or any other app or a system which has basic support for proxying) proxy
@@ -90,8 +90,14 @@ HETZNER_API_KEY=
  -> Click to show.
  -> Click to copy.
 
+VULTR_API_KEY=
+ -> Open ttps://my.vultr.com/settings/#settingsapi
+ -> Click Allow all IPv4.
+ -> Click Allow all IPv6.
+ -> Click to copy the API Key.
+
 The client will expect an API_KEY from at least one of the VPS providers,
-but it will pick a random one if both keys were set.
+but it will pick a random one if multiple were set.
 
 CLOUDFLARE_ACCOUNT_ID=
  -> Open https://dash.cloudflare.com

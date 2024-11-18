@@ -50,8 +50,13 @@ if (HETZNER_API_KEY) {
     INSTANCE_PROVIDERS.push(InstanceProvider.HETZNER)
 }
 
+export const VULTR_API_KEY = Deno.env.get('VULTR_API_KEY');
+if (VULTR_API_KEY) {
+    INSTANCE_PROVIDERS.push(InstanceProvider.VULTR)
+}
+
 if (!INSTANCE_PROVIDERS.length) {
-    throw `DIGITAL_OCEAN_API_KEY and/or HETZNER_API_KEY env variable was not provided.`;
+    throw `DIGITAL_OCEAN_API_KEY, HETZNER_API_KEY and/or VULTR_API_KEY env variable(s) was/were not provided.`;
 }
 
 export const CLOUDFLARE_ACCOUNT_ID = Deno.env.get('CLOUDFLARE_ACCOUNT_ID');
@@ -61,6 +66,7 @@ export const TEST_PROXY_URL = `http://localhost:${PROXY_LOCAL_TEST_PORT}`;
 export const PROXY_URL = `http://localhost:${PROXY_LOCAL_PORT}`;
 export const DIGITAL_OCEAN_BASE_URL = 'https://api.digitalocean.com/v2';
 export const HETZNER_BASE_URL = 'https://api.hetzner.cloud/v1';
+export const VULTR_BASE_URL = 'https://api.vultr.com/v2';
 export const CLOUDFLARE_BASE_URL = 'https://api.cloudflare.com/client/v4';
 export const __DIRNAME = path.dirname(path.fromFileUrl(import.meta.url));
 export const HOME_PATH = homedir();
@@ -80,12 +86,18 @@ export const DIGITAL_OCEAN_INSTANCE_SIZE = Deno.env.get('DIGITAL_OCEAN_INSTANCE_
 export const HETZNER_SERVER_TYPE = Deno.env.get('HETZNER_SERVER_TYPE')
     ? String(Deno.env.get('HETZNER_SERVER_TYPE'))
     : 'cx22';
+export const VULTR_INSTANCE_PLAN = Deno.env.get('VULTR_INSTANCE_PLAN')
+    ? String(Deno.env.get('VULTR_INSTANCE_PLAN'))
+    : 'vc2-1c-1gb';
 export const DIGITAL_OCEAN_INSTANCE_IMAGE = Deno.env.get('DIGITAL_OCEAN_INSTANCE_IMAGE')
     ? String(Deno.env.get('DIGITAL_OCEAN_INSTANCE_IMAGE'))
     : 'debian-12-x64';
 export const HETZNER_INSTANCE_IMAGE = Deno.env.get('HETZNER_INSTANCE_IMAGE')
     ? String(Deno.env.get('HETZNER_INSTANCE_IMAGE'))
     : 'debian-12';
+export const VULTR_INSTANCE_IMAGE = Deno.env.get('VULTR_INSTANCE_IMAGE')
+    ? String(Deno.env.get('VULTR_INSTANCE_IMAGE'))
+    : 'Debian 12 x64 (bookworm)';
 export const GENERATE_SSH_KEY_FILE_NAME = 'generate-ssh-key.exp';
 export const CONNECT_SSH_TUNNEL_FILE_NAME = 'connect-ssh-tunnel.exp';
 export const HEARTBEAT_INTERVAL_SEC = 10 * 1000;
