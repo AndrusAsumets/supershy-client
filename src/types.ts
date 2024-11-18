@@ -18,6 +18,7 @@ export enum LoopStatus {
 export enum InstanceProvider {
 	DIGITAL_OCEAN = 'digital_ocean',
 	HETZNER = 'hetzner',
+	VULTR = 'vultr',
 }
 
 export interface Connection {
@@ -69,4 +70,14 @@ export interface CreateHetznerInstance {
 	name: string
 	server_type: string
 	user_data: string
+}
+
+export interface CreateVultrInstance {
+	region: string
+	plan: string
+	label: string
+	os_id: number
+	sshkey_id: [string]
+	user_data: string
+	backups: string
 }

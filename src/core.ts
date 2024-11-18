@@ -23,6 +23,9 @@ export const getUserData = (
     return `
 #cloud-config
 runcmd:
+    - iptables -A INPUT -p tcp --dport ${sshPort} -j ACCEPT
+
+    - echo 'PasswordAuthentication no' >> /etc/ssh/sshd_config
     - echo 'Port ${sshPort}' >> /etc/ssh/sshd_config
     - sudo systemctl restart ssh
 
