@@ -3,7 +3,6 @@
 import jwt from 'npm:jsonwebtoken';
 import { encodeBase64 } from 'jsr:@std/encoding/base64';
 import * as lib from './lib.ts';
-import * as core from './core.ts';
 import { exists } from 'https://deno.land/std@0.224.0/fs/mod.ts';
 import { logger as _logger } from './logger.ts';
 
@@ -178,6 +177,14 @@ export const compute = {
                     instanceIp,
                 };
             },
+            get: async function (dropletId: string) {
+                const headers = {
+                    Authorization: `Bearer ${DIGITAL_OCEAN_API_KEY}`,
+                };
+                const res = await fetch(`${DIGITAL_OCEAN_BASE_URL}/droplets/${dropletId}`, { method: 'GET', headers });
+                const json: any = await res.json();
+                return json.droplet;
+            },
             list: async function () {
                 const headers = {
                     Authorization: `Bearer ${DIGITAL_OCEAN_API_KEY}`,
@@ -256,18 +263,11 @@ export const compute = {
                 let ip = null;
 
                 while (!ip) {
-                    const list = await compute.digital_ocean.instances.list();
-
-                    if (list) {
-                        const droplet = list.find((droplet: any) =>
-                            droplet.id == dropletId
-                        );
-
-                        if (droplet && droplet.networks.v4.length) {
-                            ip = droplet.networks.v4.filter((network: any) =>
-                                network.type == 'public'
-                            )[0]['ip_address'];
-                        }
+                    const droplet = await compute.digital_ocean.instances.get(dropletId);
+                    if (droplet && droplet.networks.v4.length) {
+                        ip = droplet.networks.v4.filter((network: any) =>
+                            network.type == 'public'
+                        )[0]['ip_address'];
                     }
                 }
 

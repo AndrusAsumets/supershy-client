@@ -124,7 +124,7 @@ const cleanup = async (instanceIdsToKeep: number[]) => {
     while (index < instanceProviders.length) {
         const instanceProvider = instanceProviders[index];
 
-        const deletableKeyIds = await integrations.compute[instanceProvider].keys.list()
+        const deletableKeyIds = await integrations.compute[instanceProvider].keys.list();
         if (deletableKeyIds) {
             await integrations.compute[instanceProvider].keys.delete(
                 deletableKeyIds
@@ -133,7 +133,7 @@ const cleanup = async (instanceIdsToKeep: number[]) => {
             );
         }
 
-        const deletableInstanceIds = await integrations.compute[instanceProvider].instances.list()
+        const deletableInstanceIds = await integrations.compute[instanceProvider].instances.list();
         if (deletableInstanceIds) {
             await integrations.compute[instanceProvider].instances.delete(
                 deletableInstanceIds
