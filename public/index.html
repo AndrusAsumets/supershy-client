@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+    <body>
+        <script src="http://localhost:8080/lib/socket.io.min.js"></script>
+        <script>
+            const socket = io('ws://localhost:3000', { reconnectionDelayMax: 10000 });
+
+            socket.on('status', (status) => {
+                document.getElementsByTagName('body')[0].innerText = status;
+            });
+        </script>
+    </body>
+</html>

@@ -3,6 +3,9 @@
 import 'jsr:@std/dotenv/load';
 import * as crypto from 'node:crypto';
 import { v7 as uuidv7 } from 'npm:uuid';
+import { serve } from 'https://deno.land/std@0.150.0/http/server.ts';
+import { Server } from 'https://deno.land/x/socket_io@0.2.0/mod.ts';
+import { serveDir } from 'jsr:@std/http/file-server';
 import {
     LoopStatus,
     ConnectionType,
@@ -48,6 +51,7 @@ import {
 } from './src/ssh.ts';
 
 const logger = _logger.get();
+const io = new Server({ cors: { origin: '*' }});
 
 let loopStatus: LoopStatus = LoopStatus.INACTIVE;
 
@@ -247,6 +251,11 @@ const exit = async (message: string) => {
     throw new Error();
 };
 
+const updateStatus = (status: LoopStatus) => {
+    loopStatus = status;
+    io.emit('event', status);
+};
+
 const loop = async () => {
     setTimeout(async () => {
         const isStillWorking = loopStatus == LoopStatus.ACTIVE;
@@ -256,11 +265,11 @@ const loop = async () => {
     }, LOOP_INTERVAL_SEC * 1000);
 
     try {
-        loopStatus = LoopStatus.ACTIVE;
+        updateStatus(LoopStatus.ACTIVE);
         const startTime = performance.now();
         await rotate();
         const endTime = performance.now();
-        loopStatus = LoopStatus.FINISHED;
+        updateStatus(LoopStatus.FINISHED);
 
         logger.info(
             `Loop finished in ${
@@ -298,4 +307,30 @@ await new Deno.Command('chmod', { args: `+x ${`${TMP_PATH}/${CONNECT_SSH_TUNNEL_
 await Deno.chmod(`${TMP_PATH}/${GENERATE_SSH_KEY_FILE_NAME}`, 0o700);
 await Deno.chmod(`${TMP_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME}`, 0o700);
 
-await loop();
+loop();
+
+Deno.serve(
+    { hostname: 'localhost', port: 8080 },
+    (req: Request) => {
+        const pathname = new URL(req.url).pathname;
+
+        if (pathname.startsWith('/')) {
+            return serveDir(req, {
+                fsRoot: 'public',
+                urlRoot: '',
+            });
+        }
+    }
+);
+
+io.on('connection', (socket) => {
+    console.log(`socket ${socket.id} connected`);
+
+    io.emit('status', loopStatus);
+
+    socket.on('disconnect', (reason) => {
+        console.log(`socket ${socket.id} disconnected due to ${reason}`);
+    });
+});
+
+await serve(io.handler(), { port: 3000 });
