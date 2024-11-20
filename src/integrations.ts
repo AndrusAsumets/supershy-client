@@ -171,6 +171,7 @@ export const compute = {
                     body: JSON.stringify(args),
                 });
                 const json: any = await res.json();
+                if (!json.droplet) logger.error('compute.digital_ocean.instances.create error', json);
                 const instanceIp = await compute.digital_ocean.ip.get(json.droplet.id);
                 return {
                     instanceId: json.droplet.id,
@@ -332,6 +333,7 @@ export const compute = {
                     body: JSON.stringify(args),
                 });
                 const json: any = await res.json();
+                if (!json.server) logger.error('compute.hetzner.instances.create error', json);
                 return {
                     instanceId: json.server.id,
                     instanceIp: json.server.public_net.ipv4.ip,
@@ -482,6 +484,7 @@ export const compute = {
                     body: JSON.stringify(args),
                 });
                 const json: any = await res.json();
+                if (!json.instance) logger.error('compute.vultr.instances.create error', json);
                 const instanceIp = await compute.vultr.ip.get(json.instance.id);
                 return {
                     instanceId: json.instance.id,

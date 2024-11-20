@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html>
     <body>
+        <div class="app">
+            <div class="connection-status"></div>
+            <div class="connect-toggle">
+                connect
+            </div>
+        </div>
         <script src="http://localhost:8080/lib/socket.io.min.js"></script>
-        <script>
-            const socket = io('ws://localhost:3000', { reconnectionDelayMax: 10000 });
-
-            socket.on('status', (status) => {
-                document.getElementsByTagName('body')[0].innerText = status;
-            });
-        </script>
+        <script src="http://localhost:8080/src/index.js"></script>
     </body>
 </html>

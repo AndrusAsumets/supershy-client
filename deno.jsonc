@@ -1,7 +1,7 @@
 {
     "tasks": {
         "compile": "deno compile --allow-all --output dist/ app.ts",
-        "desktop": "deno --allow-read --allow-write --allow-run --allow-net --allow-ffi ui.ts",
-        "web": "open http://localhost:8080/public/html/"
+        "desktop": "deno run --allow-all ui.ts desktop",
+        "web": "deno run --allow-all ui.ts web"
     }
 }

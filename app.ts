@@ -5,7 +5,6 @@ import * as crypto from 'node:crypto';
 import { v7 as uuidv7 } from 'npm:uuid';
 import { serve } from 'https://deno.land/std@0.150.0/http/server.ts';
 import { Server } from 'https://deno.land/x/socket_io@0.2.0/mod.ts';
-import { serveDir } from 'jsr:@std/http/file-server';
 import {
     LoopStatus,
     ConnectionType,
@@ -44,6 +43,7 @@ import {
     CONNECTION_TYPES,
     INSTANCE_PROVIDERS,
     HEARTBEAT_INTERVAL_SEC,
+    WEB_SOCKET_PORT,
 } from './src/constants.ts';
 import {
     GENERATE_SSH_KEY_FILE,
@@ -309,28 +309,22 @@ await Deno.chmod(`${TMP_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME}`, 0o700);
 
 loop();
 
-Deno.serve(
-    { hostname: 'localhost', port: 8080 },
-    (req: Request) => {
-        const pathname = new URL(req.url).pathname;
-
-        if (pathname.startsWith('/')) {
-            return serveDir(req, {
-                fsRoot: 'public',
-                urlRoot: '',
-            });
-        }
-    }
-);
-
 io.on('connection', (socket) => {
     console.log(`socket ${socket.id} connected`);
 
     io.emit('status', loopStatus);
+
+    socket.on('start', () => {
+
+    });
+
+    socket.on('stop', () => {
+
+    });
 
     socket.on('disconnect', (reason) => {
         console.log(`socket ${socket.id} disconnected due to ${reason}`);
     });
 });
 
-await serve(io.handler(), { port: 3000 });
+await serve(io.handler(), { port: WEB_SOCKET_PORT });

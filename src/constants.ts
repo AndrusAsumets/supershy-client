@@ -113,3 +113,11 @@ if (!CLOUDFLARE_API_KEY) {
 if (!CLOUDFLARE_KV_NAMESPACE) {
     throw `CLOUDFLARE_KV_NAMESPACEY env variable was not provided.`;
 }
+
+export const WEB_SERVER_PORT = Deno.env.get('WEB_SERVER_PORT')
+    ? Number(Deno.env.get('WEB_SERVER_PORT'))
+    : 8080;
+
+export const WEB_SOCKET_PORT = Deno.env.get('WEB_SOCKET_PORT')
+    ? Number(Deno.env.get('WEB_SOCKET_PORT'))
+    : 3000;
