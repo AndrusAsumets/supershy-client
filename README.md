@@ -52,11 +52,6 @@ brew install expect
 ```
 
 ```
-# Forever
-sudo npm install forever -g
-```
-
-```
 # supershy-client
 git clone git@github.com:AndrusAsumets/supershy-client.git
 cd supershy-client
@@ -126,17 +121,12 @@ CLOUDFLARE_API_KEY=
 
 ```
 # Start supershy
-forever start -c "deno run --allow-all app.ts" ./
+deno task app
 ```
 
 ```
 # Log
 tail -f ~/.supershy-client/logs/*.log
-```
-
-```
-# Stop supershy
-forever stop -c "deno run --allow-all app.ts" ./
 ```
 
 ```

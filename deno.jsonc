@@ -1,6 +1,6 @@
 {
     "tasks": {
-        "app": "deno run --allow-all app.ts",
+        "app": "./app.sh",
         "desktop": "sleep 1 && deno --allow-all desktop.ts | deno --allow-all webserver.ts",
         "web": "deno --allow-all webserver.ts open",
         "compile": "deno compile --allow-all --output dist/ app.ts"
