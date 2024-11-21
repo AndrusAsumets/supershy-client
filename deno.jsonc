@@ -1,9 +1,9 @@
 {
     "tasks": {
+        "desktop": "deno task app | sleep 1 && deno --allow-all desktop.ts | deno --allow-all webserver.ts",
+        "web": "deno task app | deno --allow-all webserver.ts",
         "app": "deno task app-stop | sleep 1 && screen -dm bash -c './supershy.sh' &",
         "app-stop": "pkill -f supershy.sh",
-        "desktop": "sleep 1 && deno --allow-all desktop.ts | deno --allow-all webserver.ts",
-        "web": "deno --allow-all webserver.ts",
         "compile": "deno compile --allow-all --output dist/ app.ts"
     }
 }

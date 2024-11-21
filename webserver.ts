@@ -6,7 +6,7 @@ import {
     WEB_SERVER_PORT,
 } from './src/constants.ts';
 
-const isOpen = Deno.args[0] == 'open';
+const canOpen = Deno.args[0] == 'open';
 
 Deno.serve(
     { hostname: 'localhost', port: WEB_SERVER_PORT },
@@ -32,4 +32,4 @@ Deno.serve(
     }
 );
 
-isOpen && open(`http://localhost:${WEB_SERVER_PORT}`);
+canOpen && open(`http://localhost:${WEB_SERVER_PORT}`);

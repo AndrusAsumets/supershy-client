@@ -281,18 +281,22 @@ const loop = async () => {
     }
 };
 
-setInterval(async () => {
-    const isLooped = loopStatus == LoopStatus.FINISHED;
+const heartbeat = async () => {
+    try {
+        await integrations.kv.cloudflare.heartbeat({ url: PROXY_URL });
+        io.emit('status', 'connected');
+    }
+    catch(err) {
+        io.emit('status', 'disconnected');
+        const isLooped = loopStatus == LoopStatus.FINISHED;
 
-    if (isLooped) {
-        try {
-            await integrations.kv.cloudflare.heartbeat({ url: PROXY_URL });
-        }
-        catch(err) {
+        if (isLooped) {
             await exit(`Heartbeat failure: ${err}`);
         }
     }
-}, HEARTBEAT_INTERVAL_SEC);
+};
+
+setInterval(() => heartbeat(), HEARTBEAT_INTERVAL_SEC);
 
 await integrations.fs.ensureFolder(DATA_PATH);
 await integrations.fs.ensureFolder(KEY_PATH);
@@ -301,8 +305,8 @@ await integrations.fs.ensureFolder(LOG_PATH);
 await Deno.writeTextFileSync(`${TMP_PATH}/${GENERATE_SSH_KEY_FILE_NAME}`, GENERATE_SSH_KEY_FILE);
 await Deno.writeTextFileSync(`${TMP_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME}`, CONNECT_SSH_TUNNEL_FILE);
 
-await new Deno.Command('chmod', { args: `+x ${`${TMP_PATH}/${GENERATE_SSH_KEY_FILE_NAME}`}`.split(' ') });
-await new Deno.Command('chmod', { args: `+x ${`${TMP_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME}`}`.split(' ') });
+await new Deno.Command('chmod', { args: ['+x', GENERATE_SSH_KEY_FILE_NAME] });
+await new Deno.Command('chmod', { args: ['+x', CONNECT_SSH_TUNNEL_FILE_NAME] });
 
 await Deno.chmod(`${TMP_PATH}/${GENERATE_SSH_KEY_FILE_NAME}`, 0o700);
 await Deno.chmod(`${TMP_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME}`, 0o700);
@@ -311,16 +315,7 @@ loop();
 
 io.on('connection', (socket) => {
     console.log(`socket ${socket.id} connected`);
-
-    io.emit('status', loopStatus);
-
-    socket.on('start', () => {
-
-    });
-
-    socket.on('stop', () => {
-
-    });
+    heartbeat();
 
     socket.on('disconnect', (reason) => {
         console.log(`socket ${socket.id} disconnected due to ${reason}`);

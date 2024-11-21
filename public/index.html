@@ -1,10 +1,44 @@
 <!DOCTYPE html>
 <html>
+    <head>
+        <style>
+            body {
+                margin: 0;
+                padding: 0;
+            }
+
+            .app {
+                position: relative;
+                width: 100vw;
+                max-width: 800px;
+                height: 100vh;
+                max-height: 100vh;
+                margin: 0 auto;
+            }
+
+            .footer {
+                position: absolute;
+                bottom: 0;
+                width: 100%;
+                display: flex;
+                justify-content: center;
+                margin: 8px;
+            }
+
+            .connect-toggle {
+                width: fit-content;
+                margin: 8px;
+                padding: 8px;
+                border: 1px solid black;
+            }
+        </style>
+    </head>
     <body>
         <div class="app">
-            <div class="connection-status"></div>
-            <div class="connect-toggle">
-                connect
+            <div class="footer">
+                <div class="connect-toggle">
+                    connect
+                </div>
             </div>
         </div>
         <script src="http://localhost:8080/lib/socket.io.min.js"></script>

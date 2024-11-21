@@ -3,5 +3,5 @@
 until deno run --allow-all app.ts
 do
     echo "Restarting App"
-    sleep 2
+    sleep 10
 done
