@@ -28,7 +28,10 @@ const interact = async () => {
 
 socket
     .on('status', (status) => updateConnectStatus(status))
-    .on('disconnect', () => updateConnectStatus('disconnected'));
+    .on('disconnect', () => updateConnectStatus('disconnected'))
+    .on('log', (message) => Object
+        .keys(message)
+        .forEach(key => console.log(`${key}: ${message[key][0]}`)));
 
 $connectToggle
     .addEventListener('click', () => interact());

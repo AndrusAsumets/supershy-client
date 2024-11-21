@@ -50,8 +50,8 @@ import {
     CONNECT_SSH_TUNNEL_FILE,
 } from './src/ssh.ts';
 
-const logger = _logger.get();
 const io = new Server({ cors: { origin: '*' }});
+const logger = _logger.get(io);
 
 let loopStatus: LoopStatus = LoopStatus.INACTIVE;
 
