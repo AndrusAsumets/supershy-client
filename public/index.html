@@ -2,42 +2,78 @@
 <html>
     <head>
         <style>
+            @font-face {
+                font-family: SourceCodePro-Regular;
+                src: url(/assets/fonts/SourceCodePro-Regular.otf.woff);
+            }
+
+            @font-face {
+                font-family: SourceCodePro-Semibold;
+                src: url(/assets/fonts/SourceCodePro-Semibold.otf.woff);
+            }
+
+            .clickable {
+                font-family: SourceCodePro-Semibold;
+                cursor: pointer;
+                user-select: none;
+            }
+
             body {
+                --primary-bg-color: black;
+                --secondary-bg-color: white;
+                --primary-text-color: white;
+                font-family: SourceCodePro-Regular;
                 margin: 0;
                 padding: 0;
+                background: var(--primary-bg-color);
+                color: var(--primary-text-color);
             }
 
             .app {
                 position: relative;
                 width: 100vw;
                 max-width: 800px;
-                height: 100vh;
-                max-height: 100vh;
                 margin: 0 auto;
             }
 
+            .content {
+                height: calc(100vh - 128px);
+                margin: 16px;
+                padding: 16px;
+                border: 1px solid var(--secondary-bg-color);
+                word-wrap: break-word;
+                font-size: 12px;
+                overflow-y: scroll;
+            }
+
+            .log-item {
+                line-height: 16px;
+            }
+
             .footer {
-                position: absolute;
+                max-width: 800px;
+                background: var(--primary-bg-color);
+                position: fixed;
                 bottom: 0;
                 width: 100%;
                 display: flex;
                 justify-content: center;
-                margin: 8px;
             }
 
             .connect-toggle {
                 width: fit-content;
-                margin: 8px;
-                padding: 8px;
-                border: 1px solid black;
+                margin: 16px;
+                padding: 8px 32px;
+                border: 1px solid var(--secondary-bg-color);
             }
         </style>
     </head>
     <body>
         <div class="app">
+            <div class="content"></div>
             <div class="footer">
-                <div class="connect-toggle">
-                    connect
+                <div class="connect-toggle clickable">
+                    Loading
                 </div>
             </div>
         </div>
