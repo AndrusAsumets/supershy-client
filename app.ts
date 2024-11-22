@@ -5,6 +5,7 @@ import * as crypto from 'node:crypto';
 import { v7 as uuidv7 } from 'npm:uuid';
 import { serve } from 'https://deno.land/std@0.150.0/http/server.ts';
 import { Server } from 'https://deno.land/x/socket_io@0.2.0/mod.ts';
+import { serveDir } from 'jsr:@std/http/file-server';
 import {
     LoopStatus,
     ConnectionType,
@@ -31,7 +32,6 @@ import {
     KEY_ALGORITHM,
     PROXY_URL,
     TEST_PROXY_URL,
-    __DIRNAME,
     TMP_PATH,
     DATA_PATH,
     KEY_PATH,
@@ -44,6 +44,8 @@ import {
     INSTANCE_PROVIDERS,
     HEARTBEAT_INTERVAL_SEC,
     WEB_SOCKET_PORT,
+    WEB_SERVER_PORT,
+    AUTO_START,
 } from './src/constants.ts';
 import {
     GENERATE_SSH_KEY_FILE,
@@ -245,8 +247,8 @@ const rotate = async () => {
     );
 };
 
-const exit = async (message: string) => {
-    logger.error(message);
+const exit = async (message: string, onPurpose = false) => {
+    !onPurpose && logger.error(message);
     await lib.sleep(1000);
     throw new Error();
 };
@@ -296,26 +298,60 @@ const heartbeat = async () => {
     }
 };
 
-setInterval(() => heartbeat(), HEARTBEAT_INTERVAL_SEC);
+const start = async () => {
+    setInterval(() => heartbeat(), HEARTBEAT_INTERVAL_SEC);
 
-await integrations.fs.ensureFolder(DATA_PATH);
-await integrations.fs.ensureFolder(KEY_PATH);
-await integrations.fs.ensureFolder(LOG_PATH);
+    await integrations.fs.ensureFolder(DATA_PATH);
+    await integrations.fs.ensureFolder(KEY_PATH);
+    await integrations.fs.ensureFolder(LOG_PATH);
 
-await Deno.writeTextFileSync(`${TMP_PATH}/${GENERATE_SSH_KEY_FILE_NAME}`, GENERATE_SSH_KEY_FILE);
-await Deno.writeTextFileSync(`${TMP_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME}`, CONNECT_SSH_TUNNEL_FILE);
+    await Deno.writeTextFileSync(`${TMP_PATH}/${GENERATE_SSH_KEY_FILE_NAME}`, GENERATE_SSH_KEY_FILE);
+    await Deno.writeTextFileSync(`${TMP_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME}`, CONNECT_SSH_TUNNEL_FILE);
 
-await new Deno.Command('chmod', { args: ['+x', GENERATE_SSH_KEY_FILE_NAME] });
-await new Deno.Command('chmod', { args: ['+x', CONNECT_SSH_TUNNEL_FILE_NAME] });
+    await new Deno.Command('chmod', { args: ['+x', GENERATE_SSH_KEY_FILE_NAME] });
+    await new Deno.Command('chmod', { args: ['+x', CONNECT_SSH_TUNNEL_FILE_NAME] });
 
-await Deno.chmod(`${TMP_PATH}/${GENERATE_SSH_KEY_FILE_NAME}`, 0o700);
-await Deno.chmod(`${TMP_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME}`, 0o700);
+    await Deno.chmod(`${TMP_PATH}/${GENERATE_SSH_KEY_FILE_NAME}`, 0o700);
+    await Deno.chmod(`${TMP_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME}`, 0o700);
 
-loop();
+    loop();
+    heartbeat();
+};
+
+AUTO_START && start();
+
+Deno.serve(
+    { hostname: 'localhost', port: WEB_SERVER_PORT },
+    async (req: Request) => {
+        const pathname = new URL(req.url).pathname;
+        const headers = {
+            'content-type': 'application/json; charset=utf-8'
+        };
+
+        switch(true) {
+            case pathname.startsWith('/app/start'):
+                core.updateEnv('AUTO_START', true);
+                await lib.sleep(1000);
+                setTimeout(() => exit('/app/start', true));
+                return new Response(JSON.stringify({ success: true }), { headers });
+            case pathname.startsWith('/app/stop'):
+                core.updateEnv('AUTO_START', false);
+                await lib.sleep(1000);
+                setTimeout(() => exit('/app/stop', true));
+                return new Response(JSON.stringify({ success: true }), { headers });
+            case pathname.startsWith('/'):
+                return serveDir(req, {
+                    fsRoot: 'public',
+                    urlRoot: '',
+                });
+        }
+    }
+);
 
 io.on('connection', (socket) => {
     console.log(`socket ${socket.id} connected`);
-    heartbeat();
+
+    io.emit('started', AUTO_START);
 
     socket.on('disconnect', (reason) => {
         console.log(`socket ${socket.id} disconnected due to ${reason}`);

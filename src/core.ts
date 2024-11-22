@@ -5,12 +5,12 @@ import {
     CLOUDFLARE_API_KEY,
     CLOUDFLARE_KV_NAMESPACE,
     CLOUDFLARE_BASE_URL,
-    __DIRNAME,
     TMP_PATH,
     CONNECT_SSH_TUNNEL_FILE_NAME,
     USER,
     LOG_PATH,
     SSH_LOG_OUTPUT_EXTENSION,
+    ENV_PATH,
 } from './constants.ts';
 
 import { Connection } from './types.ts';
@@ -58,3 +58,25 @@ export const getConnectionString = (
 };
 
 export const getSshLogOutputPath = (connectionUuid: string): string =>`${LOG_PATH}/${connectionUuid}${SSH_LOG_OUTPUT_EXTENSION}`;
+
+
+export const updateEnv = (key: string, value: boolean | number | string) => {
+    const newLine = '\n';
+    const separator = `${key}=`;
+    let env = Deno.readTextFileSync(ENV_PATH);
+
+    if (!env.includes(separator)) {
+        env = `${env}${newLine}${separator}`;
+    }
+
+    env = env
+        .split(newLine)
+        .map((line: string) =>
+            line.startsWith(separator)
+                ? `${separator}${value}`
+                : line
+        )
+        .join(newLine);
+
+    Deno.writeTextFileSync(ENV_PATH, env);
+};

@@ -68,7 +68,8 @@ export const DIGITAL_OCEAN_BASE_URL = 'https://api.digitalocean.com/v2';
 export const HETZNER_BASE_URL = 'https://api.hetzner.cloud/v1';
 export const VULTR_BASE_URL = 'https://api.vultr.com/v2';
 export const CLOUDFLARE_BASE_URL = 'https://api.cloudflare.com/client/v4';
-export const __DIRNAME = path.dirname(path.fromFileUrl(import.meta.url));
+export const __DIRNAME = path.dirname(path.fromFileUrl(import.meta.url)).split('/src')[0];
+export const ENV_PATH = `${__DIRNAME}/.env`;
 export const HOME_PATH = homedir();
 export const DATA_PATH = `${HOME_PATH}/.${APP_ID}`;
 export const KEY_PATH = `${DATA_PATH}/.keys`;
@@ -120,4 +121,8 @@ export const WEB_SERVER_PORT = Deno.env.get('WEB_SERVER_PORT')
 
 export const WEB_SOCKET_PORT = Deno.env.get('WEB_SOCKET_PORT')
     ? Number(Deno.env.get('WEB_SOCKET_PORT'))
-    : 3000;
+    : 3000;Deno.env.get('AUTO_START')
+
+export const AUTO_START = Deno.env.get('AUTO_START') == 'false'
+    ? false
+    : true;

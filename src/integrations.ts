@@ -61,9 +61,12 @@ export const shell = {
         const command = new Deno.Command(cmd, { args });
         await command.output();
     },
-    process: async function (input: string) {
-        const process = Deno.run({ cmd: input.split(' ') });
-        return await process.status();
+    command: async function (input: string) {
+        const args = input.split(' ');
+        const cmd = args[0];
+        args.shift();
+        const response = new Deno.Command(cmd, { args });
+        return await response.outputSync();
     }
 };
 
