@@ -286,10 +286,8 @@ const loop = async () => {
 const heartbeat = async () => {
     try {
         await integrations.kv.cloudflare.heartbeat({ url: PROXY_URL });
-        io.emit('status', 'connected');
     }
     catch(err) {
-        io.emit('status', 'disconnected');
         const isLooped = loopStatus == LoopStatus.FINISHED;
 
         if (isLooped) {
@@ -299,8 +297,6 @@ const heartbeat = async () => {
 };
 
 const start = async () => {
-    setInterval(() => heartbeat(), HEARTBEAT_INTERVAL_SEC);
-
     await integrations.fs.ensureFolder(DATA_PATH);
     await integrations.fs.ensureFolder(KEY_PATH);
     await integrations.fs.ensureFolder(LOG_PATH);
@@ -316,6 +312,7 @@ const start = async () => {
 
     loop();
     heartbeat();
+    setInterval(() => heartbeat(), HEARTBEAT_INTERVAL_SEC);
 };
 
 AUTO_START && start();
@@ -331,12 +328,10 @@ Deno.serve(
         switch(true) {
             case pathname.startsWith('/app/start'):
                 core.updateEnv('AUTO_START', true);
-                await lib.sleep(1000);
                 setTimeout(() => exit('/app/start', true));
                 return new Response(JSON.stringify({ success: true }), { headers });
             case pathname.startsWith('/app/stop'):
                 core.updateEnv('AUTO_START', false);
-                await lib.sleep(1000);
                 setTimeout(() => exit('/app/stop', true));
                 return new Response(JSON.stringify({ success: true }), { headers });
             case pathname.startsWith('/'):
@@ -350,12 +345,7 @@ Deno.serve(
 
 io.on('connection', (socket) => {
     console.log(`socket ${socket.id} connected`);
-
     io.emit('started', AUTO_START);
-
-    socket.on('disconnect', (reason) => {
-        console.log(`socket ${socket.id} disconnected due to ${reason}`);
-    });
 });
 
 await serve(io.handler(), { port: WEB_SOCKET_PORT });

@@ -1,4 +1,6 @@
-const socket = io('ws://localhost:3000', { reconnectionDelayMax: 10000 });
+const socket = io('ws://localhost:3000', {
+    reconnectionDelayMax: 1000
+});
 
 const $connectToggle = document.getElementsByClassName('connect-toggle')[0];
 const $content = document.getElementsByClassName('content')[0];
