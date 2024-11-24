@@ -44,6 +44,7 @@ import {
     INSTANCE_PROVIDERS,
     HEARTBEAT_INTERVAL_SEC,
     PROXY_AUTO_CONNECT,
+    DB_TABLE,
 } from './src/constants.ts';
 import {
     GENERATE_SSH_KEY_FILE,
@@ -107,7 +108,9 @@ const connect = async (
     await tunnel(connection, PROXY_LOCAL_PORT);
 };
 
-const cleanup = async (instanceIdsToKeep: number[]) => {
+const cleanup = async (
+    instanceIdsToKeep: string[]
+) => {
     const instanceProviders = Object.values(InstanceProvider);
 
     let index = 0;
@@ -132,12 +135,14 @@ const cleanup = async (instanceIdsToKeep: number[]) => {
                         if ('label' in instance && instance.label.includes(`${APP_ID}-${ENV}`)) return true;
                     })
                     .map((instance: any) => instance.id)
-                    .filter((id: number) => !instanceIdsToKeep.includes(id))
+                    .filter((id: string) => !instanceIdsToKeep.includes(id))
             );
         }
 
         index = index + 1;
     }
+
+    models.removeUsedConnections(instanceIdsToKeep);
 };
 
 const rotate = async () => {
@@ -216,7 +221,7 @@ const rotate = async () => {
         };
         connection = await integrations.kv.cloudflare.hostKey.update(connection, jwtSecret);
 
-        db.get().data.connections.push(connection);
+        db.get().data[DB_TABLE].push(connection);
         db.get().write();
 
         activeConnections.push(connection);
@@ -297,3 +302,5 @@ const connectProxy = async () => {
 webserver.start();
 websocket.start(io);
 PROXY_AUTO_CONNECT && connectProxy();
+
+models.removeUsedConnections(['459660652', '3e7112e4-4bdc-4990-b156-7ba1df7f9530']);

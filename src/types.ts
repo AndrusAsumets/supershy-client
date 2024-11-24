@@ -25,7 +25,7 @@ export interface Connection {
 	connectionUuid: string
 	connectionType: ConnectionType
 	instanceProvider: InstanceProvider
-	instanceId: number
+	instanceId: string
 	instanceName: string
 	instanceIp: string
 	instanceRegion: string

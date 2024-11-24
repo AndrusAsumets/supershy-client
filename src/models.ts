@@ -16,3 +16,11 @@ export const getInitConnection = () => {
         .reverse()
         .value()[0];
 };
+
+export const removeUsedConnections = (
+    instanceIdsToKeep: string[]
+) => {
+    db.get().data[DB_TABLE] = db.get().data[DB_TABLE]
+        .filter((connection: Connection) => instanceIdsToKeep.includes(connection.instanceId));
+    db.get().write();
+};

@@ -201,7 +201,7 @@ export const compute = {
                 const json: any = await res.json();
                 return json.droplets;
             },
-            delete: async function (ids: number[]) {
+            delete: async function (ids: string[]) {
                 let index = 0;
 
                 while (index < ids.length) {
@@ -248,7 +248,7 @@ export const compute = {
                 const json: any = await res.json();
                 return json['ssh_keys'];
             },
-            delete: async function (ids: number[]) {
+            delete: async function (ids: string[]) {
                 let index = 0;
 
                 while (index < ids.length) {
@@ -355,7 +355,7 @@ export const compute = {
                 const json: any = await res.json();
                 return json.servers;
             },
-            delete: async function (ids: number[]) {
+            delete: async function (ids: string[]) {
                 let index = 0;
 
                 while (index < ids.length) {

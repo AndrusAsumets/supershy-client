@@ -5,6 +5,7 @@ import {
 } from './constants.ts';
 
 export const start = () => {
+    // @ts-ignore: because
     Deno.serve(
         { hostname: 'localhost', port: WEB_SERVER_PORT },
         (req: Request) => {
