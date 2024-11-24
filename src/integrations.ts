@@ -431,6 +431,20 @@ export const compute = {
             }
         },
         regions: {
+            availability: async function (proxy: any = null, regionId: string) {
+                const headers = {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${VULTR_API_KEY}`
+                };
+                const options: any = { method: 'GET', headers };
+                if (proxy) {
+                    options.client = Deno.createHttpClient({ proxy });
+                }
+                const res = await fetch(`${VULTR_BASE_URL}/regions/${regionId}/availability`, options);
+                const json: any = await res.json();
+                const availablePlans = json.available_plans;
+                return availablePlans;
+            },
             list: async function (proxy: any = null) {
                 const headers = {
                     'Content-Type': 'application/json',
@@ -444,7 +458,12 @@ export const compute = {
                 const json: any = await res.json();
                 const regions = json
                     .regions
-                    .map((data: any) => data.id);
+                    .map((data: any) => data.id)
+                    .filter(async(id: string) => {
+                        const availablePlans = await compute.vultr.regions.availability(proxy, id);
+                        return availablePlans.includes(compute.vultr.instanceSize);
+                    });
+
                 return regions;
             },
         },
