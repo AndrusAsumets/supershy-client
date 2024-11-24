@@ -34,7 +34,7 @@ import {
 } from './constants.ts';
 
 import {
-    Connection,
+    Proxy,
     CreateDigitalOceanInstance,
     CreateHetznerInstance,
     CreateVultrInstance,
@@ -80,13 +80,13 @@ export const fs = {
 
 export const kv = {
     cloudflare: {
-        heartbeat: async function (proxy: any = null) {
+        heartbeat: async function (proxyUrl: string | null = null) {
             const options: any = {
                 method: 'GET',
                 signal: AbortSignal.timeout(HEARTBEAT_INTERVAL_SEC),
             };
-            if (proxy) {
-                options.client = Deno.createHttpClient({ proxy });
+            if (proxyUrl) {
+                options.client = Deno.createHttpClient({ proxy: { url: proxyUrl } });
             }
             const res = await fetch(CLOUDFLARE_BASE_URL, options);
             await res.json();
@@ -94,7 +94,7 @@ export const kv = {
         },
         hostKey: {
             get: async function (
-                connectionUuid: string,
+                proxyUuid: string,
                 jwtSecret: string,
             ) {
                 let hostKey: string = '';
@@ -105,7 +105,7 @@ export const kv = {
                         };
                         const options: any = { method: 'GET', headers };
                         const url =
-                            `${CLOUDFLARE_BASE_URL}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${CLOUDFLARE_KV_NAMESPACE}/values/${connectionUuid}`;
+                            `${CLOUDFLARE_BASE_URL}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${CLOUDFLARE_KV_NAMESPACE}/values/${proxyUuid}`;
                         const res = await fetch(url, options);
                         const text = await res.text();
                         const decoded = jwt.verify(text, jwtSecret);
@@ -118,22 +118,22 @@ export const kv = {
                 return hostKey;
             },
             update: async function (
-                connection: Connection,
+                proxy: Proxy,
                 jwtSecret: string,
             ) {
-                const { connectionUuid, instanceIp } = connection;
+                const { proxyUuid, instanceIp } = proxy;
 
-                connection.hostKey = await kv.cloudflare.hostKey.get(connection.connectionUuid, jwtSecret);
-                logger.info(`Fetched host key for connection ${connectionUuid}.`);
+                proxy.hostKey = await kv.cloudflare.hostKey.get(proxy.proxyUuid, jwtSecret);
+                logger.info(`Fetched host key for proxy ${proxyUuid}.`);
 
                 Deno.writeTextFileSync(
                     KNOWN_HOSTS_PATH,
-                    `${instanceIp} ssh-${KEY_ALGORITHM} ${connection.hostKey}\n`,
+                    `${instanceIp} ssh-${KEY_ALGORITHM} ${proxy.hostKey}\n`,
                     { append: true },
                 );
                 logger.info(`Added host key for ${instanceIp} to known hosts.`);
 
-                return connection;
+                return proxy;
             },
         }
     },
@@ -149,13 +149,13 @@ export const compute = {
             }
         },
         regions: {
-            list: async function (proxy: any = null) {
+            list: async function (proxyUrl: string | null = null) {
                 const headers = {
                     Authorization: `Bearer ${DIGITAL_OCEAN_API_KEY}`,
                 };
                 const options: any = { method: 'GET', headers };
-                if (proxy) {
-                    options.client = Deno.createHttpClient({ proxy });
+                if (proxyUrl) {
+                    options.client = Deno.createHttpClient({ proxy: { url: proxyUrl } });
                 }
                 const res = await fetch(`${DIGITAL_OCEAN_BASE_URL}/regions`, options);
                 const json: any = await res.json();
@@ -292,18 +292,18 @@ export const compute = {
             }
         },
         regions: {
-            list: async function (proxy: any = null) {
+            list: async function (proxyUrl: string | null = null) {
                 const headers = {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${HETZNER_API_KEY}`
                 };
                 const options: any = { method: 'GET', headers };
-                if (proxy) {
-                    options.client = Deno.createHttpClient({ proxy });
+                if (proxyUrl) {
+                    options.client = Deno.createHttpClient({ proxy: { url: proxyUrl } });
                 }
                 const res = await fetch(`${HETZNER_BASE_URL}/datacenters`, options);
                 const json: any = await res.json();
-                const serverTypeId = await compute.hetzner.serverTypes.getId(proxy, compute.hetzner.instanceSize);
+                const serverTypeId = await compute.hetzner.serverTypes.getId(proxyUrl, compute.hetzner.instanceSize);
                 const regions = json
                     .datacenters
                     .filter((data: any) => data.server_types.available.includes(serverTypeId))
@@ -312,14 +312,14 @@ export const compute = {
             },
         },
         serverTypes: {
-            getId: async function (proxy: any = null, instanceSize: string) {
+            getId: async function (proxyUrl: string | null = null, instanceSize: string) {
                 const headers = {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${HETZNER_API_KEY}`
                 };
                 const options: any = { method: 'GET', headers };
-                if (proxy) {
-                    options.client = Deno.createHttpClient({ proxy });
+                if (proxyUrl) {
+                    options.client = Deno.createHttpClient({ proxy: { url: proxyUrl } });
                 }
                 const res = await fetch(`${HETZNER_BASE_URL}/server_types?per_page=50`, options);
                 const json: any = await res.json();
@@ -431,28 +431,28 @@ export const compute = {
             }
         },
         regions: {
-            availability: async function (proxy: any = null, regionId: string) {
+            availability: async function (proxyUrl: string | null = null, regionId: string) {
                 const headers = {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${VULTR_API_KEY}`
                 };
                 const options: any = { method: 'GET', headers };
-                if (proxy) {
-                    options.client = Deno.createHttpClient({ proxy });
+                if (proxyUrl) {
+                    options.client = Deno.createHttpClient({ proxy: { url: proxyUrl } });
                 }
                 const res = await fetch(`${VULTR_BASE_URL}/regions/${regionId}/availability`, options);
                 const json: any = await res.json();
                 const availablePlans = json.available_plans;
                 return availablePlans;
             },
-            list: async function (proxy: any = null) {
+            list: async function (proxyUrl: string | null = null) {
                 const headers = {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${VULTR_API_KEY}`
                 };
                 const options: any = { method: 'GET', headers };
-                if (proxy) {
-                    options.client = Deno.createHttpClient({ proxy });
+                if (proxyUrl) {
+                    options.client = Deno.createHttpClient({ proxy: { url: proxyUrl } });
                 }
                 const res = await fetch(`${VULTR_BASE_URL}/regions`, options);
                 const json: any = await res.json();
@@ -460,7 +460,7 @@ export const compute = {
                     .regions
                     .map((data: any) => data.id)
                     .filter(async(id: string) => {
-                        const availablePlans = await compute.vultr.regions.availability(proxy, id);
+                        const availablePlans = await compute.vultr.regions.availability(proxyUrl, id);
                         return availablePlans.includes(compute.vultr.instanceSize);
                     });
 

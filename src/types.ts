@@ -5,7 +5,7 @@ export interface Provider {
 
 export type Providers = Record<string, Provider>
 
-export enum ConnectionType {
+export enum ProxyType {
 	A = 'a'
 }
 
@@ -21,9 +21,9 @@ export enum InstanceProvider {
 	VULTR = 'vultr',
 }
 
-export interface Connection {
-	connectionUuid: string
-	connectionType: ConnectionType
+export interface Proxy {
+	proxyUuid: string
+	proxyType: ProxyType
 	instanceProvider: InstanceProvider
 	instanceId: string
 	instanceName: string
@@ -52,7 +52,7 @@ export interface Connection {
 }
 
 export type DatabaseData = {
-	connections: Connection[]
+	proxies: Proxy[]
 }
 
 export interface CreateDigitalOceanInstance {

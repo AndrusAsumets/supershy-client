@@ -9,7 +9,7 @@ import {
 
 import {
     DatabaseData,
-    Connection,
+    Proxy,
 } from './types.ts';
 
 const defaultData: DatabaseData = {
@@ -24,7 +24,7 @@ const getDatabase = async (): Promise<LowWithLodash<DatabaseData>> => {
     const adapter = new JSONFile<DatabaseData>(DB_FILE_NAME);
     const db = new LowWithLodash(adapter, defaultData);
     await db.read();
-    db.data ||= { connections: [] };
+    db.data ||= { [DB_TABLE]: [] };
     db.chain = lodash.chain(db.data);
     return db;
 };
@@ -36,14 +36,14 @@ export const db = {
         return _db;
     },
     update: async function (
-        connection: Connection
+        proxy: Proxy
     ) {
         await db
             .get()
             .chain
             .get(DB_TABLE)
-            .find({ connectionUuid: connection.connectionUuid })
-            .assign(connection)
+            .find({ proxyUuid: proxy.proxyUuid })
+            .assign(proxy)
             .value();
     
         await db.get().write();

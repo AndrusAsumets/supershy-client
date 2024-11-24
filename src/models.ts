@@ -3,24 +3,24 @@ import {
     DB_TABLE,
 } from './constants.ts';
 import {
-    Connection,
+    Proxy,
 } from './types.ts';
 
-export const getInitConnection = () => {
+export const getInitialProxy = () => {
     return db
         .get()
         .chain
         .get(DB_TABLE)
-        .filter((connection: Connection) => !connection.isDeleted)
+        .filter((proxy: Proxy) => !proxy.isDeleted)
         .sortBy('createdTime')
         .reverse()
         .value()[0];
 };
 
-export const removeUsedConnections = (
+export const removeUsedProxies = (
     instanceIdsToKeep: string[]
 ) => {
     db.get().data[DB_TABLE] = db.get().data[DB_TABLE]
-        .filter((connection: Connection) => instanceIdsToKeep.includes(connection.instanceId));
+        .filter((proxy: Proxy) => instanceIdsToKeep.includes(proxy.instanceId));
     db.get().write();
 };

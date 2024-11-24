@@ -15,14 +15,14 @@ import {
     APP_ID,
     ENV,
 } from './constants.ts';
-import { Connection } from './types.ts';
+import { Proxy } from './types.ts';
 import * as lib from './lib.ts';
 import * as integrations from './integrations.ts';
 
 const logger = _logger.get();
 
 export const getUserData = (
-    connectionUuid: string,
+    proxyUuid: string,
     sshPort: number,
     jwtSecret: string,
 ) => {
@@ -44,14 +44,14 @@ runcmd:
 
     - HOST_KEY=$(cat /etc/ssh/ssh_host_ed25519_key.pub | cut -d ' ' -f 2)
     - ENCODED_HOST_KEY=$(python3 -c 'import sys;import jwt;payload={};payload[\"hostKey\"]=sys.argv[1];print(jwt.encode(payload, sys.argv[2], algorithm=\"HS256\"))' $HOST_KEY ${jwtSecret})
-    - curl --request PUT -H 'Content-Type=*\/*' --data $ENCODED_HOST_KEY --url ${CLOUDFLARE_BASE_URL}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${CLOUDFLARE_KV_NAMESPACE}/values/${connectionUuid} --oauth2-bearer ${CLOUDFLARE_API_KEY}
+    - curl --request PUT -H 'Content-Type=*\/*' --data $ENCODED_HOST_KEY --url ${CLOUDFLARE_BASE_URL}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${CLOUDFLARE_KV_NAMESPACE}/values/${proxyUuid} --oauth2-bearer ${CLOUDFLARE_API_KEY}
 
     - iptables -A INPUT -p tcp --dport ${sshPort} -j ACCEPT
 `;
 };
 
 export const getConnectionString = (
-    connection: Connection,
+    proxy: Proxy,
 ): string => {
     const {
         passphrase,
@@ -59,11 +59,11 @@ export const getConnectionString = (
         sshPort,
         keyPath,
         sshLogOutputPath
-    } = connection;
+    } = proxy;
     return `${TMP_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${instanceIp} ${USER} ${sshPort} ${PROXY_LOCAL_PORT} ${PROXY_REMOTE_PORT} ${keyPath} ${sshLogOutputPath}`;
 };
 
-export const getSshLogOutputPath = (connectionUuid: string): string =>`${LOG_PATH}/${connectionUuid}${SSH_LOG_OUTPUT_EXTENSION}`;
+export const getSshLogOutputPath = (proxyUuid: string): string =>`${LOG_PATH}/${proxyUuid}${SSH_LOG_OUTPUT_EXTENSION}`;
 
 export const updateEnv = (
     key: string,

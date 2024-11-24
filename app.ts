@@ -6,8 +6,8 @@ import { v7 as uuidv7 } from 'npm:uuid';
 import { Server } from 'https://deno.land/x/socket_io@0.2.0/mod.ts';
 import {
     LoopStatus,
-    ConnectionType,
-    Connection,
+    ProxyType,
+    Proxy,
     InstanceProvider,
     CreateDigitalOceanInstance,
     CreateHetznerInstance,
@@ -40,7 +40,7 @@ import {
     GENERATE_SSH_KEY_FILE_NAME,
     CONNECT_SSH_TUNNEL_FILE_NAME,
     USER,
-    CONNECTION_TYPES,
+    PROXY_TYPES,
     INSTANCE_PROVIDERS,
     HEARTBEAT_INTERVAL_SEC,
     PROXY_AUTO_CONNECT,
@@ -57,16 +57,16 @@ const logger = _logger.get(io);
 let loopStatus: LoopStatus = LoopStatus.INACTIVE;
 
 const tunnel = async (
-    connection: Connection,
+    proxy: Proxy,
     port: number,
-    proxy: any = null,
+    proxyUrl: string | null = null,
 ) => {
-    connection.connectionString = core
-        .getConnectionString(connection)
+    proxy.connectionString = core
+        .getConnectionString(proxy)
         .replace(` ${PROXY_LOCAL_PORT} `, ` ${port} `)
         .replace('\n', '');
 
-    logger.info(`Starting SSH tunnel connection to ${connection.instanceIp}:${port}.`);
+    logger.info(`Starting SSH tunnel proxy to ${proxy.instanceIp}:${port}.`);
 
     let isConnected = false;
     while (!isConnected) {
@@ -76,36 +76,36 @@ const tunnel = async (
 
             // @ts-ignore: because
             const process = Deno.run({
-                cmd: connection.connectionString.split(' '),
+                cmd: proxy.connectionString.split(' '),
                 stdout: 'piped',
                 stderr: 'piped',
                 stdin: 'null',
             });
             await lib.sleep(TUNNEL_CONNECT_TIMEOUT_SEC * 1000);
             await process.stderrOutput();
-            const output = await Deno.readTextFile(connection.sshLogOutputPath);
+            const output = await Deno.readTextFile(proxy.sshLogOutputPath);
             isConnected = output.includes('pledge: network');
 
             if (isConnected) {
-                await integrations.kv.cloudflare.heartbeat(proxy);
-                logger.info(`Connected SSH test tunnel to ${connection.instanceIp}:${port}.`);
-                await db.update(connection);
+                await integrations.kv.cloudflare.heartbeat(proxyUrl);
+                logger.info(`Connected SSH test tunnel to ${proxy.instanceIp}:${port}.`);
+                await db.update(proxy);
             }
         }
         catch(err) {
             logger.warn(err);
-            logger.warn(`Restarting SSH tunnel connection to ${connection.instanceIp}:${port}.`);
+            logger.warn(`Restarting SSH tunnel to ${proxy.instanceIp}:${port}.`);
         }
     }
 };
 
 const connect = async (
-    connection: Connection,
+    proxy: Proxy,
 ) => {
-    await tunnel(connection, PROXY_LOCAL_TEST_PORT, { url: TEST_PROXY_URL });
+    await tunnel(proxy, PROXY_LOCAL_TEST_PORT, TEST_PROXY_URL);
     await integrations.shell.pkill(`${PROXY_LOCAL_TEST_PORT}:`);
     await lib.sleep(1000);
-    await tunnel(connection, PROXY_LOCAL_PORT);
+    await tunnel(proxy, PROXY_LOCAL_PORT);
 };
 
 const cleanup = async (
@@ -142,26 +142,26 @@ const cleanup = async (
         index = index + 1;
     }
 
-    models.removeUsedConnections(instanceIdsToKeep);
+    models.removeUsedProxies(instanceIdsToKeep);
 };
 
 const rotate = async () => {
     const instanceProvider: InstanceProvider = lib.randomChoice(INSTANCE_PROVIDERS);
-    const activeConnections: Connection[] = [];
-    const initConnection = models.getInitConnection();
-    initConnection && await connect(initConnection);
-    initConnection && activeConnections.push(initConnection);
-    const connectionTypes: ConnectionType[] = initConnection
-        ? [ConnectionType.A]
-        : CONNECTION_TYPES;
+    const activeProxies: Proxy[] = [];
+    const initialProxy = models.getInitialProxy();
+    initialProxy && await connect(initialProxy);
+    initialProxy && activeProxies.push(initialProxy);
+    const proxyTypes: ProxyType[] = initialProxy
+        ? [ProxyType.A]
+        : PROXY_TYPES;
 
-    let connectionIndex = 0;
-    while (connectionIndex < connectionTypes.length) {
-        const connectionUuid = uuidv7();
-        const connectionType = connectionTypes[connectionIndex];
+    let proxyIndex = 0;
+    while (proxyIndex < proxyTypes.length) {
+        const proxyUuid = uuidv7();
+        const proxyType = proxyTypes[proxyIndex];
         const instanceRegions = await integrations.compute[instanceProvider].regions.list();
         const instanceRegion: string = lib.randomChoice(instanceRegions);
-        const instanceName = `${APP_ID}-${ENV}-${connectionType}-${connectionUuid}`;
+        const instanceName = `${APP_ID}-${ENV}-${proxyType}-${proxyUuid}`;
         const { instanceSize, instanceImage } = integrations.compute[instanceProvider];
         const keyPath = `${KEY_PATH}/${instanceName}`;
         const passphrase = crypto.randomBytes(64).toString('hex');
@@ -169,7 +169,7 @@ const rotate = async () => {
         const instancePublicKeyId = await integrations.compute[instanceProvider].keys.add(publicKey, instanceName);
         const jwtSecret = crypto.randomBytes(64).toString('hex');
         const sshPort = lib.randomNumberFromRange(SSH_PORT_RANGE[0], SSH_PORT_RANGE[1]);
-        const userData = core.getUserData(connectionUuid, sshPort, jwtSecret);
+        const userData = core.getUserData(proxyUuid, sshPort, jwtSecret);
         const formattedUserData = await integrations.compute[instanceProvider].userData.format(userData);
         const instancePayload: CreateDigitalOceanInstance & CreateHetznerInstance & CreateVultrInstance = {
             datacenter: instanceRegion,
@@ -190,8 +190,8 @@ const rotate = async () => {
         logger.info(`Created ${instanceProvider} instance.`, instancePayload);
         logger.info(`Found network at ${instanceIp}.`);
 
-        let connection: Connection = {
-            connectionUuid,
+        let proxy: Proxy = {
+            proxyUuid,
             appId: APP_ID,
             instanceProvider,
             instanceName,
@@ -201,7 +201,7 @@ const rotate = async () => {
             instanceSize,
             instanceImage,
             instancePublicKeyId,
-            connectionType,
+            proxyType,
             user: USER,
             passphrase,
             loopIntervalSec: LOOP_INTERVAL_SEC,
@@ -212,28 +212,28 @@ const rotate = async () => {
             keyPath,
             sshPort,
             hostKey: '',
-            sshLogOutputPath: core.getSshLogOutputPath(connectionUuid),
+            sshLogOutputPath: core.getSshLogOutputPath(proxyUuid),
             connectionString: '',
             isDeleted: false,
             createdTime: new Date().toISOString(),
             modifiedTime: null,
             deletedTime: null,
         };
-        connection = await integrations.kv.cloudflare.hostKey.update(connection, jwtSecret);
+        proxy = await integrations.kv.cloudflare.hostKey.update(proxy, jwtSecret);
 
-        db.get().data[DB_TABLE].push(connection);
+        db.get().data[DB_TABLE].push(proxy);
         db.get().write();
 
-        activeConnections.push(connection);
-        connectionIndex = connectionIndex + 1;
+        activeProxies.push(proxy);
+        proxyIndex = proxyIndex + 1;
     }
 
-    if (!initConnection) {
-        await connect(activeConnections[0]);
+    if (!initialProxy) {
+        await connect(activeProxies[0]);
     }
 
     await cleanup(
-        activeConnections.map(connection => connection.instanceId)
+        activeProxies.map(proxy => proxy.instanceId)
     );
 };
 
@@ -269,7 +269,7 @@ const loop = async () => {
 
 const heartbeat = async () => {
     try {
-        await integrations.kv.cloudflare.heartbeat({ url: PROXY_URL });
+        await integrations.kv.cloudflare.heartbeat(PROXY_URL);
     }
     catch(err) {
         const isLooped = loopStatus == LoopStatus.FINISHED;

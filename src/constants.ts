@@ -1,7 +1,7 @@
 import * as path from 'https://deno.land/std@0.224.0/path/mod.ts';
 import { homedir } from 'node:os';
 
-import { InstanceProvider, ConnectionType } from './types.ts';
+import { InstanceProvider, ProxyType } from './types.ts';
 
 export const APP_ID = Deno.env.get('APP_ID')
     ? String(Deno.env.get('APP_ID'))
@@ -77,10 +77,10 @@ export const TMP_PATH = '/tmp';
 export const LOG_PATH = `${DATA_PATH}/logs`;
 export const KNOWN_HOSTS_PATH = `${HOME_PATH}/.ssh/known_hosts`;
 export const DB_FILE_NAME = `${DATA_PATH}/.database.${ENV}.json`;
-export const DB_TABLE = 'connections';
+export const DB_TABLE = 'proxies';
 export const SSH_LOG_OUTPUT_EXTENSION = '.ssh.out';
 export const USER = 'root';
-export const CONNECTION_TYPES = [ConnectionType.A, ConnectionType.A];
+export const PROXY_TYPES = [ProxyType.A, ProxyType.A];
 export const DIGITAL_OCEAN_INSTANCE_SIZE = Deno.env.get('DIGITAL_OCEAN_INSTANCE_SIZE')
     ? String(Deno.env.get('DIGITAL_OCEAN_INSTANCE_SIZE'))
     : 's-1vcpu-512mb-10gb';
