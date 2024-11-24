@@ -6,29 +6,30 @@ const $connectToggle = document.getElementsByClassName('connect-toggle')[0];
 const $content = document.getElementsByClassName('content')[0];
 
 const updateConnectToggle = (label) => $connectToggle.innerText = label;
-let isStarted = false;
+
+let isConected = false;
 
 const interact = async () => {
-    if (!isStarted) {
-        isStarted = true;
-        updateConnectToggle('Starting ...');
+    if (!isConected) {
+        isConected = true;
+        updateConnectToggle('Connecting ...');
         await fetch('/app/start');
     }
     else {
-        isStarted = false
-        updateConnectToggle('Stopping ...');
+        isConected = false
+        updateConnectToggle('Disconnecting ...');
         await fetch('/app/stop');
     }
 };
 
 socket
-    .on('started', (bool) => {
-        isStarted = bool;
+    .on('started', (_isConected) => {
+        isConected = _isConected;
         updateConnectToggle(
-            bool
-                ? 'Stop'
-                : 'Start'
-        )
+            isConected
+                ? 'Disconnect'
+                : 'Connect'
+        );
     })
     .on('log', (message) => Object
         .keys(message)

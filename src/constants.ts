@@ -102,6 +102,15 @@ export const VULTR_INSTANCE_IMAGE = Deno.env.get('VULTR_INSTANCE_IMAGE')
 export const GENERATE_SSH_KEY_FILE_NAME = 'generate-ssh-key.exp';
 export const CONNECT_SSH_TUNNEL_FILE_NAME = 'connect-ssh-tunnel.exp';
 export const HEARTBEAT_INTERVAL_SEC = 10 * 1000;
+export const WEB_SERVER_PORT = Deno.env.get('WEB_SERVER_PORT')
+    ? Number(Deno.env.get('WEB_SERVER_PORT'))
+    : 8080;
+export const WEB_SOCKET_PORT = Deno.env.get('WEB_SOCKET_PORT')
+    ? Number(Deno.env.get('WEB_SOCKET_PORT'))
+    : 3000;
+export const PROXY_AUTO_CONNECT = Deno.env.get('PROXY_AUTO_CONNECT') == 'false'
+    ? false
+    : true;
 
 if (!CLOUDFLARE_ACCOUNT_ID) {
     throw `CLOUDFLARE_ACCOUNT_ID env variable was not provided.`;
@@ -114,15 +123,3 @@ if (!CLOUDFLARE_API_KEY) {
 if (!CLOUDFLARE_KV_NAMESPACE) {
     throw `CLOUDFLARE_KV_NAMESPACEY env variable was not provided.`;
 }
-
-export const WEB_SERVER_PORT = Deno.env.get('WEB_SERVER_PORT')
-    ? Number(Deno.env.get('WEB_SERVER_PORT'))
-    : 8080;
-
-export const WEB_SOCKET_PORT = Deno.env.get('WEB_SOCKET_PORT')
-    ? Number(Deno.env.get('WEB_SOCKET_PORT'))
-    : 3000;Deno.env.get('AUTO_START')
-
-export const AUTO_START = Deno.env.get('AUTO_START') == 'false'
-    ? false
-    : true;

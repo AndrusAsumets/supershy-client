@@ -1,3 +1,4 @@
+import { logger as _logger } from './logger.ts';
 import {
     PROXY_LOCAL_PORT,
     PROXY_REMOTE_PORT,
@@ -12,8 +13,10 @@ import {
     SSH_LOG_OUTPUT_EXTENSION,
     ENV_PATH,
 } from './constants.ts';
-
 import { Connection } from './types.ts';
+import * as lib from './lib.ts';
+
+const logger = _logger.get();
 
 export const getUserData = (
     connectionUuid: string,
@@ -60,7 +63,10 @@ export const getConnectionString = (
 export const getSshLogOutputPath = (connectionUuid: string): string =>`${LOG_PATH}/${connectionUuid}${SSH_LOG_OUTPUT_EXTENSION}`;
 
 
-export const updateEnv = (key: string, value: boolean | number | string) => {
+export const updateEnv = (
+    key: string,
+    value: boolean | number | string
+) => {
     const newLine = '\n';
     const separator = `${key}=`;
     let env = Deno.readTextFileSync(ENV_PATH);
@@ -79,4 +85,13 @@ export const updateEnv = (key: string, value: boolean | number | string) => {
         .join(newLine);
 
     Deno.writeTextFileSync(ENV_PATH, env);
+};
+
+export const exit = async (
+    message: string,
+    onPurpose = false
+) => {
+    !onPurpose && logger.error(message);
+    await lib.sleep(1000);
+    throw new Error();
 };
