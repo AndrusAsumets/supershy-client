@@ -22,15 +22,9 @@ import { db } from './src/db.ts';
 import * as lib from './src/lib.ts';
 import * as integrations from './src/integrations.ts';
 import {
+    config,
     ENV,
     APP_ID,
-    LOOP_INTERVAL_SEC,
-    TUNNEL_CONNECT_TIMEOUT_SEC,
-    SSH_PORT_RANGE,
-    PROXY_LOCAL_TEST_PORT,
-    PROXY_LOCAL_PORT,
-    PROXY_REMOTE_PORT,
-    KEY_ALGORITHM,
     PROXY_URL,
     TEST_PROXY_URL,
     TMP_PATH,
@@ -41,9 +35,6 @@ import {
     CONNECT_SSH_TUNNEL_FILE_NAME,
     USER,
     PROXY_TYPES,
-    INSTANCE_PROVIDERS,
-    HEARTBEAT_INTERVAL_SEC,
-    PROXY_AUTO_CONNECT,
     PROXIES_TABLE,
 } from './src/constants.ts';
 import {
@@ -63,7 +54,7 @@ const tunnel = async (
 ) => {
     proxy.connectionString = core
         .getConnectionString(proxy)
-        .replace(` ${PROXY_LOCAL_PORT} `, ` ${port} `)
+        .replace(` ${config.PROXY_LOCAL_PORT} `, ` ${port} `)
         .replace('\n', '');
 
     logger.info(`Starting SSH tunnel proxy to ${proxy.instanceIp}:${port}.`);
@@ -81,7 +72,7 @@ const tunnel = async (
                 stderr: 'piped',
                 stdin: 'null',
             });
-            await lib.sleep(TUNNEL_CONNECT_TIMEOUT_SEC * 1000);
+            await lib.sleep(config.TUNNEL_CONNECT_TIMEOUT_SEC * 1000);
             await process.stderrOutput();
             const output = await Deno.readTextFile(proxy.sshLogPath);
             isConnected = output.includes('pledge: network');
@@ -102,10 +93,10 @@ const tunnel = async (
 const connect = async (
     proxy: Proxy,
 ) => {
-    await tunnel(proxy, PROXY_LOCAL_TEST_PORT, TEST_PROXY_URL);
-    await integrations.shell.pkill(`${PROXY_LOCAL_TEST_PORT}:`);
+    await tunnel(proxy, config.PROXY_LOCAL_TEST_PORT, TEST_PROXY_URL);
+    await integrations.shell.pkill(`${config.PROXY_LOCAL_TEST_PORT}:`);
     await lib.sleep(1000);
-    await tunnel(proxy, PROXY_LOCAL_PORT);
+    await tunnel(proxy, config.PROXY_LOCAL_PORT);
 };
 
 const cleanup = async (
@@ -146,7 +137,7 @@ const cleanup = async (
 };
 
 const rotate = async () => {
-    const instanceProvider: InstanceProvider = lib.randomChoice(INSTANCE_PROVIDERS);
+    const instanceProvider: InstanceProvider = lib.randomChoice(config.INSTANCE_PROVIDERS);
     const activeProxies: Proxy[] = [];
     const initialProxy = models.getInitialProxy();
     initialProxy && await connect(initialProxy);
@@ -168,7 +159,7 @@ const rotate = async () => {
         const publicKey = await integrations.shell.privateKey.create(keyPath, passphrase);
         const instancePublicKeyId = await integrations.compute[instanceProvider].keys.add(publicKey, instanceName);
         const jwtSecret = crypto.randomBytes(64).toString('hex');
-        const sshPort = lib.randomNumberFromRange(SSH_PORT_RANGE[0], SSH_PORT_RANGE[1]);
+        const sshPort = lib.randomNumberFromRange(config.SSH_PORT_RANGE[0], config.SSH_PORT_RANGE[1]);
         const userData = core.getUserData(proxyUuid, sshPort, jwtSecret);
         const formattedUserData = await integrations.compute[instanceProvider].userData.format(userData);
         const instancePayload: CreateDigitalOceanInstance & CreateHetznerInstance & CreateVultrInstance = {
@@ -204,11 +195,11 @@ const rotate = async () => {
             proxyType,
             user: USER,
             passphrase,
-            loopIntervalSec: LOOP_INTERVAL_SEC,
-            keyAlgorithm: KEY_ALGORITHM,
-            proxyLocalTestPort: PROXY_LOCAL_TEST_PORT,
-            proxyLocalPort: PROXY_LOCAL_PORT,
-            proxyRemotePort: PROXY_REMOTE_PORT,
+            loopIntervalSec: config.LOOP_INTERVAL_SEC,
+            keyAlgorithm: config.KEY_ALGORITHM,
+            proxyLocalTestPort: config.PROXY_LOCAL_TEST_PORT,
+            proxyLocalPort: config.PROXY_LOCAL_PORT,
+            proxyRemotePort: config.PROXY_REMOTE_PORT,
             keyPath,
             sshPort,
             hostKey: '',
@@ -246,9 +237,9 @@ const loop = async () => {
     setTimeout(async () => {
         const isStillWorking = loopStatus == LoopStatus.ACTIVE;
         isStillWorking
-            ? await core.exit(`Timeout after passing ${LOOP_INTERVAL_SEC} seconds.`)
+            ? await core.exit(`Timeout after passing ${config.LOOP_INTERVAL_SEC} seconds.`)
             : await loop();
-    }, LOOP_INTERVAL_SEC * 1000);
+    }, config.LOOP_INTERVAL_SEC * 1000);
 
     try {
         updateStatus(LoopStatus.ACTIVE);
@@ -296,9 +287,9 @@ const connectProxy = async () => {
 
     loop();
     heartbeat();
-    setInterval(() => heartbeat(), HEARTBEAT_INTERVAL_SEC);
+    setInterval(() => heartbeat(), config.HEARTBEAT_INTERVAL_SEC);
 };
 
 webserver.start();
 websocket.start(io);
-PROXY_AUTO_CONNECT && connectProxy();
+config.PROXY_AUTO_CONNECT && connectProxy();

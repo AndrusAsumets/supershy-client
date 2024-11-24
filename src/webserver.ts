@@ -1,13 +1,13 @@
 import { serveDir } from 'jsr:@std/http/file-server';
 import * as core from './core.ts';
 import {
-    WEB_SERVER_PORT,
+    config
 } from './constants.ts';
 
 export const start = () => {
     // @ts-ignore: because
     Deno.serve(
-        { hostname: 'localhost', port: WEB_SERVER_PORT },
+        { hostname: 'localhost', port: config.WEB_SERVER_PORT },
         (req: Request) => {
             const pathname = new URL(req.url).pathname;
             const headers = {
