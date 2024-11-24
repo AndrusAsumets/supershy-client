@@ -14,13 +14,13 @@ export const start = () => {
             };
 
             switch(true) {
-                case pathname.startsWith('/app/start'):
+                case pathname.startsWith('/proxy/connect'):
                     core.updateEnv('PROXY_AUTO_CONNECT', true);
-                    setTimeout(() => core.exit('/app/start', true));
+                    setTimeout(() => core.exit('/proxy/connect', true));
                     return new Response(JSON.stringify({ success: true }), { headers });
-                case pathname.startsWith('/app/stop'):
+                case pathname.startsWith('/proxy/disconnect'):
                     core.updateEnv('PROXY_AUTO_CONNECT', false);
-                    setTimeout(() => core.exit('/app/stop', true));
+                    setTimeout(() => core.exit('/proxy/disconnect', true));
                     return new Response(JSON.stringify({ success: true }), { headers });
                 case pathname.startsWith('/'):
                     return serveDir(req, {

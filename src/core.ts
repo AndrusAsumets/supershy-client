@@ -12,9 +12,12 @@ import {
     LOG_PATH,
     SSH_LOG_OUTPUT_EXTENSION,
     ENV_PATH,
+    APP_ID,
+    ENV,
 } from './constants.ts';
 import { Connection } from './types.ts';
 import * as lib from './lib.ts';
+import * as integrations from './integrations.ts';
 
 const logger = _logger.get();
 
@@ -91,6 +94,7 @@ export const exit = async (
     onPurpose = false
 ) => {
     !onPurpose && logger.error(message);
+    onPurpose && await integrations.shell.pkill(`${APP_ID}-${ENV}`);
     await lib.sleep(1000);
     throw new Error();
 };

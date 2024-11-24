@@ -13,12 +13,12 @@ const interact = async () => {
     if (!isConected) {
         isConected = true;
         updateConnectToggle('Connecting ...');
-        await fetch('/app/start');
+        await fetch('/proxy/connect');
     }
     else {
         isConected = false
         updateConnectToggle('Disconnecting ...');
-        await fetch('/app/stop');
+        await fetch('/proxy/disconnect');
     }
 };
 
