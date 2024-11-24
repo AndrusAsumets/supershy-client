@@ -62,7 +62,6 @@ export const getConnectionString = (
 
 export const getSshLogOutputPath = (connectionUuid: string): string =>`${LOG_PATH}/${connectionUuid}${SSH_LOG_OUTPUT_EXTENSION}`;
 
-
 export const updateEnv = (
     key: string,
     value: boolean | number | string

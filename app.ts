@@ -14,6 +14,7 @@ import {
     CreateVultrInstance,
 } from './src/types.ts';
 import * as core from './src/core.ts';
+import * as models from './src/models.ts';
 import * as webserver from './src/webserver.ts';
 import * as websocket from './src/websocket.ts';
 import { logger as _logger } from './src/logger.ts';
@@ -38,12 +39,10 @@ import {
     LOG_PATH,
     GENERATE_SSH_KEY_FILE_NAME,
     CONNECT_SSH_TUNNEL_FILE_NAME,
-    DB_TABLE,
     USER,
     CONNECTION_TYPES,
     INSTANCE_PROVIDERS,
     HEARTBEAT_INTERVAL_SEC,
-    WEB_SOCKET_PORT,
     PROXY_AUTO_CONNECT,
 } from './src/constants.ts';
 import {
@@ -55,20 +54,6 @@ const io = new Server({ cors: { origin: '*' }});
 const logger = _logger.get(io);
 
 let loopStatus: LoopStatus = LoopStatus.INACTIVE;
-
-const init = async () => {
-    const connection = db
-        .get()
-        .chain
-        .get(DB_TABLE)
-        .filter((connection: Connection) => !connection.isDeleted)
-        .sortBy('createdTime')
-        .reverse()
-        .value()[0];
-
-    connection && await connect(connection);
-    return connection;
-};
 
 const tunnel = async (
     connection: Connection,
@@ -158,7 +143,8 @@ const cleanup = async (instanceIdsToKeep: number[]) => {
 const rotate = async () => {
     const instanceProvider: InstanceProvider = lib.randomChoice(INSTANCE_PROVIDERS);
     const activeConnections: Connection[] = [];
-    const initConnection = await init();
+    const initConnection = models.getInitConnection();
+    initConnection && await connect(initConnection);
     initConnection && activeConnections.push(initConnection);
     const connectionTypes: ConnectionType[] = initConnection
         ? [ConnectionType.A]
