@@ -302,5 +302,3 @@ const connectProxy = async () => {
 webserver.start();
 websocket.start(io);
 PROXY_AUTO_CONNECT && connectProxy();
-
-models.removeUsedConnections(['459660652', '3e7112e4-4bdc-4990-b156-7ba1df7f9530']);
