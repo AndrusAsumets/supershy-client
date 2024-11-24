@@ -10,7 +10,7 @@ import {
     CONNECT_SSH_TUNNEL_FILE_NAME,
     USER,
     LOG_PATH,
-    SSH_LOG_OUTPUT_EXTENSION,
+    SSH_LOG_EXTENSION,
     ENV_PATH,
     APP_ID,
     ENV,
@@ -58,12 +58,12 @@ export const getConnectionString = (
         instanceIp,
         sshPort,
         keyPath,
-        sshLogOutputPath
+        sshLogPath
     } = proxy;
-    return `${TMP_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${instanceIp} ${USER} ${sshPort} ${PROXY_LOCAL_PORT} ${PROXY_REMOTE_PORT} ${keyPath} ${sshLogOutputPath}`;
+    return `${TMP_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${instanceIp} ${USER} ${sshPort} ${PROXY_LOCAL_PORT} ${PROXY_REMOTE_PORT} ${keyPath} ${sshLogPath}`;
 };
 
-export const getSshLogOutputPath = (proxyUuid: string): string =>`${LOG_PATH}/${proxyUuid}${SSH_LOG_OUTPUT_EXTENSION}`;
+export const getSshLogPath = (proxyUuid: string): string =>`${LOG_PATH}/${proxyUuid}${SSH_LOG_EXTENSION}`;
 
 export const updateEnv = (
     key: string,

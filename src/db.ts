@@ -4,7 +4,7 @@ import lodash from 'npm:lodash';
 
 import {
     DB_FILE_NAME,
-    DB_TABLE,
+    PROXIES_TABLE,
 } from './constants.ts';
 
 import {
@@ -13,7 +13,7 @@ import {
 } from './types.ts';
 
 const defaultData: DatabaseData = {
-    [DB_TABLE]: [],
+    [PROXIES_TABLE]: [],
 };
 
 class LowWithLodash<T> extends Low<T> {
@@ -24,7 +24,7 @@ const getDatabase = async (): Promise<LowWithLodash<DatabaseData>> => {
     const adapter = new JSONFile<DatabaseData>(DB_FILE_NAME);
     const db = new LowWithLodash(adapter, defaultData);
     await db.read();
-    db.data ||= { [DB_TABLE]: [] };
+    db.data ||= { [PROXIES_TABLE]: [] };
     db.chain = lodash.chain(db.data);
     return db;
 };
@@ -41,7 +41,7 @@ export const db = {
         await db
             .get()
             .chain
-            .get(DB_TABLE)
+            .get(PROXIES_TABLE)
             .find({ proxyUuid: proxy.proxyUuid })
             .assign(proxy)
             .value();

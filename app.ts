@@ -44,7 +44,7 @@ import {
     INSTANCE_PROVIDERS,
     HEARTBEAT_INTERVAL_SEC,
     PROXY_AUTO_CONNECT,
-    DB_TABLE,
+    PROXIES_TABLE,
 } from './src/constants.ts';
 import {
     GENERATE_SSH_KEY_FILE,
@@ -83,7 +83,7 @@ const tunnel = async (
             });
             await lib.sleep(TUNNEL_CONNECT_TIMEOUT_SEC * 1000);
             await process.stderrOutput();
-            const output = await Deno.readTextFile(proxy.sshLogOutputPath);
+            const output = await Deno.readTextFile(proxy.sshLogPath);
             isConnected = output.includes('pledge: network');
 
             if (isConnected) {
@@ -212,7 +212,7 @@ const rotate = async () => {
             keyPath,
             sshPort,
             hostKey: '',
-            sshLogOutputPath: core.getSshLogOutputPath(proxyUuid),
+            sshLogPath: core.getSshLogPath(proxyUuid),
             connectionString: '',
             isDeleted: false,
             createdTime: new Date().toISOString(),
@@ -221,7 +221,7 @@ const rotate = async () => {
         };
         proxy = await integrations.kv.cloudflare.hostKey.update(proxy, jwtSecret);
 
-        db.get().data[DB_TABLE].push(proxy);
+        db.get().data[PROXIES_TABLE].push(proxy);
         db.get().write();
 
         activeProxies.push(proxy);

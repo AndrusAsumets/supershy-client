@@ -44,7 +44,7 @@ export interface Proxy {
 	loopIntervalSec: number
 	sshPort: number
 	hostKey: string
-	sshLogOutputPath: string
+	sshLogPath: string
 	isDeleted: false
 	createdTime: string
 	modifiedTime: string | null

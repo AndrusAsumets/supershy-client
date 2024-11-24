@@ -1,6 +1,6 @@
 import { db } from './db.ts';
 import {
-    DB_TABLE,
+    PROXIES_TABLE,
 } from './constants.ts';
 import {
     Proxy,
@@ -10,7 +10,7 @@ export const getInitialProxy = () => {
     return db
         .get()
         .chain
-        .get(DB_TABLE)
+        .get(PROXIES_TABLE)
         .filter((proxy: Proxy) => !proxy.isDeleted)
         .sortBy('createdTime')
         .reverse()
@@ -20,7 +20,7 @@ export const getInitialProxy = () => {
 export const removeUsedProxies = (
     instanceIdsToKeep: string[]
 ) => {
-    db.get().data[DB_TABLE] = db.get().data[DB_TABLE]
+    db.get().data[PROXIES_TABLE] = db.get().data[PROXIES_TABLE]
         .filter((proxy: Proxy) => instanceIdsToKeep.includes(proxy.instanceId));
     db.get().write();
 };
