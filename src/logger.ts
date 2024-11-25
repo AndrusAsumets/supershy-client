@@ -1,9 +1,10 @@
 import Logger from 'https://deno.land/x/logger@v1.1.6/logger.ts';
 import { Server } from 'https://deno.land/x/socket_io@0.2.0/mod.ts';
+import { config } from './constants.ts';
 
-import {
+const {
     LOG_PATH,
-} from './constants.ts';
+} = config;
 
 const _logger = new Logger();
 await _logger.initFileLogger(`${LOG_PATH}`);

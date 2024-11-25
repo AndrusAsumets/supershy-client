@@ -12,6 +12,7 @@ import {
     CreateDigitalOceanInstance,
     CreateHetznerInstance,
     CreateVultrInstance,
+    DatabaseKey,
 } from './src/types.ts';
 import * as core from './src/core.ts';
 import * as models from './src/models.ts';
@@ -21,12 +22,16 @@ import { logger as _logger } from './src/logger.ts';
 import { db } from './src/db.ts';
 import * as lib from './src/lib.ts';
 import * as integrations from './src/integrations.ts';
-import {
-    config,
+import { config } from './src/constants.ts';
+const {
     ENV,
     APP_ID,
+    PROXY_LOCAL_TEST_PORT,
+    PROXY_LOCAL_PORT,
+    PROXY_REMOTE_PORT,
     PROXY_URL,
     TEST_PROXY_URL,
+    TUNNEL_CONNECT_TIMEOUT_SEC,
     TMP_PATH,
     DATA_PATH,
     KEY_PATH,
@@ -35,8 +40,13 @@ import {
     CONNECT_SSH_TUNNEL_FILE_NAME,
     USER,
     PROXY_TYPES,
-    PROXIES_TABLE,
-} from './src/constants.ts';
+    INSTANCE_PROVIDERS,
+    SSH_PORT_RANGE,
+    LOOP_INTERVAL_SEC,
+    KEY_ALGORITHM,
+    HEARTBEAT_INTERVAL_SEC,
+    PROXY_AUTO_CONNECT,
+} = config;
 import {
     GENERATE_SSH_KEY_FILE,
     CONNECT_SSH_TUNNEL_FILE,
@@ -54,7 +64,7 @@ const tunnel = async (
 ) => {
     proxy.connectionString = core
         .getConnectionString(proxy)
-        .replace(` ${config.PROXY_LOCAL_PORT} `, ` ${port} `)
+        .replace(` ${PROXY_LOCAL_PORT} `, ` ${port} `)
         .replace('\n', '');
 
     logger.info(`Starting SSH tunnel proxy to ${proxy.instanceIp}:${port}.`);
@@ -72,7 +82,7 @@ const tunnel = async (
                 stderr: 'piped',
                 stdin: 'null',
             });
-            await lib.sleep(config.TUNNEL_CONNECT_TIMEOUT_SEC * 1000);
+            await lib.sleep(TUNNEL_CONNECT_TIMEOUT_SEC * 1000);
             await process.stderrOutput();
             const output = await Deno.readTextFile(proxy.sshLogPath);
             isConnected = output.includes('pledge: network');
@@ -93,10 +103,10 @@ const tunnel = async (
 const connect = async (
     proxy: Proxy,
 ) => {
-    await tunnel(proxy, config.PROXY_LOCAL_TEST_PORT, TEST_PROXY_URL);
-    await integrations.shell.pkill(`${config.PROXY_LOCAL_TEST_PORT}:`);
+    await tunnel(proxy, PROXY_LOCAL_TEST_PORT, TEST_PROXY_URL);
+    await integrations.shell.pkill(`${PROXY_LOCAL_TEST_PORT}:`);
     await lib.sleep(1000);
-    await tunnel(proxy, config.PROXY_LOCAL_PORT);
+    await tunnel(proxy, PROXY_LOCAL_PORT);
 };
 
 const cleanup = async (
@@ -137,7 +147,7 @@ const cleanup = async (
 };
 
 const rotate = async () => {
-    const instanceProvider: InstanceProvider = lib.randomChoice(config.INSTANCE_PROVIDERS);
+    const instanceProvider: InstanceProvider = lib.randomChoice(INSTANCE_PROVIDERS);
     const activeProxies: Proxy[] = [];
     const initialProxy = models.getInitialProxy();
     initialProxy && await connect(initialProxy);
@@ -159,7 +169,7 @@ const rotate = async () => {
         const publicKey = await integrations.shell.privateKey.create(keyPath, passphrase);
         const instancePublicKeyId = await integrations.compute[instanceProvider].keys.add(publicKey, instanceName);
         const jwtSecret = crypto.randomBytes(64).toString('hex');
-        const sshPort = lib.randomNumberFromRange(config.SSH_PORT_RANGE[0], config.SSH_PORT_RANGE[1]);
+        const sshPort = lib.randomNumberFromRange(SSH_PORT_RANGE[0], SSH_PORT_RANGE[1]);
         const userData = core.getUserData(proxyUuid, sshPort, jwtSecret);
         const formattedUserData = await integrations.compute[instanceProvider].userData.format(userData);
         const instancePayload: CreateDigitalOceanInstance & CreateHetznerInstance & CreateVultrInstance = {
@@ -195,11 +205,11 @@ const rotate = async () => {
             proxyType,
             user: USER,
             passphrase,
-            loopIntervalSec: config.LOOP_INTERVAL_SEC,
-            keyAlgorithm: config.KEY_ALGORITHM,
-            proxyLocalTestPort: config.PROXY_LOCAL_TEST_PORT,
-            proxyLocalPort: config.PROXY_LOCAL_PORT,
-            proxyRemotePort: config.PROXY_REMOTE_PORT,
+            loopIntervalSec: LOOP_INTERVAL_SEC,
+            keyAlgorithm: KEY_ALGORITHM,
+            proxyLocalTestPort: PROXY_LOCAL_TEST_PORT,
+            proxyLocalPort: PROXY_LOCAL_PORT,
+            proxyRemotePort: PROXY_REMOTE_PORT,
             keyPath,
             sshPort,
             hostKey: '',
@@ -211,8 +221,8 @@ const rotate = async () => {
             deletedTime: null,
         };
         proxy = await integrations.kv.cloudflare.hostKey.update(proxy, jwtSecret);
-
-        db.get().data[PROXIES_TABLE].push(proxy);
+        // @ts-ignore: because
+        db.get().data[DatabaseKey.PROXIES].push(proxy);
         db.get().write();
 
         activeProxies.push(proxy);
@@ -237,9 +247,9 @@ const loop = async () => {
     setTimeout(async () => {
         const isStillWorking = loopStatus == LoopStatus.ACTIVE;
         isStillWorking
-            ? await core.exit(`Timeout after passing ${config.LOOP_INTERVAL_SEC} seconds.`)
+            ? await core.exit(`Timeout after passing ${LOOP_INTERVAL_SEC} seconds.`)
             : await loop();
-    }, config.LOOP_INTERVAL_SEC * 1000);
+    }, LOOP_INTERVAL_SEC * 1000);
 
     try {
         updateStatus(LoopStatus.ACTIVE);
@@ -287,9 +297,9 @@ const connectProxy = async () => {
 
     loop();
     heartbeat();
-    setInterval(() => heartbeat(), config.HEARTBEAT_INTERVAL_SEC);
+    setInterval(() => heartbeat(), HEARTBEAT_INTERVAL_SEC);
 };
 
 webserver.start();
 websocket.start(io);
-config.PROXY_AUTO_CONNECT && connectProxy();
+PROXY_AUTO_CONNECT && connectProxy();

@@ -1,6 +1,6 @@
 import { logger as _logger } from './logger.ts';
-import {
-    config,
+import { config } from './constants.ts';
+const {
     CLOUDFLARE_BASE_URL,
     TMP_PATH,
     CONNECT_SSH_TUNNEL_FILE_NAME,
@@ -10,7 +10,12 @@ import {
     ENV_PATH,
     APP_ID,
     ENV,
-} from './constants.ts';
+    PROXY_LOCAL_PORT,
+    PROXY_REMOTE_PORT,
+    CLOUDFLARE_ACCOUNT_ID,
+    CLOUDFLARE_KV_NAMESPACE,
+    CLOUDFLARE_API_KEY,
+} = config;
 import { Proxy } from './types.ts';
 import * as lib from './lib.ts';
 import * as integrations from './integrations.ts';
@@ -32,7 +37,7 @@ runcmd:
     - sudo apt update
     - sudo apt dist-upgrade -y
     - sudo apt install tinyproxy -y
-    - echo 'Port ${config.PROXY_REMOTE_PORT}' >> tinyproxy.conf
+    - echo 'Port ${PROXY_REMOTE_PORT}' >> tinyproxy.conf
     - echo 'Listen 0.0.0.0' >> tinyproxy.conf
     - echo 'Timeout 600' >> tinyproxy.conf
     - echo 'Allow 0.0.0.0' >> tinyproxy.conf
@@ -40,7 +45,7 @@ runcmd:
 
     - HOST_KEY=$(cat /etc/ssh/ssh_host_ed25519_key.pub | cut -d ' ' -f 2)
     - ENCODED_HOST_KEY=$(python3 -c 'import sys;import jwt;payload={};payload[\"hostKey\"]=sys.argv[1];print(jwt.encode(payload, sys.argv[2], algorithm=\"HS256\"))' $HOST_KEY ${jwtSecret})
-    - curl --request PUT -H 'Content-Type=*\/*' --data $ENCODED_HOST_KEY --url ${CLOUDFLARE_BASE_URL}/accounts/${config.CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${config.CLOUDFLARE_KV_NAMESPACE}/values/${proxyUuid} --oauth2-bearer ${config.CLOUDFLARE_API_KEY}
+    - curl --request PUT -H 'Content-Type=*\/*' --data $ENCODED_HOST_KEY --url ${CLOUDFLARE_BASE_URL}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${CLOUDFLARE_KV_NAMESPACE}/values/${proxyUuid} --oauth2-bearer ${CLOUDFLARE_API_KEY}
 
     - iptables -A INPUT -p tcp --dport ${sshPort} -j ACCEPT
 `;
@@ -56,7 +61,7 @@ export const getConnectionString = (
         keyPath,
         sshLogPath
     } = proxy;
-    return `${TMP_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${instanceIp} ${USER} ${sshPort} ${config.PROXY_LOCAL_PORT} ${config.PROXY_REMOTE_PORT} ${keyPath} ${sshLogPath}`;
+    return `${TMP_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${instanceIp} ${USER} ${sshPort} ${PROXY_LOCAL_PORT} ${PROXY_REMOTE_PORT} ${keyPath} ${sshLogPath}`;
 };
 
 export const getSshLogPath = (proxyUuid: string): string =>`${LOG_PATH}/${proxyUuid}${SSH_LOG_EXTENSION}`;

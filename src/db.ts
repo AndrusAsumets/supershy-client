@@ -2,18 +2,20 @@ import { Low } from 'npm:lowdb';
 import { JSONFile } from 'npm:lowdb/node';
 import lodash from 'npm:lodash';
 
-import {
+import { config } from './constants.ts';
+const {
     DB_FILE_NAME,
-    PROXIES_TABLE,
-} from './constants.ts';
+} = config;
 
 import {
     DatabaseData,
+    DatabaseKey,
     Proxy,
 } from './types.ts';
 
 const defaultData: DatabaseData = {
-    [PROXIES_TABLE]: [],
+    [DatabaseKey.PROXIES]: [],
+    [DatabaseKey.CONFIG]: config,
 };
 
 class LowWithLodash<T> extends Low<T> {
@@ -24,7 +26,7 @@ const getDatabase = async (): Promise<LowWithLodash<DatabaseData>> => {
     const adapter = new JSONFile<DatabaseData>(DB_FILE_NAME);
     const db = new LowWithLodash(adapter, defaultData);
     await db.read();
-    db.data ||= { [PROXIES_TABLE]: [] };
+    db.data ||= defaultData;
     db.chain = lodash.chain(db.data);
     return db;
 };
@@ -41,7 +43,7 @@ export const db = {
         await db
             .get()
             .chain
-            .get(PROXIES_TABLE)
+            .get(DatabaseKey.PROXIES)
             .find({ proxyUuid: proxy.proxyUuid })
             .assign(proxy)
             .value();

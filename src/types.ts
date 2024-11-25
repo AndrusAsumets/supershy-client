@@ -51,8 +51,9 @@ export interface Proxy {
 	deletedTime: string | null
 }
 
-export type DatabaseData = {
-	proxies: Proxy[]
+export enum DatabaseKey {
+	PROXIES = 'proxies',
+	CONFIG = 'config'
 }
 
 export interface CreateDigitalOceanInstance {
@@ -81,3 +82,56 @@ export interface CreateVultrInstance {
 	user_data: string
 	backups: string
 }
+
+export interface Config {
+    APP_ID: string
+    ENV: string
+    LOOP_INTERVAL_SEC: number
+    TUNNEL_CONNECT_TIMEOUT_SEC: number
+    SSH_PORT: number
+    SSH_PORT_RANGE: number[]
+    PROXY_LOCAL_TEST_PORT: number
+    PROXY_LOCAL_PORT: number
+    PROXY_REMOTE_PORT: number
+    KEY_ALGORITHM: string
+    KEY_LENGTH: number
+    INSTANCE_PROVIDERS: InstanceProvider[]
+    DIGITAL_OCEAN_API_KEY: string | undefined
+    HETZNER_API_KEY: string | undefined
+    VULTR_API_KEY: string | undefined
+    CLOUDFLARE_ACCOUNT_ID: string
+    CLOUDFLARE_API_KEY: string
+    CLOUDFLARE_KV_NAMESPACE: string
+    TEST_PROXY_URL: string
+    PROXY_URL: string
+    DIGITAL_OCEAN_BASE_URL: string
+    HETZNER_BASE_URL: string
+    VULTR_BASE_URL: string
+    CLOUDFLARE_BASE_URL: string
+    __DIRNAME: string
+    ENV_PATH: string
+    HOME_PATH: string
+    DATA_PATH: string
+    KEY_PATH: string
+    TMP_PATH: string
+    LOG_PATH: string
+    KNOWN_HOSTS_PATH: string
+    DB_FILE_NAME: string
+    SSH_LOG_EXTENSION: string
+    USER: string
+    PROXY_TYPES: ProxyType[]
+    DIGITAL_OCEAN_INSTANCE_SIZE: string
+    HETZNER_SERVER_TYPE: string
+    VULTR_INSTANCE_PLAN: string
+    DIGITAL_OCEAN_INSTANCE_IMAGE: string
+    HETZNER_INSTANCE_IMAGE: string
+    VULTR_INSTANCE_IMAGE: string
+    GENERATE_SSH_KEY_FILE_NAME: string
+    CONNECT_SSH_TUNNEL_FILE_NAME: string
+    HEARTBEAT_INTERVAL_SEC: number
+    WEB_SERVER_PORT: number
+    WEB_SOCKET_PORT: number
+    PROXY_AUTO_CONNECT: boolean
+}
+
+export type DatabaseData = Record<DatabaseKey, Proxy[] | Config>
