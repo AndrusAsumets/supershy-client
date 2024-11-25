@@ -9,6 +9,7 @@ const {
 export const start = async (io: Server) => {
     io.on('connection', () => {
         io.emit('started', PROXY_AUTO_CONNECT);
+        io.emit('config', config);
     });
 
     await serve(io.handler(), { port: WEB_SOCKET_PORT });

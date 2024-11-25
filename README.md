@@ -56,7 +56,7 @@ brew install screen
 # supershy-client
 git clone git@github.com:AndrusAsumets/supershy-client.git
 cd supershy-client
-cp sample.env .env
+deno task start
 ```
 
 ```
