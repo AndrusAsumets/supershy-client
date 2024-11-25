@@ -32,18 +32,19 @@ export interface Proxy {
 	instanceSize: string
 	instanceImage: string
 	instancePublicKeyId: number
-	user: string
+	sshUser: string
 	passphrase: string
 	proxyLocalTestPort: number
 	proxyLocalPort: number
 	proxyRemotePort: number
-	keyAlgorithm: string
-	keyPath: string
+	sshKeyAlgorithm: string
+	sshKeyLength: number;
+	sshKeyPath: string
 	connectionString: string
 	appId: string
-	loopIntervalSec: number
+	proxyIntervalSec: number
 	sshPort: number
-	hostKey: string
+	sshHostKey: string
 	sshLogPath: string
 	isDeleted: false
 	createdTime: string
@@ -86,15 +87,15 @@ export interface CreateVultrInstance {
 export interface Config {
     APP_ID: string
     ENV: string
-    LOOP_INTERVAL_SEC: number
+    PROXY_INTERVAL_SEC: number
     TUNNEL_CONNECT_TIMEOUT_SEC: number
     SSH_PORT: number
     SSH_PORT_RANGE: number[]
     PROXY_LOCAL_TEST_PORT: number
     PROXY_LOCAL_PORT: number
     PROXY_REMOTE_PORT: number
-    KEY_ALGORITHM: string
-    KEY_LENGTH: number
+    SSH_KEY_ALGORITHM: string
+    SSH_KEY_LENGTH: number
     INSTANCE_PROVIDERS: InstanceProvider[]
     DIGITAL_OCEAN_API_KEY: string | undefined
     HETZNER_API_KEY: string | undefined
@@ -112,13 +113,13 @@ export interface Config {
     ENV_PATH: string
     HOME_PATH: string
     DATA_PATH: string
-    KEY_PATH: string
+    SSH_KEY_PATH: string
     TMP_PATH: string
     LOG_PATH: string
-    KNOWN_HOSTS_PATH: string
+    SSH_KNOWN_HOSTS_PATH: string
     DB_FILE_NAME: string
     SSH_LOG_EXTENSION: string
-    USER: string
+    SSH_USER: string
     PROXY_TYPES: ProxyType[]
     DIGITAL_OCEAN_INSTANCE_SIZE: string
     HETZNER_SERVER_TYPE: string

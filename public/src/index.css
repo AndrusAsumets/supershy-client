@@ -49,7 +49,7 @@ body {
     overflow-x: hidden;
     height: calc(100vh - 148px);
     margin: 16px;
-    padding: 16px;
+    padding: 0 16px 16px 16px;
     border: 1px solid var(--secondary-bg-color);
     word-wrap: break-word;
     font-size: 12px;
@@ -62,9 +62,13 @@ body {
 }
 
 .section-header {
-    border-bottom: 1px solid white;
+    position: sticky;
+    top: 0;
     margin-bottom: 8px;
+    padding-top: 16px;
     padding-bottom: 8px;
+    background: var(--primary-bg-color);
+    border-bottom: 1px solid white;
     font-size: 14px;
     font-family: SourceCodePro-Semibold;
 }

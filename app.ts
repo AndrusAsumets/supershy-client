@@ -12,7 +12,6 @@ import {
     CreateDigitalOceanInstance,
     CreateHetznerInstance,
     CreateVultrInstance,
-    DatabaseKey,
 } from './src/types.ts';
 import * as core from './src/core.ts';
 import * as models from './src/models.ts';
@@ -34,16 +33,17 @@ const {
     TUNNEL_CONNECT_TIMEOUT_SEC,
     TMP_PATH,
     DATA_PATH,
-    KEY_PATH,
+    SSH_KEY_PATH,
     LOG_PATH,
     GENERATE_SSH_KEY_FILE_NAME,
     CONNECT_SSH_TUNNEL_FILE_NAME,
-    USER,
+    SSH_USER,
     PROXY_TYPES,
     INSTANCE_PROVIDERS,
     SSH_PORT_RANGE,
-    LOOP_INTERVAL_SEC,
-    KEY_ALGORITHM,
+    PROXY_INTERVAL_SEC,
+    SSH_KEY_ALGORITHM,
+    SSH_KEY_LENGTH,
     HEARTBEAT_INTERVAL_SEC,
     PROXY_AUTO_CONNECT,
 } = config;
@@ -164,9 +164,9 @@ const rotate = async () => {
         const instanceRegion: string = lib.randomChoice(instanceRegions);
         const instanceName = `${APP_ID}-${ENV}-${proxyType}-${proxyUuid}`;
         const { instanceSize, instanceImage } = integrations.compute[instanceProvider];
-        const keyPath = `${KEY_PATH}/${instanceName}`;
+        const sshKeyPath = `${SSH_KEY_PATH}/${instanceName}`;
         const passphrase = crypto.randomBytes(64).toString('hex');
-        const publicKey = await integrations.shell.privateKey.create(keyPath, passphrase);
+        const publicKey = await integrations.shell.privateKey.create(sshKeyPath, passphrase);
         const instancePublicKeyId = await integrations.compute[instanceProvider].keys.add(publicKey, instanceName);
         const jwtSecret = crypto.randomBytes(64).toString('hex');
         const sshPort = lib.randomNumberFromRange(SSH_PORT_RANGE[0], SSH_PORT_RANGE[1]);
@@ -203,16 +203,17 @@ const rotate = async () => {
             instanceImage,
             instancePublicKeyId,
             proxyType,
-            user: USER,
+            sshUser: SSH_USER,
             passphrase,
-            loopIntervalSec: LOOP_INTERVAL_SEC,
-            keyAlgorithm: KEY_ALGORITHM,
+            proxyIntervalSec: PROXY_INTERVAL_SEC,
             proxyLocalTestPort: PROXY_LOCAL_TEST_PORT,
             proxyLocalPort: PROXY_LOCAL_PORT,
             proxyRemotePort: PROXY_REMOTE_PORT,
-            keyPath,
+            sshHostKey: '',
+            sshKeyAlgorithm: SSH_KEY_ALGORITHM,
+            sshKeyLength: SSH_KEY_LENGTH,
+            sshKeyPath,
             sshPort,
-            hostKey: '',
             sshLogPath: core.getSshLogPath(proxyUuid),
             connectionString: '',
             isDeleted: false,
@@ -244,9 +245,9 @@ const loop = async () => {
     setTimeout(async () => {
         const isStillWorking = loopStatus == LoopStatus.ACTIVE;
         isStillWorking
-            ? await core.exit(`Timeout after passing ${LOOP_INTERVAL_SEC} seconds.`)
+            ? await core.exit(`Timeout after passing ${PROXY_INTERVAL_SEC} seconds.`)
             : await loop();
-    }, LOOP_INTERVAL_SEC * 1000);
+    }, PROXY_INTERVAL_SEC * 1000);
 
     try {
         updateStatus(LoopStatus.ACTIVE);
@@ -256,7 +257,7 @@ const loop = async () => {
         updateStatus(LoopStatus.FINISHED);
 
         logger.info(
-            `Loop finished in ${
+            `Proxy created in ${
                 Number((endTime - startTime) / 1000).toFixed(0)
             } seconds.`,
         );
@@ -280,7 +281,7 @@ const heartbeat = async () => {
 
 const connectProxy = async () => {
     await integrations.fs.ensureFolder(DATA_PATH);
-    await integrations.fs.ensureFolder(KEY_PATH);
+    await integrations.fs.ensureFolder(SSH_KEY_PATH);
     await integrations.fs.ensureFolder(LOG_PATH);
 
     Deno.writeTextFileSync(`${TMP_PATH}/${GENERATE_SSH_KEY_FILE_NAME}`, GENERATE_SSH_KEY_FILE);

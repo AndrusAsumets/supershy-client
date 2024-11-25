@@ -61,7 +61,7 @@ deno task start
 
 ```
 # .env
-LOOP_INTERVAL_SEC=how often you would like to recycle the exit nodes in seconds, defaults to 1800.
+PROXY_INTERVAL_SEC=how often you would like to recycle the exit nodes in seconds, defaults to 1800.
 
 SSH_PORT=Port for the SSH server, defaults to 22.
 

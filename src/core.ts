@@ -4,7 +4,7 @@ const {
     CLOUDFLARE_BASE_URL,
     TMP_PATH,
     CONNECT_SSH_TUNNEL_FILE_NAME,
-    USER,
+    SSH_USER,
     LOG_PATH,
     SSH_LOG_EXTENSION,
     ENV_PATH,
@@ -58,10 +58,10 @@ export const getConnectionString = (
         passphrase,
         instanceIp,
         sshPort,
-        keyPath,
+        sshKeyPath,
         sshLogPath
     } = proxy;
-    return `${TMP_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${instanceIp} ${USER} ${sshPort} ${PROXY_LOCAL_PORT} ${PROXY_REMOTE_PORT} ${keyPath} ${sshLogPath}`;
+    return `${TMP_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${instanceIp} ${SSH_USER} ${sshPort} ${PROXY_LOCAL_PORT} ${PROXY_REMOTE_PORT} ${sshKeyPath} ${sshLogPath}`;
 };
 
 export const getSshLogPath = (proxyUuid: string): string =>`${LOG_PATH}/${proxyUuid}${SSH_LOG_EXTENSION}`;

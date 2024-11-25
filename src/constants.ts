@@ -1,11 +1,11 @@
 import * as path from 'https://deno.land/std@0.224.0/path/mod.ts';
 import { homedir } from 'node:os';
 
-import { InstanceProvider, ProxyType, DatabaseKey, Config } from './types.ts';
+import { InstanceProvider, ProxyType, Config } from './types.ts';
 
 const APP_ID = 'supershy-client';
 const ENV = 'dev';
-const LOOP_INTERVAL_SEC = 300;
+const PROXY_INTERVAL_SEC = 300;
 const TUNNEL_CONNECT_TIMEOUT_SEC = 10;
 const SSH_PORT = 22;
 const SSH_PORT_RANGE: number[] = Deno.env.get('SSH_PORT_RANGE')
@@ -16,8 +16,8 @@ const SSH_PORT_RANGE: number[] = Deno.env.get('SSH_PORT_RANGE')
 const PROXY_LOCAL_TEST_PORT = 8887;
 const PROXY_LOCAL_PORT = 8888;
 const PROXY_REMOTE_PORT = 8888;
-const KEY_ALGORITHM = 'ed25519';
-const KEY_LENGTH = 32768;
+const SSH_KEY_ALGORITHM = 'ed25519';
+const SSH_KEY_LENGTH = 32768;
 const INSTANCE_PROVIDERS: InstanceProvider[] = [];
 
 const DIGITAL_OCEAN_API_KEY = Deno.env.get('DIGITAL_OCEAN_API_KEY');
@@ -52,13 +52,13 @@ const __DIRNAME = path.dirname(path.fromFileUrl(import.meta.url)).split('/src')[
 const ENV_PATH = `${__DIRNAME}/.env`;
 const HOME_PATH = homedir();
 const DATA_PATH = `${HOME_PATH}/.${APP_ID}`;
-const KEY_PATH = `${DATA_PATH}/.keys`;
+const SSH_KEY_PATH = `${DATA_PATH}/.keys`;
 const TMP_PATH = '/tmp';
 const LOG_PATH = `${DATA_PATH}/logs`;
-const KNOWN_HOSTS_PATH = `${HOME_PATH}/.ssh/known_hosts`;
+const SSH_KNOWN_HOSTS_PATH = `${HOME_PATH}/.ssh/known_hosts`;
 const DB_FILE_NAME = `${DATA_PATH}/.database.${ENV}.json`;
 const SSH_LOG_EXTENSION = '.ssh.log';
-const USER = 'root';
+const SSH_USER = 'root';
 const PROXY_TYPES = [ProxyType.A, ProxyType.A];
 const DIGITAL_OCEAN_INSTANCE_SIZE = 's-1vcpu-512mb-10gb';
 const HETZNER_SERVER_TYPE = 'cx22';
@@ -88,17 +88,8 @@ if (!CLOUDFLARE_KV_NAMESPACE) {
 }
 
 export const config: Config = {
-    APP_ID,
-    ENV,
-    LOOP_INTERVAL_SEC,
-    TUNNEL_CONNECT_TIMEOUT_SEC,
-    SSH_PORT,
-    SSH_PORT_RANGE,
-    PROXY_LOCAL_TEST_PORT,
-    PROXY_LOCAL_PORT,
-    PROXY_REMOTE_PORT,
-    KEY_ALGORITHM,
-    KEY_LENGTH,
+    PROXY_AUTO_CONNECT,
+    PROXY_INTERVAL_SEC,
     INSTANCE_PROVIDERS,
     DIGITAL_OCEAN_API_KEY,
     HETZNER_API_KEY,
@@ -106,34 +97,43 @@ export const config: Config = {
     CLOUDFLARE_ACCOUNT_ID,
     CLOUDFLARE_API_KEY,
     CLOUDFLARE_KV_NAMESPACE,
-    TEST_PROXY_URL,
-    PROXY_URL,
-    DIGITAL_OCEAN_BASE_URL,
-    HETZNER_BASE_URL,
-    VULTR_BASE_URL,
-    CLOUDFLARE_BASE_URL,
-    __DIRNAME,
-    ENV_PATH,
-    HOME_PATH,
-    DATA_PATH,
-    KEY_PATH,
-    TMP_PATH,
-    LOG_PATH,
-    KNOWN_HOSTS_PATH,
-    DB_FILE_NAME,
-    SSH_LOG_EXTENSION,
-    USER,
-    PROXY_TYPES,
     DIGITAL_OCEAN_INSTANCE_SIZE,
     HETZNER_SERVER_TYPE,
     VULTR_INSTANCE_PLAN,
     DIGITAL_OCEAN_INSTANCE_IMAGE,
     HETZNER_INSTANCE_IMAGE,
     VULTR_INSTANCE_IMAGE,
+    APP_ID,
+    ENV,
+    TUNNEL_CONNECT_TIMEOUT_SEC,
+    WEB_SERVER_PORT,
+    WEB_SOCKET_PORT,
+    PROXY_LOCAL_TEST_PORT,
+    PROXY_LOCAL_PORT,
+    PROXY_REMOTE_PORT,
+    TEST_PROXY_URL,
+    PROXY_URL,
+    DIGITAL_OCEAN_BASE_URL,
+    HETZNER_BASE_URL,
+    VULTR_BASE_URL,
+    CLOUDFLARE_BASE_URL,
     GENERATE_SSH_KEY_FILE_NAME,
     CONNECT_SSH_TUNNEL_FILE_NAME,
     HEARTBEAT_INTERVAL_SEC,
-    WEB_SERVER_PORT,
-    WEB_SOCKET_PORT,
-    PROXY_AUTO_CONNECT,
+    __DIRNAME,
+    ENV_PATH,
+    HOME_PATH,
+    DATA_PATH,
+    SSH_KEY_PATH,
+    TMP_PATH,
+    SSH_PORT,
+    SSH_PORT_RANGE,
+    SSH_KEY_ALGORITHM,
+    SSH_KEY_LENGTH,
+    SSH_KNOWN_HOSTS_PATH,
+    DB_FILE_NAME,
+    LOG_PATH,
+    SSH_LOG_EXTENSION,
+    SSH_USER,
+    PROXY_TYPES,
 };

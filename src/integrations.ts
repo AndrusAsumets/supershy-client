@@ -10,10 +10,10 @@ const logger = _logger.get();
 
 import { config } from './constants.ts';
 const {
-    KEY_ALGORITHM,
-    KEY_LENGTH,
+    SSH_KEY_ALGORITHM,
+    SSH_KEY_LENGTH,
     TMP_PATH,
-    KNOWN_HOSTS_PATH,
+    SSH_KNOWN_HOSTS_PATH,
     GENERATE_SSH_KEY_FILE_NAME,
     CLOUDFLARE_BASE_URL,
     CLOUDFLARE_API_KEY,
@@ -48,7 +48,7 @@ export const shell = {
             passphrase: string,
         ) {
             const cmd =
-                `${TMP_PATH}/${GENERATE_SSH_KEY_FILE_NAME} ${passphrase} ${keyPath} ${KEY_ALGORITHM} ${KEY_LENGTH}`;
+                `${TMP_PATH}/${GENERATE_SSH_KEY_FILE_NAME} ${passphrase} ${keyPath} ${SSH_KEY_ALGORITHM} ${SSH_KEY_LENGTH}`;
             // @ts-ignore: because
             const process = Deno.run({ cmd: cmd.split(' ') });
             await process.status();
@@ -124,12 +124,12 @@ export const kv = {
             ) {
                 const { proxyUuid, instanceIp } = proxy;
 
-                proxy.hostKey = await kv.cloudflare.hostKey.get(proxy.proxyUuid, jwtSecret);
+                proxy.sshHostKey = await kv.cloudflare.hostKey.get(proxy.proxyUuid, jwtSecret);
                 logger.info(`Fetched host key for proxy ${proxyUuid}.`);
 
                 Deno.writeTextFileSync(
-                    KNOWN_HOSTS_PATH,
-                    `${instanceIp} ssh-${KEY_ALGORITHM} ${proxy.hostKey}\n`,
+                    SSH_KNOWN_HOSTS_PATH,
+                    `${instanceIp} ssh-${SSH_KEY_ALGORITHM} ${proxy.sshHostKey}\n`,
                     { append: true },
                 );
                 logger.info(`Added host key for ${instanceIp} to known hosts.`);
