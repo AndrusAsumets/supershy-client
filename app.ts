@@ -221,10 +221,7 @@ const rotate = async () => {
             deletedTime: null,
         };
         proxy = await integrations.kv.cloudflare.hostKey.update(proxy, jwtSecret);
-        // @ts-ignore: because
-        db.get().data[DatabaseKey.PROXIES].push(proxy);
-        db.get().write();
-
+        models.saveProxy(proxy);
         activeProxies.push(proxy);
         proxyIndex = proxyIndex + 1;
     }

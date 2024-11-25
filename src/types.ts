@@ -134,4 +134,6 @@ export interface Config {
     PROXY_AUTO_CONNECT: boolean
 }
 
-export type DatabaseData = Record<DatabaseKey, Proxy[] | Config>
+export type Proxies = Record<string, Proxy>
+
+export type DatabaseData = Record<DatabaseKey, Proxies | Config>

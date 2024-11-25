@@ -14,7 +14,7 @@ import {
 } from './types.ts';
 
 const defaultData: DatabaseData = {
-    [DatabaseKey.PROXIES]: [],
+    [DatabaseKey.PROXIES]: {},
     [DatabaseKey.CONFIG]: config,
 };
 
@@ -40,14 +40,12 @@ export const db = {
     update: async function (
         proxy: Proxy
     ) {
-        await db
+        const proxies = db
             .get()
             .chain
             .get(DatabaseKey.PROXIES)
-            .find({ proxyUuid: proxy.proxyUuid })
-            .assign(proxy)
             .value();
-    
+        proxies[proxy.proxyUuid] = proxy;
         await db.get().write();
     },
 };
