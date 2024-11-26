@@ -2,13 +2,12 @@
 
 import jwt from 'npm:jsonwebtoken';
 import { encodeBase64 } from 'jsr:@std/encoding/base64';
-import * as lib from './lib.ts';
 import { exists } from 'https://deno.land/std@0.224.0/fs/mod.ts';
+import * as lib from './lib.ts';
+import * as models from './models.ts';
 import { logger as _logger } from './logger.ts';
 
 const logger = _logger.get();
-
-import { config } from './constants.ts';
 const {
     SSH_KEY_ALGORITHM,
     SSH_KEY_LENGTH,
@@ -32,7 +31,7 @@ const {
     VULTR_INSTANCE_IMAGE,
     VULTR_API_KEY,
     HEARTBEAT_INTERVAL_SEC,
-} = config;
+} = models.getConfig();
 
 import {
     Proxy,

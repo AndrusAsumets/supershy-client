@@ -2,7 +2,8 @@ import { db } from './db.ts';
 import {
     Proxies,
     Proxy,
-    DatabaseKey
+    DatabaseKey,
+    Config
 } from './types.ts';
 
 export const saveProxy = (
@@ -47,5 +48,20 @@ export const removeUsedProxies = (
         .filter((proxy: Proxy) => instanceIdsToKeep.includes(proxy.instanceId))
         .forEach((proxy: Proxy) => result[proxy.proxyUuid] = proxy);
     db.get().data[DatabaseKey.PROXIES] = result;
+    db.get().write();
+};
+
+export const getConfig = () => {
+    return db
+        .get()
+        .chain
+        .get(DatabaseKey.CONFIG)
+        .value();
+};
+
+export const saveConfig = (
+    config: Config
+) => {
+    db.get().data[DatabaseKey.CONFIG] = config;
     db.get().write();
 };

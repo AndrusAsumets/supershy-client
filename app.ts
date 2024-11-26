@@ -21,7 +21,6 @@ import { logger as _logger } from './src/logger.ts';
 import { db } from './src/db.ts';
 import * as lib from './src/lib.ts';
 import * as integrations from './src/integrations.ts';
-import { config } from './src/constants.ts';
 const {
     ENV,
     APP_ID,
@@ -46,7 +45,7 @@ const {
     SSH_KEY_LENGTH,
     HEARTBEAT_INTERVAL_SEC,
     PROXY_AUTO_CONNECT,
-} = config;
+} = models.getConfig();
 import {
     GENERATE_SSH_KEY_FILE,
     CONNECT_SSH_TUNNEL_FILE,

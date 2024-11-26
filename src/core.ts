@@ -1,5 +1,6 @@
 import { logger as _logger } from './logger.ts';
-import { config } from './constants.ts';
+import * as models from './models.ts';
+
 const {
     CLOUDFLARE_BASE_URL,
     TMP_PATH,
@@ -7,7 +8,6 @@ const {
     SSH_USER,
     LOG_PATH,
     SSH_LOG_EXTENSION,
-    ENV_PATH,
     APP_ID,
     ENV,
     PROXY_LOCAL_PORT,
@@ -15,7 +15,7 @@ const {
     CLOUDFLARE_ACCOUNT_ID,
     CLOUDFLARE_KV_NAMESPACE,
     CLOUDFLARE_API_KEY,
-} = config;
+} = models.getConfig();
 import { Proxy } from './types.ts';
 import * as lib from './lib.ts';
 import * as integrations from './integrations.ts';
@@ -65,30 +65,6 @@ export const getConnectionString = (
 };
 
 export const getSshLogPath = (proxyUuid: string): string =>`${LOG_PATH}/${proxyUuid}${SSH_LOG_EXTENSION}`;
-
-export const updateEnv = (
-    key: string,
-    value: boolean | number | string
-) => {
-    const newLine = '\n';
-    const separator = `${key}=`;
-    let env = Deno.readTextFileSync(ENV_PATH);
-
-    if (!env.includes(separator)) {
-        env = `${env}${newLine}${separator}`;
-    }
-
-    env = env
-        .split(newLine)
-        .map((line: string) =>
-            line.startsWith(separator)
-                ? `${separator}${value}`
-                : line
-        )
-        .join(newLine);
-
-    Deno.writeTextFileSync(ENV_PATH, env);
-};
 
 export const exit = async (
     message: string,
