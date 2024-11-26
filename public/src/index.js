@@ -45,16 +45,16 @@ const visibleConfigKeys = [
 ]
 let isConected = false;
 
-const interact = async () => {
+const interact = () => {
     if (!isConected) {
         isConected = true;
         updateConnectToggle('Connecting ...');
-        await fetch('/proxy/connect');
+        socket.emit('/proxy/connect');
     }
     else {
         isConected = false
         updateConnectToggle('Disconnecting ...');
-        await fetch('/proxy/disconnect');
+        socket.emit('/proxy/disconnect');
     }
 };
 

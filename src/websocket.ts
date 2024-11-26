@@ -5,11 +5,22 @@ const {
     PROXY_AUTO_CONNECT,
     WEB_SOCKET_PORT,
 } = config;
+import * as core from './core.ts';
 
 export const start = async (io: Server) => {
-    io.on('connection', () => {
+    io.on('connection', (socket) => {
         io.emit('started', PROXY_AUTO_CONNECT);
         io.emit('config', config);
+
+        socket.on('/proxy/connect', () => {
+            core.updateEnv('PROXY_AUTO_CONNECT', true);
+            setTimeout(() => core.exit('/proxy/connect', true));
+        });
+
+        socket.on('/proxy/disconnect', () => {
+            core.updateEnv('PROXY_AUTO_CONNECT', false);
+            setTimeout(() => core.exit('/proxy/disconnect', true));
+        });
     });
 
     await serve(io.handler(), { port: WEB_SOCKET_PORT });
