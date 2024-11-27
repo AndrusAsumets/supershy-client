@@ -31,7 +31,7 @@ let config = {};
 
 const constructConfigLine = (key, value, isEditable, hasApiKey) => {
     const setChangeListener = (div, listener) => {
-        div.addEventListener('keyup', listener);
+        div.addEventListener('mouseout', listener);
     };
 
     const $key = document.createElement('div');
