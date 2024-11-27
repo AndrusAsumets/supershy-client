@@ -24,7 +24,9 @@ body {
     --secondary-bg-color: white;
     --primary-text-color: white;
     --secondary-text-color: black;
-    --tertiary-text-color: grey;
+    --active-color: yellow;
+    --inactive-color: grey;
+    --alert-color: red;
     font-family: SourceCodePro-Regular;
     margin: 0;
     padding: 0;
@@ -106,13 +108,21 @@ body {
     overflow-x: hidden;
 }
 
-.config-value:not(.config-editable) {
-    color: var(--tertiary-text-color);
+.config-value.config-editable:not(.config-alert) {
+    border-bottom: 1px dotted var(--inactive-color);
 }
 
-.config-editable:hover {
+.config-value:not(.config-editable) {
+    color: var(--inactive-color);
+}
+
+.config-alert {
+    border-bottom: 1px solid var(--alert-color);
+}
+
+.config-value.config-editable:not(.config-alert):hover {
     cursor: pointer;
-    border: 1px solid yellow;
+    border-bottom: 1px solid var(--active-color);
 }
 
 .connect-toggle {

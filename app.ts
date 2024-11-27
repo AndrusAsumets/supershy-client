@@ -296,5 +296,5 @@ const connectProxy = async () => {
 };
 
 webserver.start();
-websocket.start(io);
+await websocket.start(io);
 PROXY_AUTO_CONNECT && connectProxy();

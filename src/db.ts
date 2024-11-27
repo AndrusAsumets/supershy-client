@@ -25,7 +25,10 @@ const getDatabase = async (): Promise<LowWithLodash<DatabaseData>> => {
     const adapter = new JSONFile<DatabaseData>(DB_FILE_NAME);
     const db = new LowWithLodash(adapter, defaultData);
     await db.read();
-    db.data ||= defaultData;
+    db.data = {
+        [DatabaseKey.PROXIES]: {...defaultData[DatabaseKey.PROXIES], ...db.data[DatabaseKey.PROXIES]},
+        [DatabaseKey.CONFIG]: {...defaultData[DatabaseKey.CONFIG], ...db.data[DatabaseKey.CONFIG]}
+    }
     db.chain = lodash.chain(db.data);
     return db;
 };

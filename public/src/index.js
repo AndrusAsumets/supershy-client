@@ -25,18 +25,13 @@ const visibleConfigKeys = {
     'LOG_PATH': { editable: false },
     'DB_FILE_NAME': { editable: false },
 };
+const apiKeys = ['DIGITAL_OCEAN_API_KEY', 'HETZNER_API_KEY', 'VULTR_API_KEY'];
 let isConected = false;
 let config = {};
 
-const constructConfigLine = (key, value, isEditable) => {
+const constructConfigLine = (key, value, isEditable, hasApiKey) => {
     const setChangeListener = (div, listener) => {
-        div.addEventListener('blur', listener);
         div.addEventListener('keyup', listener);
-        div.addEventListener('paste', listener);
-        div.addEventListener('copy', listener);
-        div.addEventListener('cut', listener);
-        div.addEventListener('delete', listener);
-        div.addEventListener('mouseup', listener);
     };
 
     const $key = document.createElement('div');
@@ -44,16 +39,23 @@ const constructConfigLine = (key, value, isEditable) => {
     $key.innerText = key;
 
     const $value = document.createElement('div');
-    $value.className = 'config-value';
+    $value.className = `${key} config-value`;
     $value.innerText = value;
     $value.spellcheck = false;
     if (isEditable) {
         $value.className += ' config-editable';
         $value.contentEditable = true;
 
+        if (apiKeys.includes(key) && !hasApiKey) {
+            $value.className += ' config-alert';
+        }
+        else if (!apiKeys.includes(key) && !$value.innerText) {
+            $value.className += ' config-alert';
+        }
+
         setChangeListener($value, (event) => {
             if (visibleConfigKeys[key].editable == 'string') {
-                config[key] = String(event.target.innerText);
+                config[key] = String(event.target.innerText).replace('\n', '');
             }
             if (visibleConfigKeys[key].editable == 'number') {
                 config[key] = Number(event.target.innerText);
@@ -99,9 +101,13 @@ socket
         $configSection = document.getElementsByClassName('section-content config')[0];
         $configSection.innerText = '';
 
+        const hasApiKey = apiKeys
+            .filter((apiKey) => config[apiKey])
+            .length > 0;
+
         Object.keys(config).forEach((key) => {
             visibleConfigKeys[key] && $configSection.append(
-                constructConfigLine(key, config[key], visibleConfigKeys[key].editable)
+                constructConfigLine(key, config[key], visibleConfigKeys[key].editable, hasApiKey)
             );
         });
     })

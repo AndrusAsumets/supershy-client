@@ -11,7 +11,7 @@ const {
     WEB_SOCKET_PORT,
 } = models.getConfig();
 
-export const start = async (io: Server) => {
+export const start = (io: Server) => {
     io.on('connection', (socket) => {
         io.emit('started', PROXY_AUTO_CONNECT);
         io.emit('config', models.getConfig());
@@ -26,8 +26,9 @@ export const start = async (io: Server) => {
 
         socket.on('/config/save', (config: Config) => {
             models.saveConfig(config);
+            io.emit('config', models.getConfig());
         });
     });
 
-    await serve(io.handler(), { port: WEB_SOCKET_PORT });
+    serve(io.handler(), { port: WEB_SOCKET_PORT });
 };
