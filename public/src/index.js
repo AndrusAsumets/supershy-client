@@ -41,11 +41,11 @@ const constructConfigLine = (key, value, isEditable) => {
 
     const $key = document.createElement('div');
     $key.className = 'config-key';
-    $key.innerHTML = key;
+    $key.innerText = key;
 
     const $value = document.createElement('div');
     $value.className = 'config-value';
-    $value.innerHTML = value;
+    $value.innerText = value;
     $value.spellcheck = false;
     if (isEditable) {
         $value.className += ' config-editable';
@@ -53,10 +53,10 @@ const constructConfigLine = (key, value, isEditable) => {
 
         setChangeListener($value, (event) => {
             if (visibleConfigKeys[key].editable == 'string') {
-                config[key] = String(event.target.innerHTML).replace('<br>', '');
+                config[key] = String(event.target.innerText);
             }
             if (visibleConfigKeys[key].editable == 'number') {
-                config[key] = Number(event.target.innerHTML);
+                config[key] = Number(event.target.innerText);
             }
             socket.emit('/config/save', config);
         });
@@ -111,8 +111,8 @@ socket
         Object
             .keys(message)
             .forEach(key => {
-                const value = `${key}: ${JSON.stringify(message[key])}<br />`;
-                $logSection.innerHTML = value + $logSection.innerHTML;
+                const value = `${key}: ${JSON.stringify(message[key])}\n`;
+                $logSection.innerText = value + $logSection.innerText;
             });
     });
 

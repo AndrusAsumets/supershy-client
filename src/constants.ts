@@ -7,23 +7,18 @@ const APP_ID = 'supershy-client';
 const ENV = 'dev';
 const PROXY_INTERVAL_SEC = 300;
 const TUNNEL_CONNECT_TIMEOUT_SEC = 10;
-const SSH_PORT = 22;
-const SSH_PORT_RANGE: number[] = Deno.env.get('SSH_PORT_RANGE')
-    ? String(Deno.env.get('SSH_PORT_RANGE'))
-        .split(':')
-        .map(item => Number(item))
-    : [SSH_PORT, SSH_PORT];
+const SSH_PORT_RANGE: number[] = [10000, 65535];
 const PROXY_LOCAL_TEST_PORT = 8887;
 const PROXY_LOCAL_PORT = 8888;
 const PROXY_REMOTE_PORT = 8888;
 const SSH_KEY_ALGORITHM = 'ed25519';
 const SSH_KEY_LENGTH = 32768;
-const DIGITAL_OCEAN_API_KEY = Deno.env.get('DIGITAL_OCEAN_API_KEY');
-const HETZNER_API_KEY = Deno.env.get('HETZNER_API_KEY');
-const VULTR_API_KEY = Deno.env.get('VULTR_API_KEY');
-const CLOUDFLARE_ACCOUNT_ID = Deno.env.get('CLOUDFLARE_ACCOUNT_ID');
-const CLOUDFLARE_API_KEY = Deno.env.get('CLOUDFLARE_API_KEY');
-const CLOUDFLARE_KV_NAMESPACE = Deno.env.get('CLOUDFLARE_KV_NAMESPACE');
+const DIGITAL_OCEAN_API_KEY = '';
+const HETZNER_API_KEY = '';
+const VULTR_API_KEY = '';
+const CLOUDFLARE_ACCOUNT_ID = '';
+const CLOUDFLARE_API_KEY = '';
+const CLOUDFLARE_KV_NAMESPACE = '';
 const TEST_PROXY_URL = `http://localhost:${PROXY_LOCAL_TEST_PORT}`;
 const PROXY_URL = `http://localhost:${PROXY_LOCAL_PORT}`;
 const DIGITAL_OCEAN_BASE_URL = 'https://api.digitalocean.com/v2';
@@ -53,9 +48,7 @@ const CONNECT_SSH_TUNNEL_FILE_NAME = 'connect-ssh-tunnel.exp';
 const HEARTBEAT_INTERVAL_SEC = 10 * 1000;
 const WEB_SERVER_PORT = 8080;
 const WEB_SOCKET_PORT = 8880;
-const PROXY_AUTO_CONNECT = Deno.env.get('PROXY_AUTO_CONNECT') == 'false'
-    ? false
-    : true;
+const PROXY_AUTO_CONNECT = false;
 
 export const config: Config = {
     DIGITAL_OCEAN_API_KEY,
@@ -95,7 +88,6 @@ export const config: Config = {
     DATA_PATH,
     SSH_KEY_PATH,
     TMP_PATH,
-    SSH_PORT,
     SSH_PORT_RANGE,
     SSH_KEY_ALGORITHM,
     SSH_KEY_LENGTH,

@@ -103,6 +103,7 @@ body {
 .config-value {
     width: 100%;
     max-width: calc(50% - 8px);
+    overflow-x: hidden;
 }
 
 .config-value:not(.config-editable) {

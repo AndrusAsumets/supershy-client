@@ -1,6 +1,5 @@
 // deno-lint-ignore-file ban-unused-ignore no-explicit-any no-deprecated-deno-api
 
-import 'jsr:@std/dotenv/load';
 import * as crypto from 'node:crypto';
 import { v7 as uuidv7 } from 'npm:uuid';
 import { Server } from 'https://deno.land/x/socket_io@0.2.0/mod.ts';
@@ -18,7 +17,6 @@ import * as models from './src/models.ts';
 import * as webserver from './src/webserver.ts';
 import * as websocket from './src/websocket.ts';
 import { logger as _logger } from './src/logger.ts';
-import { db } from './src/db.ts';
 import * as lib from './src/lib.ts';
 import * as integrations from './src/integrations.ts';
 const {

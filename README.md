@@ -63,8 +63,6 @@ deno task start
 # .env
 PROXY_INTERVAL_SEC=how often you would like to recycle the exit nodes in seconds, defaults to 1800.
 
-SSH_PORT=Port for the SSH server, defaults to 22.
-
 SSH_PORT_RANGE=colon separated [from:to] range of numbers for a random selection, overrides SSH_PORT if set.
 
 DIGITAL_OCEAN_API_KEY=

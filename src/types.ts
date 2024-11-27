@@ -89,19 +89,18 @@ export interface Config {
     ENV: string
     PROXY_INTERVAL_SEC: number
     TUNNEL_CONNECT_TIMEOUT_SEC: number
-    SSH_PORT: number
     SSH_PORT_RANGE: number[]
     PROXY_LOCAL_TEST_PORT: number
     PROXY_LOCAL_PORT: number
     PROXY_REMOTE_PORT: number
     SSH_KEY_ALGORITHM: string
     SSH_KEY_LENGTH: number
-    DIGITAL_OCEAN_API_KEY: string | undefined
-    HETZNER_API_KEY: string | undefined
-    VULTR_API_KEY: string | undefined
-    CLOUDFLARE_ACCOUNT_ID: string | undefined
-    CLOUDFLARE_API_KEY: string | undefined
-    CLOUDFLARE_KV_NAMESPACE: string | undefined
+    DIGITAL_OCEAN_API_KEY: string
+    HETZNER_API_KEY: string
+    VULTR_API_KEY: string
+    CLOUDFLARE_ACCOUNT_ID: string
+    CLOUDFLARE_API_KEY: string
+    CLOUDFLARE_KV_NAMESPACE: string
     TEST_PROXY_URL: string
     PROXY_URL: string
     DIGITAL_OCEAN_BASE_URL: string
