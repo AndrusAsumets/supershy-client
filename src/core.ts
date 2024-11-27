@@ -16,11 +16,31 @@ const {
     CLOUDFLARE_KV_NAMESPACE,
     CLOUDFLARE_API_KEY,
 } = models.getConfig();
-import { Proxy } from './types.ts';
+import { Config, Proxy, InstanceProvider } from './types.ts';
 import * as lib from './lib.ts';
 import * as integrations from './integrations.ts';
 
 const logger = _logger.get();
+
+export const getInstanceProviders = (
+    config: Config
+) => {
+    const instanceProviders: InstanceProvider[] = [];
+
+    if (config.DIGITAL_OCEAN_API_KEY) {
+        instanceProviders.push(InstanceProvider.DIGITAL_OCEAN)
+    }
+
+    if (config.HETZNER_API_KEY) {
+        instanceProviders.push(InstanceProvider.HETZNER)
+    }
+
+    if (config.VULTR_API_KEY) {
+        instanceProviders.push(InstanceProvider.VULTR)
+    }
+
+    return instanceProviders;
+};
 
 export const getUserData = (
     proxyUuid: string,
@@ -64,14 +84,17 @@ export const getConnectionString = (
     return `${TMP_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${instanceIp} ${SSH_USER} ${sshPort} ${PROXY_LOCAL_PORT} ${PROXY_REMOTE_PORT} ${sshKeyPath} ${sshLogPath}`;
 };
 
-export const getSshLogPath = (proxyUuid: string): string =>`${LOG_PATH}/${proxyUuid}${SSH_LOG_EXTENSION}`;
+export const getSshLogPath = (
+    proxyUuid: string
+): string =>`${LOG_PATH}/${proxyUuid}${SSH_LOG_EXTENSION}`;
 
 export const exit = async (
     message: string,
     onPurpose = false
 ) => {
     !onPurpose && logger.error(message);
-    onPurpose && await integrations.shell.pkill(`${APP_ID}-${ENV}`);
+    const hasProxies = Object.keys(models.getProxies()).length > 0;
+    onPurpose && hasProxies && await integrations.shell.pkill(`${APP_ID}-${ENV}`);
     await lib.sleep(1000);
     throw new Error();
 };

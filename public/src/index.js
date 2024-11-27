@@ -14,7 +14,6 @@ const visibleConfigKeys = {
     'DIGITAL_OCEAN_API_KEY': { editable: 'string' },
     'HETZNER_API_KEY': { editable: 'string' },
     'VULTR_API_KEY': { editable: 'string' },
-    'INSTANCE_PROVIDERS': { editable: false },
     'CLOUDFLARE_ACCOUNT_ID': { editable: 'string' },
     'CLOUDFLARE_API_KEY': { editable: 'string' },
     'CLOUDFLARE_KV_NAMESPACE': { editable: 'string' },

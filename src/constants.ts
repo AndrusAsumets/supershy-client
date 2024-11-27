@@ -1,7 +1,7 @@
 import * as path from 'https://deno.land/std@0.224.0/path/mod.ts';
 import { homedir } from 'node:os';
 
-import { InstanceProvider, ProxyType, Config } from './types.ts';
+import { ProxyType, Config } from './types.ts';
 
 const APP_ID = 'supershy-client';
 const ENV = 'dev';
@@ -18,27 +18,9 @@ const PROXY_LOCAL_PORT = 8888;
 const PROXY_REMOTE_PORT = 8888;
 const SSH_KEY_ALGORITHM = 'ed25519';
 const SSH_KEY_LENGTH = 32768;
-const INSTANCE_PROVIDERS: InstanceProvider[] = [];
-
 const DIGITAL_OCEAN_API_KEY = Deno.env.get('DIGITAL_OCEAN_API_KEY');
-if (DIGITAL_OCEAN_API_KEY) {
-    INSTANCE_PROVIDERS.push(InstanceProvider.DIGITAL_OCEAN)
-}
-
 const HETZNER_API_KEY = Deno.env.get('HETZNER_API_KEY');
-if (HETZNER_API_KEY) {
-    INSTANCE_PROVIDERS.push(InstanceProvider.HETZNER)
-}
-
 const VULTR_API_KEY = Deno.env.get('VULTR_API_KEY');
-if (VULTR_API_KEY) {
-    INSTANCE_PROVIDERS.push(InstanceProvider.VULTR)
-}
-
-if (!INSTANCE_PROVIDERS.length) {
-    throw `DIGITAL_OCEAN_API_KEY, HETZNER_API_KEY and/or VULTR_API_KEY env variable(s) was/were not provided.`;
-}
-
 const CLOUDFLARE_ACCOUNT_ID = Deno.env.get('CLOUDFLARE_ACCOUNT_ID');
 const CLOUDFLARE_API_KEY = Deno.env.get('CLOUDFLARE_API_KEY');
 const CLOUDFLARE_KV_NAMESPACE = Deno.env.get('CLOUDFLARE_KV_NAMESPACE');
@@ -88,7 +70,6 @@ if (!CLOUDFLARE_KV_NAMESPACE) {
 }
 
 export const config: Config = {
-    INSTANCE_PROVIDERS,
     DIGITAL_OCEAN_API_KEY,
     HETZNER_API_KEY,
     VULTR_API_KEY,

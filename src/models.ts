@@ -6,7 +6,23 @@ import {
     Config
 } from './types.ts';
 
+export const getProxies = () => {
+    return db
+        .get()
+        .chain
+        .get(DatabaseKey.PROXIES)
+        .value();
+};
+
 export const saveProxy = (
+    proxy: Proxy
+) => {
+    const proxies = getProxies();
+    proxies[proxy.proxyUuid] = proxy;
+    db.get().write();
+};
+
+export const updateProxy = (
     proxy: Proxy
 ) => {
     const proxies = db
@@ -19,11 +35,7 @@ export const saveProxy = (
 };
 
 export const getInitialProxy = () => {
-    const proxies = db
-        .get()
-        .chain
-        .get(DatabaseKey.PROXIES)
-        .value();
+    const proxies = getProxies();
     const proxy = Object
         .keys(proxies)
         .sort()
@@ -36,11 +48,7 @@ export const getInitialProxy = () => {
 export const removeUsedProxies = (
     instanceIdsToKeep: string[]
 ) => {
-    const proxies = db
-        .get()
-        .chain
-        .get(DatabaseKey.PROXIES)
-        .value();
+    const proxies = getProxies();
     const result: Proxies = {};
     Object
         .keys(proxies)

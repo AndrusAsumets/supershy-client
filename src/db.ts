@@ -10,7 +10,6 @@ const {
 import {
     DatabaseData,
     DatabaseKey,
-    Proxy,
 } from './types.ts';
 
 const defaultData: DatabaseData = {
@@ -36,16 +35,5 @@ const _db: LowWithLodash<DatabaseData> = await getDatabase();
 export const db = {
 	get: function () {
         return _db;
-    },
-    update: async function (
-        proxy: Proxy
-    ) {
-        const proxies = db
-            .get()
-            .chain
-            .get(DatabaseKey.PROXIES)
-            .value();
-        proxies[proxy.proxyUuid] = proxy;
-        await db.get().write();
-    },
+    }
 };

@@ -96,7 +96,6 @@ export interface Config {
     PROXY_REMOTE_PORT: number
     SSH_KEY_ALGORITHM: string
     SSH_KEY_LENGTH: number
-    INSTANCE_PROVIDERS: InstanceProvider[]
     DIGITAL_OCEAN_API_KEY: string | undefined
     HETZNER_API_KEY: string | undefined
     VULTR_API_KEY: string | undefined

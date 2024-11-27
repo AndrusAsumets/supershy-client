@@ -38,7 +38,6 @@ const {
     CONNECT_SSH_TUNNEL_FILE_NAME,
     SSH_USER,
     PROXY_TYPES,
-    INSTANCE_PROVIDERS,
     SSH_PORT_RANGE,
     PROXY_INTERVAL_SEC,
     SSH_KEY_ALGORITHM,
@@ -89,7 +88,7 @@ const tunnel = async (
             if (isConnected) {
                 await integrations.kv.cloudflare.heartbeat(proxyUrl);
                 logger.info(`Connected SSH test tunnel to ${proxy.instanceIp}:${port}.`);
-                await db.update(proxy);
+                models.updateProxy(proxy);
             }
         }
         catch(err) {
@@ -146,7 +145,8 @@ const cleanup = async (
 };
 
 const rotate = async () => {
-    const instanceProvider: InstanceProvider = lib.randomChoice(INSTANCE_PROVIDERS);
+    const instanceProviders = core.getInstanceProviders(models.getConfig());
+    const instanceProvider: InstanceProvider = lib.randomChoice(instanceProviders);
     const activeProxies: Proxy[] = [];
     const initialProxy = models.getInitialProxy();
     initialProxy && await connect(initialProxy);
