@@ -99,9 +99,9 @@ export interface Config {
     DIGITAL_OCEAN_API_KEY: string | undefined
     HETZNER_API_KEY: string | undefined
     VULTR_API_KEY: string | undefined
-    CLOUDFLARE_ACCOUNT_ID: string
-    CLOUDFLARE_API_KEY: string
-    CLOUDFLARE_KV_NAMESPACE: string
+    CLOUDFLARE_ACCOUNT_ID: string | undefined
+    CLOUDFLARE_API_KEY: string | undefined
+    CLOUDFLARE_KV_NAMESPACE: string | undefined
     TEST_PROXY_URL: string
     PROXY_URL: string
     DIGITAL_OCEAN_BASE_URL: string

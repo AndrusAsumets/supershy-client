@@ -57,18 +57,6 @@ const PROXY_AUTO_CONNECT = Deno.env.get('PROXY_AUTO_CONNECT') == 'false'
     ? false
     : true;
 
-if (!CLOUDFLARE_ACCOUNT_ID) {
-    throw `CLOUDFLARE_ACCOUNT_ID env variable was not provided.`;
-}
-
-if (!CLOUDFLARE_API_KEY) {
-    throw `CLOUDFLARE_API_KEY env variable was not provided.`;
-}
-
-if (!CLOUDFLARE_KV_NAMESPACE) {
-    throw `CLOUDFLARE_KV_NAMESPACEY env variable was not provided.`;
-}
-
 export const config: Config = {
     DIGITAL_OCEAN_API_KEY,
     HETZNER_API_KEY,
