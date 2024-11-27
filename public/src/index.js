@@ -3,6 +3,8 @@ const socket = io('ws://localhost:8880', {
 });
 
 const $connectToggle = document.getElementsByClassName('connect-toggle')[0];
+$configSection = document.getElementsByClassName('section-content config')[0];
+$logSection = document.getElementsByClassName('section-content log')[0];
 
 const updateConnectToggle = (label) => $connectToggle.innerText = label;
 
@@ -21,7 +23,6 @@ const visibleConfigKeys = {
     'WEB_SOCKET_PORT': { editable: 'number'},
     'PROXY_LOCAL_TEST_PORT': { editable: 'number' },
     'PROXY_LOCAL_PORT': { editable: 'number' },
-    'PROXY_AUTO_CONNECT': { editable: false },
     'LOG_PATH': { editable: false },
     'DB_FILE_NAME': { editable: false },
 };
@@ -87,8 +88,25 @@ const interact = () => {
     }
 };
 
+const appendLogMessage = (message, key) => {
+    const timeLocale = 'en-UK';
+    const timeFormat = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+    const time = new Date(message[key][0]).toLocaleTimeString(timeLocale, timeFormat);
+    const value = `${time} ${key}: ${message[key][1]}\n`;
+    $logSection.innerText = value + $logSection.innerText;
+};
+
+const createLogMessage = (label) => {
+    return {
+        'Info': [
+            new Date().toISOString(),
+            label
+        ]
+    }
+};
+
 socket
-    .on('started', (_isConected) => {
+    .on('/started', (_isConected) => {
         isConected = _isConected;
         updateConnectToggle(
             isConected
@@ -96,9 +114,8 @@ socket
                 : 'Connect Proxy'
         );
     })
-    .on('config', (_config) => {
+    .on('/config', (_config) => {
         config = _config;
-        $configSection = document.getElementsByClassName('section-content config')[0];
         $configSection.innerText = '';
 
         const hasApiKey = apiKeys
@@ -111,15 +128,16 @@ socket
             );
         });
     })
-    .on('log', (message) => {
-        $logSection = document.getElementsByClassName('section-content log')[0];
-
+    .on('/log', (message) => {
         Object
             .keys(message)
-            .forEach(key => {
-                const value = `${key}: ${JSON.stringify(message[key])}\n`;
-                $logSection.innerText = value + $logSection.innerText;
-            });
+            .forEach(key => appendLogMessage(message, key));
+    })
+    .on('connect', () => {
+        appendLogMessage(createLogMessage('Connected to WebSocket.'), 'Info')
+    })
+    .on('disconnect', () => {
+        appendLogMessage(createLogMessage('Disconnected from WebSocket.'), 'Info')
     });
 
 $connectToggle

@@ -90,7 +90,7 @@ export const kv = {
             }
             const res = await fetch(CLOUDFLARE_BASE_URL, options);
             await res.json();
-            logger.info('Heartbeat success.');
+            logger.info('Heartbeat.');
         },
         hostKey: {
             get: async function (

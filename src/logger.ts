@@ -16,17 +16,17 @@ export const logger = {
         _logger.info = async function (...args: unknown[]) {
             info.apply(this, args);
             const timestamp = new Date().toISOString();
-            io && io.emit('log', { info: [timestamp, ...args] });
+            io && io.emit('/log', { Info: [timestamp, ...args] });
         }
         _logger.warn = async function (...args: unknown[]) {
             const timestamp = new Date().toISOString();
             warn.apply(this, args);
-            io && io.emit('log', { warn: [timestamp, ...args] });
+            io && io.emit('/log', { Warn: [timestamp, ...args] });
         }
         _logger.error = async function (...args: unknown[]) {
             const timestamp = new Date().toISOString();
             error.apply(this, args);
-            io && io.emit('log', { error: [timestamp, ...args] });
+            io && io.emit('/log', { Error: [timestamp, ...args] });
         }
 
         return _logger;

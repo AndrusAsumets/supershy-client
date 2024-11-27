@@ -13,8 +13,8 @@ const {
 
 export const start = (io: Server) => {
     io.on('connection', (socket) => {
-        io.emit('started', PROXY_AUTO_CONNECT);
-        io.emit('config', models.getConfig());
+        io.emit('/started', PROXY_AUTO_CONNECT);
+        io.emit('/config', models.getConfig());
 
         socket.on('/proxy/connect', () => {
             core.exit('/proxy/connect', true);
@@ -26,7 +26,7 @@ export const start = (io: Server) => {
 
         socket.on('/config/save', (config: Config) => {
             models.saveConfig(config);
-            io.emit('config', models.getConfig());
+            io.emit('/config', models.getConfig());
         });
     });
 
