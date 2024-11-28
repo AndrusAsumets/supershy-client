@@ -3,10 +3,8 @@ const socket = io('ws://localhost:8880', {
 });
 
 const $connectToggle = document.getElementsByClassName('connect-toggle')[0];
-$configSection = document.getElementsByClassName('section-content config')[0];
-$logSection = document.getElementsByClassName('section-content log')[0];
-
-const updateConnectToggle = (label) => $connectToggle.innerText = label;
+const $configSection = document.getElementsByClassName('section-content config')[0];
+const $logSection = document.getElementsByClassName('section-content log')[0];
 
 const visibleConfigKeys = {
     'PROXY_INTERVAL_SEC': { editable: 'number' },
@@ -29,6 +27,8 @@ const visibleConfigKeys = {
 const apiKeys = ['DIGITAL_OCEAN_API_KEY', 'HETZNER_API_KEY', 'VULTR_API_KEY'];
 let isConected = false;
 let config = {};
+
+const updateConnectToggle = (label) => $connectToggle.innerText = label;
 
 const constructConfigLine = (key, value, isEditable, hasApiKey) => {
     const setChangeListener = (div, listener) => {

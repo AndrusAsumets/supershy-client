@@ -15,8 +15,8 @@
 }
 
 ::selection {
-    color: black;
-    background: yellow;
+    color: var(--primary-bg-color);
+    background: var(--active-color);
 }
 
 body {
@@ -77,7 +77,7 @@ body {
     padding-top: 16px;
     padding-bottom: 8px;
     background: var(--primary-bg-color);
-    border-bottom: 1px solid white;
+    border-bottom: 1px solid var(--secondary-bg-color);
     font-size: 14px;
     font-family: SourceCodePro-Semibold;
 }

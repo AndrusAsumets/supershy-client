@@ -185,7 +185,8 @@ const rotate = async () => {
             backups: 'disabled',
         };
         const { instanceId, instanceIp } = await integrations.compute[instanceProvider].instances.create(instancePayload);
-        logger.info(`Created ${instanceProvider} instance.`, JSON.stringify(instancePayload, null, 4));
+        logger.info(`Created ${instanceProvider} instance.`);
+        logger.info(JSON.stringify(instancePayload, null, 4));
         logger.info(`Found network at ${instanceIp}.`);
 
         let proxy: Proxy = {
