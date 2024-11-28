@@ -92,7 +92,8 @@ const appendLogMessage = (message, key) => {
     const timeLocale = 'en-UK';
     const timeFormat = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
     const time = new Date(message[key][0]).toLocaleTimeString(timeLocale, timeFormat);
-    const value = `${time} ${key}: ${message[key][1]}\n`;
+    message[key].shift();
+    const value = `${time} ${key}: ${message[key].join(', ')}\n`;
     $logSection.innerText = value + $logSection.innerText;
 };
 
