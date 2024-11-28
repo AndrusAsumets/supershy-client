@@ -3,6 +3,7 @@ const socket = io('ws://localhost:8880', {
 });
 
 const $connectToggle = document.getElementsByClassName('connect-toggle')[0];
+const $providersSection = document.getElementsByClassName('section-content providers')[0];
 const $configSection = document.getElementsByClassName('section-content config')[0];
 const $logSection = document.getElementsByClassName('section-content log')[0];
 
@@ -30,17 +31,31 @@ let config = {};
 
 const updateConnectToggle = (label) => $connectToggle.innerText = label;
 
-const constructConfigLine = (key, value, isEditable, hasApiKey) => {
-    const setChangeListener = (div, listener) => {
-        div.addEventListener('mouseout', listener);
-    };
+const convertSnakeCaseToPascalCase = (str) => str
+    .split('_')
+    .map((element) => element.slice(0, 1).toUpperCase() + element.slice(1))
+    .join('')
 
+const setChangeListener = (div, listener) => {
+    div.addEventListener('mouseout', listener);
+};
+
+const setClickListener = (div, listener) => {
+    div.addEventListener('click', listener);
+};
+
+const constructConfigLine = (
+    key,
+    value,
+    isEditable = false,
+    hasApiKey = false,
+) => {
     const $key = document.createElement('div');
-    $key.className = 'config-key';
+    $key.className = 'line-key';
     $key.innerText = key;
 
     const $value = document.createElement('div');
-    $value.className = `${key} config-value`;
+    $value.className = `${key} line-value`;
     $value.innerText = value;
     $value.spellcheck = false;
     if (isEditable) {
@@ -67,8 +82,34 @@ const constructConfigLine = (key, value, isEditable, hasApiKey) => {
 
     const $configLine = document.createElement('div');
     $configLine.className = 'config-line';
-    $configLine.append($key)
-    $configLine.append($value)
+    $configLine.append($key);
+    $configLine.append($value);
+    return $configLine;
+};
+
+const constructProviderLine = (key, value) => {
+    const $key = document.createElement('div');
+    $key.className = 'line-key';
+    $key.innerText = convertSnakeCaseToPascalCase(key);
+
+    const $value = document.createElement('div');
+    $value.className = `${key} line-value config-editable`;
+    $value.innerText = value;
+    $value.spellcheck = false;
+
+    setClickListener($value, () => {
+        !config.ENABLED_INSTANCE_PROVIDERS.includes(key)
+            ? config.ENABLED_INSTANCE_PROVIDERS.push(key)
+            : config.ENABLED_INSTANCE_PROVIDERS = config.ENABLED_INSTANCE_PROVIDERS
+                .filter((instanceProviderKey) => instanceProviderKey != key);
+
+        socket.emit('/config/save', config);
+    });
+
+    const $configLine = document.createElement('div');
+    $configLine.className = 'config-line';
+    $configLine.append($key);
+    $configLine.append($value);
     return $configLine;
 };
 
@@ -118,6 +159,7 @@ socket
     .on('/config', (_config) => {
         config = _config;
         $configSection.innerText = '';
+        $providersSection.innerText = '';
 
         const hasApiKey = apiKeys
             .filter((apiKey) => config[apiKey])
@@ -126,6 +168,17 @@ socket
         Object.keys(config).forEach((key) => {
             visibleConfigKeys[key] && $configSection.append(
                 constructConfigLine(key, config[key], visibleConfigKeys[key].editable, hasApiKey)
+            );
+        });
+
+        config.INSTANCE_PROVIDERS.forEach((instanceProviderKey) => {
+            $providersSection.append(
+                constructProviderLine(
+                    instanceProviderKey,
+                    config.ENABLED_INSTANCE_PROVIDERS.includes(instanceProviderKey)
+                        ? 'Enabled'
+                        : 'Disabled'
+                )
             );
         });
     })

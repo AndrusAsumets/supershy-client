@@ -130,6 +130,8 @@ export interface Config {
     HEARTBEAT_INTERVAL_SEC: number
     WEB_SERVER_PORT: number
     WEB_SOCKET_PORT: number
+	INSTANCE_PROVIDERS: InstanceProvider[]
+	ENABLED_INSTANCE_PROVIDERS: InstanceProvider[]
     PROXY_AUTO_CONNECT: boolean
 }
 

@@ -25,6 +25,7 @@ export const start = (io: Server) => {
         });
 
         socket.on('/config/save', (config: Config) => {
+            config = core.setInstanceProviders(config);
             models.saveConfig(config);
             io.emit('/config', models.getConfig());
         });

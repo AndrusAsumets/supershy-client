@@ -143,8 +143,6 @@ const cleanup = async (
 };
 
 const rotate = async () => {
-    const instanceProviders = core.getInstanceProviders(models.getConfig());
-    const instanceProvider: InstanceProvider = lib.randomChoice(instanceProviders);
     const activeProxies: Proxy[] = [];
     const initialProxy = models.getInitialProxy();
     initialProxy && await connect(initialProxy);
@@ -152,6 +150,11 @@ const rotate = async () => {
     const proxyTypes: ProxyType[] = initialProxy
         ? [ProxyType.A]
         : PROXY_TYPES;
+    const instanceProviders = models.getConfig().ENABLED_INSTANCE_PROVIDERS;
+    if (!instanceProviders.length) {
+        return logger.warn('None of the VPS providers were enabled.');
+    }
+    const instanceProvider: InstanceProvider = lib.randomChoice(instanceProviders);
 
     let proxyIndex = 0;
     while (proxyIndex < proxyTypes.length) {
@@ -251,11 +254,12 @@ const loop = async () => {
         updateStatus(LoopStatus.ACTIVE);
         const startTime = performance.now();
         await rotate();
+        logger.info('Started proxy rotation.');
         const endTime = performance.now();
         updateStatus(LoopStatus.FINISHED);
 
         logger.info(
-            `Proxy created in ${
+            `Proxy rotation finished in ${
                 Number((endTime - startTime) / 1000).toFixed(0)
             } seconds.`,
         );

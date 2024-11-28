@@ -1,7 +1,7 @@
 import * as path from 'https://deno.land/std@0.224.0/path/mod.ts';
 import { homedir } from 'node:os';
 
-import { ProxyType, Config } from './types.ts';
+import { ProxyType, Config, InstanceProvider } from './types.ts';
 
 const APP_ID = 'supershy-client';
 const ENV = 'dev';
@@ -43,6 +43,8 @@ const VULTR_INSTANCE_PLAN = 'vc2-1c-1gb';
 const DIGITAL_OCEAN_INSTANCE_IMAGE = 'debian-12-x64';
 const HETZNER_INSTANCE_IMAGE = 'debian-12';
 const VULTR_INSTANCE_IMAGE = 'Debian 12 x64 (bookworm)';
+const INSTANCE_PROVIDERS: InstanceProvider[] = [];
+const ENABLED_INSTANCE_PROVIDERS: InstanceProvider[] = [];
 const GENERATE_SSH_KEY_FILE_NAME = 'generate-ssh-key.exp';
 const CONNECT_SSH_TUNNEL_FILE_NAME = 'connect-ssh-tunnel.exp';
 const HEARTBEAT_INTERVAL_SEC = 10 * 1000;
@@ -79,6 +81,8 @@ export const config: Config = {
     HETZNER_BASE_URL,
     VULTR_BASE_URL,
     CLOUDFLARE_BASE_URL,
+    INSTANCE_PROVIDERS,
+    ENABLED_INSTANCE_PROVIDERS,
     GENERATE_SSH_KEY_FILE_NAME,
     CONNECT_SSH_TUNNEL_FILE_NAME,
     HEARTBEAT_INTERVAL_SEC,

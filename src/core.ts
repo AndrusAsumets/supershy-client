@@ -22,24 +22,24 @@ import * as integrations from './integrations.ts';
 
 const logger = _logger.get();
 
-export const getInstanceProviders = (
+export const setInstanceProviders = (
     config: Config
 ) => {
-    const instanceProviders: InstanceProvider[] = [];
+    config.INSTANCE_PROVIDERS = [];
 
     if (config.DIGITAL_OCEAN_API_KEY) {
-        instanceProviders.push(InstanceProvider.DIGITAL_OCEAN)
+        config.INSTANCE_PROVIDERS.push(InstanceProvider.DIGITAL_OCEAN)
     }
 
     if (config.HETZNER_API_KEY) {
-        instanceProviders.push(InstanceProvider.HETZNER)
+        config.INSTANCE_PROVIDERS.push(InstanceProvider.HETZNER)
     }
 
     if (config.VULTR_API_KEY) {
-        instanceProviders.push(InstanceProvider.VULTR)
+        config.INSTANCE_PROVIDERS.push(InstanceProvider.VULTR)
     }
 
-    return instanceProviders;
+    return config;
 };
 
 export const getUserData = (

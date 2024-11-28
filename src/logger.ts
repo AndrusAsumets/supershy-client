@@ -19,13 +19,13 @@ export const logger = {
             io && io.emit('/log', { Info: [timestamp, ...args] });
         }
         _logger.warn = async function (...args: unknown[]) {
-            const timestamp = new Date().toISOString();
             warn.apply(this, args);
+            const timestamp = new Date().toISOString();
             io && io.emit('/log', { Warn: [timestamp, ...args] });
         }
         _logger.error = async function (...args: unknown[]) {
-            const timestamp = new Date().toISOString();
             error.apply(this, args);
+            const timestamp = new Date().toISOString();
             io && io.emit('/log', { Error: [timestamp, ...args] });
         }
 
