@@ -78,12 +78,15 @@ const constructConfigLine = (
         }
 
         setChangeListener($value, (event) => {
-            if (visibleConfigKeys[key].editable == 'string') {
-                config[key] = String(event.target.innerText).replace('\n', '');
+            switch(true) {
+                case visibleConfigKeys[key].editable == 'string':
+                    config[key] = String(event.target.innerText).replace('\n', '');
+                    break;
+                case visibleConfigKeys[key].editable == 'number':
+                    config[key] = Number(event.target.innerText);
+                    break;
             }
-            if (visibleConfigKeys[key].editable == 'number') {
-                config[key] = Number(event.target.innerText);
-            }
+
             socket.emit(emitPath, config);
         });
     }

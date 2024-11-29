@@ -3,6 +3,7 @@
 import * as crypto from 'node:crypto';
 import { v7 as uuidv7 } from 'npm:uuid';
 import { Server } from 'https://deno.land/x/socket_io@0.2.0/mod.ts';
+import { open } from 'https://deno.land/x/open/index.ts';
 import {
     LoopStatus,
     ProxyType,
@@ -40,6 +41,8 @@ const {
     PROXY_TYPES,
     SSH_PORT_RANGE,
     PROXY_INTERVAL_SEC,
+    AUTO_LAUNCH_WEB,
+    WEB_URL,
     SSH_KEY_ALGORITHM,
     SSH_KEY_LENGTH,
     HEARTBEAT_INTERVAL_SEC,
@@ -310,3 +313,5 @@ const connectProxy = async () => {
 webserver.start();
 websocket.start(io);
 PROXY_ENABLED && connectProxy();
+AUTO_LAUNCH_WEB && open(WEB_URL);
+AUTO_LAUNCH_WEB && models.saveConfig({...config(), AUTO_LAUNCH_WEB: false});

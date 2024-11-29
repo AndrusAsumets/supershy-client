@@ -89,6 +89,7 @@ export interface Config {
     APP_ID: string
     ENV: string
     PROXY_INTERVAL_SEC: number
+	AUTO_LAUNCH_WEB: boolean
     TUNNEL_CONNECT_TIMEOUT_SEC: number
     SSH_PORT_RANGE: number[]
     PROXY_LOCAL_TEST_PORT: number
@@ -130,6 +131,7 @@ export interface Config {
     CONNECT_SSH_TUNNEL_FILE_NAME: string
     HEARTBEAT_INTERVAL_SEC: number
     WEB_SERVER_PORT: number
+	WEB_URL: string
     WEB_SOCKET_PORT: number
     PROXY_ENABLED: boolean
 	DIGITAL_OCEAN_REGIONS: Record<string, string>

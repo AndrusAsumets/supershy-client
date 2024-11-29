@@ -6,6 +6,7 @@ import { ProxyType, Config, InstanceProvider } from './types.ts';
 const APP_ID = 'supershy-client';
 const ENV = 'dev';
 const PROXY_INTERVAL_SEC = 300;
+const AUTO_LAUNCH_WEB = true;
 const TUNNEL_CONNECT_TIMEOUT_SEC = 10;
 const SSH_PORT_RANGE: number[] = [10000, 65535];
 const PROXY_LOCAL_TEST_PORT = 8887;
@@ -49,6 +50,7 @@ const GENERATE_SSH_KEY_FILE_NAME = 'generate-ssh-key.exp';
 const CONNECT_SSH_TUNNEL_FILE_NAME = 'connect-ssh-tunnel.exp';
 const HEARTBEAT_INTERVAL_SEC = 10 * 1000;
 const WEB_SERVER_PORT = 8080;
+const WEB_URL = `http://localhost:${WEB_SERVER_PORT}`;
 const WEB_SOCKET_PORT = 8880;
 const PROXY_ENABLED = false;
 const DIGITAL_OCEAN_REGIONS: Record<string, string> = {
@@ -80,10 +82,12 @@ export const config: Config = {
     VULTR_INSTANCE_IMAGE,
     PROXY_ENABLED,
     PROXY_INTERVAL_SEC,
+    AUTO_LAUNCH_WEB,
     APP_ID,
     ENV,
     TUNNEL_CONNECT_TIMEOUT_SEC,
     WEB_SERVER_PORT,
+    WEB_URL,
     WEB_SOCKET_PORT,
     PROXY_LOCAL_TEST_PORT,
     PROXY_LOCAL_PORT,
