@@ -181,6 +181,7 @@ socket
             });
 
         config.INSTANCE_PROVIDERS
+            .sort()
             .forEach((key) => {
                 $providersSection.append(
                     constructGenericLine(

@@ -87,7 +87,7 @@ const tunnel = async (
 
             if (isConnected) {
                 await integrations.kv.cloudflare.heartbeat(proxyUrl);
-                logger.info(`Connected SSH test tunnel to ${proxy.instanceIp}:${port}.`);
+                logger.info(`Connected SSH tunnel to ${proxy.instanceIp}:${port}.`);
                 models.updateProxy(proxy);
             }
         }
