@@ -33,7 +33,7 @@ const SSH_KEY_PATH = `${DATA_PATH}/.keys`;
 const TMP_PATH = '/tmp';
 const LOG_PATH = `${DATA_PATH}/logs`;
 const SSH_KNOWN_HOSTS_PATH = `${HOME_PATH}/.ssh/known_hosts`;
-const DB_FILE_NAME = `${DATA_PATH}/.database.${ENV}.json`;
+const DB_FILE_PATH = `${DATA_PATH}/.database.${ENV}.json`;
 const SSH_LOG_EXTENSION = '.ssh.log';
 const SSH_USER = 'root';
 const PROXY_TYPES = [ProxyType.A, ProxyType.A];
@@ -109,7 +109,7 @@ export const config: Config = {
     SSH_KEY_ALGORITHM,
     SSH_KEY_LENGTH,
     SSH_KNOWN_HOSTS_PATH,
-    DB_FILE_NAME,
+    DB_FILE_PATH,
     LOG_PATH,
     SSH_LOG_EXTENSION,
     SSH_USER,

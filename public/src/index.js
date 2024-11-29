@@ -24,7 +24,7 @@ const visibleConfigKeys = {
     'PROXY_LOCAL_TEST_PORT': { editable: 'number' },
     'PROXY_LOCAL_PORT': { editable: 'number' },
     'LOG_PATH': { editable: false },
-    'DB_FILE_NAME': { editable: false },
+    'DB_FILE_PATH': { editable: false },
 };
 const apiKeys = ['DIGITAL_OCEAN_API_KEY', 'HETZNER_API_KEY', 'VULTR_API_KEY'];
 let isConected = false;

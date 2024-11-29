@@ -1,10 +1,10 @@
 import { Low } from 'npm:lowdb';
 import { JSONFile } from 'npm:lowdb/node';
 import lodash from 'npm:lodash';
-
 import { config } from './constants.ts';
+
 const {
-    DB_FILE_NAME,
+    DB_FILE_PATH,
 } = config;
 
 import {
@@ -22,7 +22,7 @@ class LowWithLodash<T> extends Low<T> {
 }
 
 const getDatabase = async (): Promise<LowWithLodash<DatabaseData>> => {
-    const adapter = new JSONFile<DatabaseData>(DB_FILE_NAME);
+    const adapter = new JSONFile<DatabaseData>(DB_FILE_PATH);
     const db = new LowWithLodash(adapter, defaultData);
     await db.read();
     db.data = {

@@ -13,7 +13,7 @@ const {
 } = config();
 
 export const start = (io: Server) => {
-    io.on('connection', async (socket) => {
+    io.on('connection', (socket) => {
         io.emit('/started', PROXY_AUTO_CONNECT);
         io.emit('/config', config());
 
@@ -28,9 +28,14 @@ export const start = (io: Server) => {
         });
 
         socket.on('/config/save', async (_config: Config) => {
-            _config = core.setInstanceProviders(_config);
-            await models.saveConfig(_config);
-            _config = await core.setInstanceCountries(config());
+            const prevInstanceProvidersDisabled = JSON.stringify(config().INSTANCE_PROVIDERS_DISABLED);
+            const currentInstanceProvidersDisabled = JSON.stringify(_config.INSTANCE_PROVIDERS_DISABLED);
+            if (prevInstanceProvidersDisabled != currentInstanceProvidersDisabled) {
+                _config = core.setInstanceProviders(_config);
+                await models.saveConfig(_config);
+                _config = await core.setInstanceCountries(config());
+            }
+
             await models.saveConfig(_config);
             io.emit('/config', config());
         });

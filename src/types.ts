@@ -115,7 +115,7 @@ export interface Config {
     TMP_PATH: string
     LOG_PATH: string
     SSH_KNOWN_HOSTS_PATH: string
-    DB_FILE_NAME: string
+    DB_FILE_PATH: string
     SSH_LOG_EXTENSION: string
     SSH_USER: string
     PROXY_TYPES: ProxyType[]
