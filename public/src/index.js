@@ -4,6 +4,7 @@ const socket = io('ws://localhost:8880', {
 
 const $connectToggle = document.getElementsByClassName('connect-toggle')[0];
 const $providersSection = document.getElementsByClassName('section-content providers')[0];
+const $countriesSection = document.getElementsByClassName('section-content countries')[0];
 const $configSection = document.getElementsByClassName('section-content config')[0];
 const $logSection = document.getElementsByClassName('section-content log')[0];
 
@@ -87,21 +88,28 @@ const constructConfigLine = (
     return $configLine;
 };
 
-const constructProviderLine = (key, value) => {
+const constructGenericLine = (key, option) => {
     const $key = document.createElement('div');
     $key.className = 'line-key';
     $key.innerText = convertSnakeCaseToPascalCase(key);
 
+    if (COUNTRY_CODES[$key.innerText]) {
+        $key.innerText = COUNTRY_CODES[$key.innerText];
+    }
+
+    const value = config[option].includes(key)
+        ? 'Disabled'
+        : 'Enabled';
     const $value = document.createElement('div');
-    $value.className = `${key} line-value config-editable`;
+    $value.className = `${key} line-value config-editable ${value.toLowerCase()}`;
     $value.innerText = value;
     $value.spellcheck = false;
 
     setClickListener($value, () => {
-        !config.ENABLED_INSTANCE_PROVIDERS.includes(key)
-            ? config.ENABLED_INSTANCE_PROVIDERS.push(key)
-            : config.ENABLED_INSTANCE_PROVIDERS = config.ENABLED_INSTANCE_PROVIDERS
-                .filter((instanceProviderKey) => instanceProviderKey != key);
+        !config[option].includes(key)
+            ? config[option].push(key)
+            : config[option] = config[option]
+                .filter((_key) => _key != key);
 
         socket.emit('/config/save', config);
     });
@@ -114,7 +122,6 @@ const constructProviderLine = (key, value) => {
 };
 
 const interact = () => {
-    config['PROXY_AUTO_CONNECT'] = !config['PROXY_AUTO_CONNECT'];
     socket.emit('/config/save', config);
 
     if (!isConected) {
@@ -158,28 +165,40 @@ socket
     })
     .on('/config', (_config) => {
         config = _config;
-        $configSection.innerText = '';
         $providersSection.innerText = '';
+        $countriesSection.innerText = '';
+        $configSection.innerText = '';
 
         const hasApiKey = apiKeys
             .filter((apiKey) => config[apiKey])
             .length > 0;
 
-        Object.keys(config).forEach((key) => {
-            visibleConfigKeys[key] && $configSection.append(
-                constructConfigLine(key, config[key], visibleConfigKeys[key].editable, hasApiKey)
-            );
-        });
+        Object.keys(config)
+            .forEach((key) => {
+                visibleConfigKeys[key] && $configSection.append(
+                    constructConfigLine(key, config[key], visibleConfigKeys[key].editable, hasApiKey)
+                );
+            });
 
-        config.INSTANCE_PROVIDERS.forEach((instanceProviderKey) => {
-            $providersSection.append(
-                constructProviderLine(
-                    instanceProviderKey,
-                    config.ENABLED_INSTANCE_PROVIDERS.includes(instanceProviderKey)
-                        ? 'Enabled'
-                        : 'Disabled'
-                )
-            );
+        config.INSTANCE_PROVIDERS
+            .forEach((key) => {
+                $providersSection.append(
+                    constructGenericLine(
+                        key,
+                        'INSTANCE_PROVIDERS_DISABLED'
+                    )
+                );
+            });
+
+        config.INSTANCE_COUNTRIES
+            .sort()
+            .forEach((key) => {
+                $countriesSection.append(
+                    constructGenericLine(
+                        key,
+                        'INSTANCE_COUNTRIES_DISABLED'
+                    )
+                );
         });
     })
     .on('/log', (message) => {

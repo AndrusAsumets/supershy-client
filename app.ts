@@ -90,7 +90,7 @@ const tunnel = async (
             }
         }
         catch(err) {
-            logger.warn(err);
+            logger.warn(JSON.stringify(err));
             logger.warn(`Restarting SSH tunnel to ${proxy.instanceIp}:${port}.`);
         }
     }
@@ -150,9 +150,12 @@ const rotate = async () => {
     const proxyTypes: ProxyType[] = initialProxy
         ? [ProxyType.A]
         : PROXY_TYPES;
-    const instanceProviders = models.getConfig().ENABLED_INSTANCE_PROVIDERS;
+    const config = models.getConfig();
+    const instanceProviders = config
+        .INSTANCE_PROVIDERS
+        .filter((instanceProvider: InstanceProvider) => !config.INSTANCE_PROVIDERS_DISABLED.includes(instanceProvider));
     if (!instanceProviders.length) {
-        return logger.warn('None of the VPS providers were enabled.');
+        return logger.warn('None of the VPS providers are enabled.');
     }
     const instanceProvider: InstanceProvider = lib.randomChoice(instanceProviders);
 
@@ -160,7 +163,7 @@ const rotate = async () => {
     while (proxyIndex < proxyTypes.length) {
         const proxyUuid = uuidv7();
         const proxyType = proxyTypes[proxyIndex];
-        const instanceRegions = await integrations.compute[instanceProvider].regions.list();
+        const instanceRegions = await integrations.compute[instanceProvider].regions.parse();
         const instanceRegion: string = lib.randomChoice(instanceRegions);
         const instanceName = `${APP_ID}-${ENV}-${proxyType}-${proxyUuid}`;
         const { instanceSize, instanceImage } = integrations.compute[instanceProvider];
@@ -171,7 +174,7 @@ const rotate = async () => {
         const jwtSecret = crypto.randomBytes(64).toString('hex');
         const sshPort = lib.randomNumberFromRange(SSH_PORT_RANGE[0], SSH_PORT_RANGE[1]);
         const userData = core.getUserData(proxyUuid, sshPort, jwtSecret);
-        const formattedUserData = await integrations.compute[instanceProvider].userData.format(userData);
+        const formattedUserData = integrations.compute[instanceProvider].userData.format(userData);
         const instancePayload: CreateDigitalOceanInstance & CreateHetznerInstance & CreateVultrInstance = {
             datacenter: instanceRegion,
             region: instanceRegion,
@@ -301,5 +304,5 @@ const connectProxy = async () => {
 };
 
 webserver.start();
-await websocket.start(io);
+websocket.start(io);
 PROXY_AUTO_CONNECT && connectProxy();

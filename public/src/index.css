@@ -37,7 +37,7 @@ body {
 .app {
     position: relative;
     width: 100vw;
-    max-width: 640px;
+    max-width: 480px;
     margin: 0 auto;
     overflow-x: hidden;
 }
@@ -112,7 +112,8 @@ body {
     border-bottom: 1px dotted var(--inactive-color);
 }
 
-.line-value:not(.config-editable) {
+.line-value:not(.config-editable),
+.disabled {
     color: var(--inactive-color);
 }
 

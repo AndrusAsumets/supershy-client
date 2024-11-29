@@ -28,16 +28,42 @@ export const setInstanceProviders = (
     config.INSTANCE_PROVIDERS = [];
 
     if (config.DIGITAL_OCEAN_API_KEY) {
-        config.INSTANCE_PROVIDERS.push(InstanceProvider.DIGITAL_OCEAN)
+        config.INSTANCE_PROVIDERS.push(InstanceProvider.DIGITAL_OCEAN);
     }
 
     if (config.HETZNER_API_KEY) {
-        config.INSTANCE_PROVIDERS.push(InstanceProvider.HETZNER)
+        config.INSTANCE_PROVIDERS.push(InstanceProvider.HETZNER);
     }
 
     if (config.VULTR_API_KEY) {
-        config.INSTANCE_PROVIDERS.push(InstanceProvider.VULTR)
+        config.INSTANCE_PROVIDERS.push(InstanceProvider.VULTR);
     }
+
+    return config;
+};
+
+export const setInstanceCountries = async (
+    config: Config
+) => {
+    const instanceProviders: InstanceProvider[] = config
+        .INSTANCE_PROVIDERS
+        .filter((instanceProvider: InstanceProvider) =>
+            !config.INSTANCE_PROVIDERS_DISABLED.includes(instanceProvider)
+    );
+    config.INSTANCE_COUNTRIES = [];
+
+    let index = 0;
+    while(index < instanceProviders.length) {
+        const instanceProvider: InstanceProvider = instanceProviders[index];
+        const countries = await integrations.compute[instanceProvider].countries.list();
+        countries
+            .forEach((country: string) =>
+                !config.INSTANCE_COUNTRIES.includes(country) && config.INSTANCE_COUNTRIES.push(country)
+            );
+        index = index + 1;
+    }
+
+    config.INSTANCE_COUNTRIES = lib.shuffle(config.INSTANCE_COUNTRIES);
 
     return config;
 };

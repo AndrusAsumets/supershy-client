@@ -3,6 +3,7 @@
 import jwt from 'npm:jsonwebtoken';
 import { encodeBase64 } from 'jsr:@std/encoding/base64';
 import { exists } from 'https://deno.land/std@0.224.0/fs/mod.ts';
+
 import * as lib from './lib.ts';
 import * as models from './models.ts';
 import { logger as _logger } from './logger.ts';
@@ -31,6 +32,7 @@ const {
     VULTR_INSTANCE_IMAGE,
     VULTR_API_KEY,
     HEARTBEAT_INTERVAL_SEC,
+    DIGITAL_OCEAN_REGIONS,
 } = models.getConfig();
 
 import {
@@ -150,7 +152,7 @@ export const compute = {
             }
         },
         regions: {
-            list: async function (proxyUrl: string | null = null) {
+            all: async function (proxyUrl: string | null = null) {
                 const headers = {
                     Authorization: `Bearer ${DIGITAL_OCEAN_API_KEY}`,
                 };
@@ -166,6 +168,23 @@ export const compute = {
                 return regions
                     .filter((region: any) => region.sizes.includes(compute.digital_ocean.instanceSize))
                     .map((region: any) => region.slug);
+            },
+            parse: async function (proxyUrl: string | null = null) {
+                const config = models.getConfig();
+                const regions = await compute.digital_ocean.regions.all(proxyUrl);
+                return regions
+                    .filter((region: string) =>
+                        !config.INSTANCE_COUNTRIES_DISABLED.includes(
+                            DIGITAL_OCEAN_REGIONS[region.replace(/[0-9]/g, '')]
+                        )
+                    );
+            },
+        },
+        countries: {
+            list: async function (proxyUrl: string | null = null) {
+                const regions = await compute.digital_ocean.regions.all(proxyUrl);
+                return regions
+                    .map((region: string) => DIGITAL_OCEAN_REGIONS[region.replace(/[0-9]/g, '')]);
             },
         },
         instances: {
@@ -294,7 +313,7 @@ export const compute = {
             }
         },
         regions: {
-            list: async function (proxyUrl: string | null = null) {
+            all: async function (proxyUrl: string | null = null) {
                 const headers = {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${HETZNER_API_KEY}`
@@ -308,9 +327,24 @@ export const compute = {
                 const serverTypeId = await compute.hetzner.serverTypes.getId(proxyUrl, compute.hetzner.instanceSize);
                 const regions = json
                     .datacenters
-                    .filter((data: any) => data.server_types.available.includes(serverTypeId))
-                    .map((data: any) => data.name);
+                    .filter((data: any) => data.server_types.available.includes(serverTypeId));
                 return regions;
+            },
+            parse: async function (proxyUrl: string | null = null) {
+                const config = models.getConfig();
+                const regions = await compute.hetzner.regions.all(proxyUrl);
+                return regions
+                    .filter((data: any) =>
+                        !config.INSTANCE_COUNTRIES_DISABLED.includes(data.location.country)
+                    )
+                    .map((data: any) => data.name);
+            },
+        },
+        countries: {
+            list: async function (proxyUrl: string | null = null) {
+                const regions = await compute.hetzner.regions.all(proxyUrl);
+                return regions
+                    .map((data: any) => data.location.country);
             },
         },
         serverTypes: {
@@ -447,11 +481,12 @@ export const compute = {
                 }
                 const res = await fetch(`${VULTR_BASE_URL}/regions/${regionId}/availability`, options);
                 const json: any = await res.json();
+
                 const availablePlans = json.available_plans;
 
                 return availablePlans;
             },
-            list: async function (proxyUrl: string | null = null) {
+            all: async function (proxyUrl: string | null = null) {
                 const headers = {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${VULTR_API_KEY}`
@@ -462,15 +497,27 @@ export const compute = {
                 }
                 const res = await fetch(`${VULTR_BASE_URL}/regions`, options);
                 const json: any = await res.json();
-                const regions = json
-                    .regions
+                return json.regions;
+            },
+            parse: async function (proxyUrl: string | null = null) {
+                const config = models.getConfig();
+                const regions = await compute.vultr.regions.all(proxyUrl);
+                return regions
+                    .filter((data: any) =>
+                        !config.INSTANCE_COUNTRIES_DISABLED.includes(data.country)
+                    )
                     .map((data: any) => data.id)
                     .filter(async(id: string) => {
                         const availablePlans = await compute.vultr.regions.availability(proxyUrl, id);
                         return availablePlans.includes(compute.vultr.instanceSize);
                     });
-
-                return regions;
+            },
+        },
+        countries: {
+            list: async function (proxyUrl: string | null = null) {
+                const regions = await compute.vultr.regions.all(proxyUrl);
+                return regions
+                    .map((data: any) => data.country);
             },
         },
         os: {

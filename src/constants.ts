@@ -44,13 +44,26 @@ const DIGITAL_OCEAN_INSTANCE_IMAGE = 'debian-12-x64';
 const HETZNER_INSTANCE_IMAGE = 'debian-12';
 const VULTR_INSTANCE_IMAGE = 'Debian 12 x64 (bookworm)';
 const INSTANCE_PROVIDERS: InstanceProvider[] = [];
-const ENABLED_INSTANCE_PROVIDERS: InstanceProvider[] = [];
+const INSTANCE_PROVIDERS_DISABLED: InstanceProvider[] = [];
 const GENERATE_SSH_KEY_FILE_NAME = 'generate-ssh-key.exp';
 const CONNECT_SSH_TUNNEL_FILE_NAME = 'connect-ssh-tunnel.exp';
 const HEARTBEAT_INTERVAL_SEC = 10 * 1000;
 const WEB_SERVER_PORT = 8080;
 const WEB_SOCKET_PORT = 8880;
 const PROXY_AUTO_CONNECT = false;
+const DIGITAL_OCEAN_REGIONS: Record<string, string> = {
+    nyc: 'US',
+    ams: 'NL',
+    sfo: 'US',
+    sgp: 'SG',
+    lon: 'UK',
+    fra: 'DE',
+    tor: 'CA',
+    blr: 'IN',
+    syd: 'AU',
+};
+const INSTANCE_COUNTRIES: string[] = [];
+const INSTANCE_COUNTRIES_DISABLED: string[] = [];
 
 export const config: Config = {
     DIGITAL_OCEAN_API_KEY,
@@ -82,7 +95,7 @@ export const config: Config = {
     VULTR_BASE_URL,
     CLOUDFLARE_BASE_URL,
     INSTANCE_PROVIDERS,
-    ENABLED_INSTANCE_PROVIDERS,
+    INSTANCE_PROVIDERS_DISABLED,
     GENERATE_SSH_KEY_FILE_NAME,
     CONNECT_SSH_TUNNEL_FILE_NAME,
     HEARTBEAT_INTERVAL_SEC,
@@ -101,4 +114,7 @@ export const config: Config = {
     SSH_LOG_EXTENSION,
     SSH_USER,
     PROXY_TYPES,
+    DIGITAL_OCEAN_REGIONS,
+    INSTANCE_COUNTRIES,
+    INSTANCE_COUNTRIES_DISABLED
 };

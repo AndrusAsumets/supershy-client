@@ -67,9 +67,9 @@ export const getConfig = () => {
         .value();
 };
 
-export const saveConfig = (
+export const saveConfig = async (
     config: Config
 ) => {
     db.get().data[DatabaseKey.CONFIG] = config;
-    db.get().write();
+    await db.get().write();
 };

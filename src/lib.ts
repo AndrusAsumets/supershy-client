@@ -5,3 +5,7 @@ export const randomNumberFromRange = (min: number, max: number) => Math.floor(Ma
 export function randomChoice<T>(arr: Array<T>): T {
     return arr[Math.floor(Math.random() * arr.length)];
 };
+
+export const shuffle = (array: any) => {
+    return array.sort(() => Math.random() - 0.5);
+};
