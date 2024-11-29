@@ -30,6 +30,7 @@ const getDatabase = async (): Promise<LowWithLodash<DatabaseData>> => {
         [DatabaseKey.CONFIG]: {...defaultData[DatabaseKey.CONFIG], ...db.data[DatabaseKey.CONFIG]}
     }
     db.chain = lodash.chain(db.data);
+    await db.write();
     return db;
 };
 
