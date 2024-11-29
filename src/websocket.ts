@@ -5,33 +5,34 @@ import {
 } from './types.ts';
 import * as core from './core.ts';
 import * as models from './models.ts';
-import { logger as _logger } from './logger.ts';
 
+const { config } = models;
 const {
     PROXY_AUTO_CONNECT,
     WEB_SOCKET_PORT,
-} = models.getConfig();
+} = config();
 
 export const start = (io: Server) => {
-    io.on('connection', (socket) => {
+    io.on('connection', async (socket) => {
         io.emit('/started', PROXY_AUTO_CONNECT);
-        io.emit('/config', models.getConfig());
+        io.emit('/config', config());
 
         socket.on('/proxy/connect', async () => {
-            await models.saveConfig({...models.getConfig(), 'PROXY_AUTO_CONNECT': true});
+            await models.saveConfig({...config(), 'PROXY_AUTO_CONNECT': true});
             core.exit('/proxy/connect', true);
         });
 
         socket.on('/proxy/disconnect', async () => {
-            await models.saveConfig({...models.getConfig(), 'PROXY_AUTO_CONNECT': false});
+            await models.saveConfig({...config(), 'PROXY_AUTO_CONNECT': false});
             core.exit('/proxy/disconnect', true);
         });
 
-        socket.on('/config/save', async (config: Config) => {
-            config = core.setInstanceProviders(config);
-            config = await core.setInstanceCountries(config);
-            await models.saveConfig(config);
-            io.emit('/config', models.getConfig());
+        socket.on('/config/save', async (_config: Config) => {
+            _config = core.setInstanceProviders(_config);
+            await models.saveConfig(_config);
+            _config = await core.setInstanceCountries(config());
+            await models.saveConfig(_config);
+            io.emit('/config', config());
         });
     });
 

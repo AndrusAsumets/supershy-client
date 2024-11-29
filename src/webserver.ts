@@ -1,9 +1,10 @@
 import { serveDir } from 'jsr:@std/http/file-server';
 import * as models from './models.ts';
 
+const { config } = models;
 const {
     WEB_SERVER_PORT,
-} = models.getConfig();
+} = config();
 
 export const start = () => {
     // @ts-ignore: because

@@ -19,6 +19,8 @@ import * as websocket from './src/websocket.ts';
 import { logger as _logger } from './src/logger.ts';
 import * as lib from './src/lib.ts';
 import * as integrations from './src/integrations.ts';
+const { config } = models;
+
 const {
     ENV,
     APP_ID,
@@ -42,7 +44,7 @@ const {
     SSH_KEY_LENGTH,
     HEARTBEAT_INTERVAL_SEC,
     PROXY_AUTO_CONNECT,
-} = models.getConfig();
+} = config();
 import {
     GENERATE_SSH_KEY_FILE,
     CONNECT_SSH_TUNNEL_FILE,
@@ -143,6 +145,12 @@ const cleanup = async (
 };
 
 const rotate = async () => {
+    const instanceProviders = lib.shuffle(config().INSTANCE_PROVIDERS)
+        .filter((instanceProvider: InstanceProvider) => !config().INSTANCE_PROVIDERS_DISABLED.includes(instanceProvider));
+    if (!instanceProviders.length) {
+        return logger.warn('None of the VPS providers are enabled.');
+    }
+    const instanceProvider: InstanceProvider = lib.randomChoice(instanceProviders);
     const activeProxies: Proxy[] = [];
     const initialProxy = models.getInitialProxy();
     initialProxy && await connect(initialProxy);
@@ -150,13 +158,6 @@ const rotate = async () => {
     const proxyTypes: ProxyType[] = initialProxy
         ? [ProxyType.A]
         : PROXY_TYPES;
-    const config = models.getConfig();
-    const instanceProviders = lib.shuffle(config.INSTANCE_PROVIDERS)
-        .filter((instanceProvider: InstanceProvider) => !config.INSTANCE_PROVIDERS_DISABLED.includes(instanceProvider));
-    if (!instanceProviders.length) {
-        return logger.warn('None of the VPS providers are enabled.');
-    }
-    const instanceProvider: InstanceProvider = lib.randomChoice(instanceProviders);
 
     let proxyIndex = 0;
     while (proxyIndex < proxyTypes.length) {

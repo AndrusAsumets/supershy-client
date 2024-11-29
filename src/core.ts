@@ -1,6 +1,7 @@
 import { logger as _logger } from './logger.ts';
 import * as models from './models.ts';
 
+const { config } = models;
 const {
     CLOUDFLARE_BASE_URL,
     TMP_PATH,
@@ -15,7 +16,7 @@ const {
     CLOUDFLARE_ACCOUNT_ID,
     CLOUDFLARE_KV_NAMESPACE,
     CLOUDFLARE_API_KEY,
-} = models.getConfig();
+} = config();
 import { Config, Proxy, InstanceProvider } from './types.ts';
 import * as lib from './lib.ts';
 import * as integrations from './integrations.ts';

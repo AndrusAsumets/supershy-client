@@ -38,7 +38,7 @@ const convertSnakeCaseToPascalCase = (str) => str
     .join('')
 
 const setChangeListener = (div, listener) => {
-    div.addEventListener('mouseout', listener);
+    div.addEventListener('focusout', listener);
 };
 
 const setClickListener = (div, listener) => {

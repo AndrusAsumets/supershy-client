@@ -59,7 +59,7 @@ export const removeUsedProxies = (
     db.get().write();
 };
 
-export const getConfig = () => {
+export const config = (): Config => {
     return db
         .get()
         .chain
