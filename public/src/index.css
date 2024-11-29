@@ -54,6 +54,14 @@ body {
     margin: 16px 0 0 16px;
 }
 
+.enablement-toggle {
+    width: fit-content;
+    margin: 16px;
+    padding: 8px 24px;
+    border: 1px solid var(--secondary-bg-color);
+    font-size: 12px;
+}
+
 .content {
     overflow-x: hidden;
     height: calc(100vh - 128px);
@@ -108,7 +116,7 @@ body {
     overflow-x: hidden;
 }
 
-.line-value.config-editable:not(.config-alert) {
+.line-value.has-events.config-editable:not(.config-alert) {
     border-bottom: 1px dotted var(--inactive-color);
 }
 
@@ -121,15 +129,7 @@ body {
     border-bottom: 1px solid var(--alert-color);
 }
 
-.line-value.config-editable:not(.config-alert):hover {
+.line-value.has-events.config-editable:not(.config-alert):hover {
     cursor: pointer;
     border-bottom: 1px solid var(--active-color);
-}
-
-.connect-toggle {
-    width: fit-content;
-    margin: 16px;
-    padding: 8px 24px;
-    border: 1px solid var(--secondary-bg-color);
-    font-size: 12px;
 }

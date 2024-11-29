@@ -43,7 +43,7 @@ const {
     SSH_KEY_ALGORITHM,
     SSH_KEY_LENGTH,
     HEARTBEAT_INTERVAL_SEC,
-    PROXY_AUTO_CONNECT,
+    PROXY_ENABLED,
 } = config();
 import {
     GENERATE_SSH_KEY_FILE,
@@ -150,11 +150,14 @@ const rotate = async () => {
     if (!instanceProviders.length) {
         return logger.warn('None of the VPS providers are enabled.');
     }
-    const instanceProvider: InstanceProvider = lib.randomChoice(instanceProviders);
+    const instanceProvider: InstanceProvider = lib.shuffle(instanceProviders)[0];
     const activeProxies: Proxy[] = [];
     const initialProxy = models.getInitialProxy();
-    initialProxy && await connect(initialProxy);
-    initialProxy && activeProxies.push(initialProxy);
+    if (initialProxy) {
+        await connect(initialProxy);
+        io.emit('/proxy', initialProxy);
+        activeProxies.push(initialProxy);
+    }
     const proxyTypes: ProxyType[] = initialProxy
         ? [ProxyType.A]
         : PROXY_TYPES;
@@ -163,8 +166,8 @@ const rotate = async () => {
     while (proxyIndex < proxyTypes.length) {
         const proxyUuid = uuidv7();
         const proxyType = proxyTypes[proxyIndex];
-        const instanceRegions = await integrations.compute[instanceProvider].regions.parse();
-        const instanceRegion: string = lib.randomChoice(instanceRegions);
+        const instanceLocationsList = await integrations.compute[instanceProvider].regions.parse();
+        const [instanceRegion, instanceCountry]: string[] = lib.shuffle(instanceLocationsList)[0];
         const instanceName = `${APP_ID}-${ENV}-${proxyType}-${proxyUuid}`;
         const { instanceSize, instanceImage } = integrations.compute[instanceProvider];
         const sshKeyPath = `${SSH_KEY_PATH}/${instanceName}`;
@@ -203,6 +206,7 @@ const rotate = async () => {
             instanceId,
             instanceIp,
             instanceRegion,
+            instanceCountry,
             instanceSize,
             instanceImage,
             instancePublicKeyId,
@@ -305,4 +309,4 @@ const connectProxy = async () => {
 
 webserver.start();
 websocket.start(io);
-PROXY_AUTO_CONNECT && connectProxy();
+PROXY_ENABLED && connectProxy();

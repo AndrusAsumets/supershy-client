@@ -6,25 +6,26 @@ import {
 import * as core from './core.ts';
 import * as models from './models.ts';
 
-const { config } = models;
+const { config, proxies } = models;
 const {
-    PROXY_AUTO_CONNECT,
+    PROXY_ENABLED,
     WEB_SOCKET_PORT,
 } = config();
 
 export const start = (io: Server) => {
     io.on('connection', (socket) => {
-        io.emit('/started', PROXY_AUTO_CONNECT);
+        io.emit('/started', PROXY_ENABLED);
         io.emit('/config', config());
+        io.emit('/proxy', proxies()[Object.keys(proxies())[0]]);
 
-        socket.on('/proxy/connect', async () => {
-            await models.saveConfig({...config(), 'PROXY_AUTO_CONNECT': true});
-            core.exit('/proxy/connect', true);
+        socket.on('/proxy/enable', async () => {
+            await models.saveConfig({...config(), 'PROXY_ENABLED': true});
+            core.exit('/proxy/enable', true);
         });
 
-        socket.on('/proxy/disconnect', async () => {
-            await models.saveConfig({...config(), 'PROXY_AUTO_CONNECT': false});
-            core.exit('/proxy/disconnect', true);
+        socket.on('/proxy/disable', async () => {
+            await models.saveConfig({...config(), 'PROXY_ENABLED': false});
+            core.exit('/proxy/disable', true);
         });
 
         socket.on('/config/save', async (_config: Config) => {

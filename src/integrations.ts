@@ -152,7 +152,7 @@ export const compute = {
                         !config().INSTANCE_COUNTRIES_DISABLED.includes(
                             config().DIGITAL_OCEAN_REGIONS[region.replace(/[0-9]/g, '')]
                         )
-                    );
+                    ).map((region: string) => [region, config().DIGITAL_OCEAN_REGIONS[region.replace(/[0-9]/g, '')]]);
             },
         },
         countries: {
@@ -311,7 +311,7 @@ export const compute = {
                     .filter((data: any) =>
                         !config().INSTANCE_COUNTRIES_DISABLED.includes(data.location.country)
                     )
-                    .map((data: any) => data.name);
+                    .map((data: any) => [data.name, data.location.country]);
             },
         },
         countries: {
@@ -479,11 +479,11 @@ export const compute = {
                     .filter((data: any) =>
                         !config().INSTANCE_COUNTRIES_DISABLED.includes(data.country)
                     )
-                    .map((data: any) => data.id)
-                    .filter(async(id: string) => {
-                        const availablePlans = await compute.vultr.regions.availability(proxyUrl, id);
+                    .filter(async(data: any) => {
+                        const availablePlans = await compute.vultr.regions.availability(proxyUrl, data.id);
                         return availablePlans.includes(compute.vultr.instanceSize);
-                    });
+                    })
+                    .map((data: any) => [data.id, data.country]);
             },
         },
         countries: {

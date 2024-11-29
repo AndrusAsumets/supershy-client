@@ -14,6 +14,8 @@ export const getProxies = () => {
         .value();
 };
 
+export const proxies = getProxies;
+
 export const saveProxy = (
     proxy: Proxy
 ) => {

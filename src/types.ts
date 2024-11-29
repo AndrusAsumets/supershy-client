@@ -29,6 +29,7 @@ export interface Proxy {
 	instanceName: string
 	instanceIp: string
 	instanceRegion: string
+	instanceCountry: string
 	instanceSize: string
 	instanceImage: string
 	instancePublicKeyId: number
@@ -130,7 +131,7 @@ export interface Config {
     HEARTBEAT_INTERVAL_SEC: number
     WEB_SERVER_PORT: number
     WEB_SOCKET_PORT: number
-    PROXY_AUTO_CONNECT: boolean
+    PROXY_ENABLED: boolean
 	DIGITAL_OCEAN_REGIONS: Record<string, string>
 	INSTANCE_PROVIDERS: InstanceProvider[]
 	INSTANCE_PROVIDERS_DISABLED: InstanceProvider[]

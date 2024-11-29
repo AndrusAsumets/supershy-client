@@ -2,7 +2,8 @@ const socket = io('ws://localhost:8880', {
     reconnectionDelayMax: 1000
 });
 
-const $connectToggle = document.getElementsByClassName('connect-toggle')[0];
+const $enablementToggle = document.getElementsByClassName('enablement-toggle')[0];
+const $statusSection = document.getElementsByClassName('section-content status')[0];
 const $providersSection = document.getElementsByClassName('section-content providers')[0];
 const $countriesSection = document.getElementsByClassName('section-content countries')[0];
 const $configSection = document.getElementsByClassName('section-content config')[0];
@@ -27,15 +28,17 @@ const visibleConfigKeys = {
     'DB_FILE_PATH': { editable: false },
 };
 const apiKeys = ['DIGITAL_OCEAN_API_KEY', 'HETZNER_API_KEY', 'VULTR_API_KEY'];
-let isConected = false;
+let isProxyEnabled = false;
 let config = {};
+let proxy = {};
 
-const updateConnectToggle = (label) => $connectToggle.innerText = label;
+const updateEnablementToggle = (label) => $enablementToggle.innerText = label;
 
-const convertSnakeCaseToPascalCase = (str) => str
-    .split('_')
-    .map((element) => element.slice(0, 1).toUpperCase() + element.slice(1))
-    .join('')
+const convertSnakeCaseToPascalCase = (str) =>
+    str
+        .split('_')
+        .map((element) => element.slice(0, 1).toUpperCase() + element.slice(1))
+        .join('');
 
 const setChangeListener = (div, listener) => {
     div.addEventListener('focusout', listener);
@@ -48,6 +51,7 @@ const setClickListener = (div, listener) => {
 const constructConfigLine = (
     key,
     value,
+    emitPath,
     isEditable = false,
     hasApiKey = false,
 ) => {
@@ -56,7 +60,10 @@ const constructConfigLine = (
     $key.innerText = key;
 
     const $value = document.createElement('div');
-    $value.className = `${key} line-value`;
+    const hasEvents = emitPath
+        ? 'has-events'
+        : '';
+    $value.className = `${key} line-value ${hasEvents}`;
     $value.innerText = value;
     $value.spellcheck = false;
     if (isEditable) {
@@ -77,7 +84,7 @@ const constructConfigLine = (
             if (visibleConfigKeys[key].editable == 'number') {
                 config[key] = Number(event.target.innerText);
             }
-            socket.emit('/config/save', config);
+            socket.emit(emitPath, config);
         });
     }
 
@@ -88,7 +95,12 @@ const constructConfigLine = (
     return $configLine;
 };
 
-const constructGenericLine = (key, option) => {
+const constructGenericLine = (
+    key,
+    value,
+    option,
+    emitPath
+) => {
     const $key = document.createElement('div');
     $key.className = 'line-key';
     $key.innerText = convertSnakeCaseToPascalCase(key);
@@ -97,21 +109,21 @@ const constructGenericLine = (key, option) => {
         $key.innerText = COUNTRY_CODES[$key.innerText];
     }
 
-    const value = config[option].includes(key)
-        ? 'Disabled'
-        : 'Enabled';
     const $value = document.createElement('div');
-    $value.className = `${key} line-value config-editable ${value.toLowerCase()}`;
+    const hasEvents = emitPath
+        ? 'has-events'
+        : '';
+    $value.className = `${key} line-value ${hasEvents} config-editable ${value.toLowerCase()}`;
     $value.innerText = value;
     $value.spellcheck = false;
 
-    setClickListener($value, () => {
+    emitPath && setClickListener($value, () => {
         !config[option].includes(key)
             ? config[option].push(key)
             : config[option] = config[option]
                 .filter((_key) => _key != key);
 
-        socket.emit('/config/save', config);
+        socket.emit(emitPath, config);
     });
 
     const $configLine = document.createElement('div');
@@ -124,15 +136,15 @@ const constructGenericLine = (key, option) => {
 const interact = () => {
     socket.emit('/config/save', config);
 
-    if (!isConected) {
-        isConected = true;
-        updateConnectToggle('Connecting ...');
-        socket.emit('/proxy/connect');
+    if (!isProxyEnabled) {
+        isProxyEnabled = true;
+        updateEnablementToggle('Enabling ...');
+        socket.emit('/proxy/enable');
     }
     else {
-        isConected = false
-        updateConnectToggle('Disconnecting ...');
-        socket.emit('/proxy/disconnect');
+        isProxyEnabled = false
+        updateEnablementToggle('Disabling ...');
+        socket.emit('/proxy/disable');
     }
 };
 
@@ -155,12 +167,12 @@ const createLogMessage = (label) => {
 };
 
 socket
-    .on('/started', (_isConected) => {
-        isConected = _isConected;
-        updateConnectToggle(
-            isConected
-                ? 'Disconnect Proxy'
-                : 'Connect Proxy'
+    .on('/started', (_isProxyEnabled) => {
+        isProxyEnabled = _isProxyEnabled;
+        updateEnablementToggle(
+            isProxyEnabled
+                ? 'Disable Proxy'
+                : 'Enable Proxy'
         );
     })
     .on('/config', (_config) => {
@@ -176,7 +188,13 @@ socket
         Object.keys(config)
             .forEach((key) => {
                 visibleConfigKeys[key] && $configSection.append(
-                    constructConfigLine(key, config[key], visibleConfigKeys[key].editable, hasApiKey)
+                    constructConfigLine(
+                        key,
+                        config[key],
+                        '/config/save',
+                        visibleConfigKeys[key].editable,
+                        hasApiKey
+                    )
                 );
             });
 
@@ -186,7 +204,11 @@ socket
                 $providersSection.append(
                     constructGenericLine(
                         key,
-                        'INSTANCE_PROVIDERS_DISABLED'
+                        config['INSTANCE_PROVIDERS_DISABLED'].includes(key)
+                            ? 'Disabled'
+                            : 'Enabled',
+                        'INSTANCE_PROVIDERS_DISABLED',
+                        '/config/save'
                     )
                 );
             });
@@ -197,9 +219,39 @@ socket
                 $countriesSection.append(
                     constructGenericLine(
                         key,
-                        'INSTANCE_COUNTRIES_DISABLED'
+                        config['INSTANCE_COUNTRIES_DISABLED'].includes(key)
+                            ? 'Disabled'
+                            : 'Enabled',
+                        'INSTANCE_COUNTRIES_DISABLED',
+                        '/config/save'
                     )
                 );
+            });
+    })
+    .on('/proxy', (_proxy) => {
+        proxy = _proxy;
+        $statusSection.innerText = '';
+
+        const status = [[
+            'Proxy',
+            isProxyEnabled
+                ? 'Enabled'
+                : 'Disabled'
+        ]];
+
+        if (isProxyEnabled && Object.keys(proxy).length) {
+            status.push(['VPS', convertSnakeCaseToPascalCase(proxy.instanceProvider)]);
+            status.push(['Country', COUNTRY_CODES[proxy.instanceCountry]]);
+            status.push(['IPv4', proxy.instanceIp]);
+        }
+
+        status.forEach((list) => {
+            $statusSection.append(
+                constructGenericLine(
+                    list[0],
+                    list[1],
+                )
+            );
         });
     })
     .on('/log', (message) => {
@@ -214,5 +266,5 @@ socket
         appendLogMessage(createLogMessage('Disconnected from WebSocket.'), 'Info')
     });
 
-$connectToggle
+$enablementToggle
     .addEventListener('click', () => interact());

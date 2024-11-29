@@ -50,7 +50,7 @@ const CONNECT_SSH_TUNNEL_FILE_NAME = 'connect-ssh-tunnel.exp';
 const HEARTBEAT_INTERVAL_SEC = 10 * 1000;
 const WEB_SERVER_PORT = 8080;
 const WEB_SOCKET_PORT = 8880;
-const PROXY_AUTO_CONNECT = false;
+const PROXY_ENABLED = false;
 const DIGITAL_OCEAN_REGIONS: Record<string, string> = {
     nyc: 'US',
     ams: 'NL',
@@ -78,7 +78,7 @@ export const config: Config = {
     DIGITAL_OCEAN_INSTANCE_IMAGE,
     HETZNER_INSTANCE_IMAGE,
     VULTR_INSTANCE_IMAGE,
-    PROXY_AUTO_CONNECT,
+    PROXY_ENABLED,
     PROXY_INTERVAL_SEC,
     APP_ID,
     ENV,
