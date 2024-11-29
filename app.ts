@@ -151,8 +151,7 @@ const rotate = async () => {
         ? [ProxyType.A]
         : PROXY_TYPES;
     const config = models.getConfig();
-    const instanceProviders = config
-        .INSTANCE_PROVIDERS
+    const instanceProviders = lib.shuffle(config.INSTANCE_PROVIDERS)
         .filter((instanceProvider: InstanceProvider) => !config.INSTANCE_PROVIDERS_DISABLED.includes(instanceProvider));
     if (!instanceProviders.length) {
         return logger.warn('None of the VPS providers are enabled.');
