@@ -125,11 +125,11 @@ CLOUDFLARE_API_KEY=
 ```
 
 ```
-Enable Supershy
+#Enable Supershy
  -> Click Enable Proxy on Supershy's UI.
 
-# Depending on VPS, the first launch might take up to 10 minutes
-# to have both Nodes prepared, so please be patient.
+Depending on VPS, the first launch might take up to 10 minutes
+to have both Nodes prepared, so please be patient.
 ```
 
 ```
