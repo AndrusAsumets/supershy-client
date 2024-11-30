@@ -62,10 +62,10 @@ git clone git@github.com:AndrusAsumets/supershy-client.git
 cd supershy-client
 deno task start
 
-Depending on VPS, the first launch might take up to 10 minutes
-to have both Nodes prepared, so please be patient.
+# Depending on VPS, the first launch might take up to 10 minutes
+# to have both Nodes prepared, so please be patient.
 
-Supershy's UI can be accessed locally from: http://localhost:8080
+# Supershy's UI can be accessed locally from: http://localhost:8080
 ```
 
 ```
