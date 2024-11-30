@@ -66,7 +66,6 @@ Depending on VPS, the first launch might take up to 10 minutes
 to have both Nodes prepared, so please be patient.
 
 Supershy's UI can be accessed locally from: http://localhost:8080
-
 ```
 
 ```
