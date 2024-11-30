@@ -169,6 +169,25 @@ const createLogMessage = (label) => {
     }
 };
 
+const changeFavicon = (args) => {
+    const [icon, color] = args;
+    const size = 128;
+    const canvas = document.createElement('canvas');
+    canvas.height = size;
+    canvas.width = size;
+    const ctx = canvas.getContext('2d');
+    ctx.font = `${size}px serif`;
+    ctx.fillStyle = color;
+    ctx.fillText(icon, 0, size);
+
+    const link = document.createElement('link');
+    const oldLinks = document.querySelectorAll('link[rel="shortcut icon"]');
+    oldLinks.forEach(e => e.parentNode.removeChild(e));
+    link.rel = 'shortcut icon';
+    link.href = canvas.toDataURL();
+    document.head.appendChild(link);
+};
+
 socket
     .on('/started', (_isProxyEnabled) => {
         isProxyEnabled = _isProxyEnabled;
@@ -176,6 +195,11 @@ socket
             isProxyEnabled
                 ? 'Disable Proxy'
                 : 'Enable Proxy'
+        );
+        changeFavicon(
+            isProxyEnabled
+                ? ['❊', 'white']
+                : ['❊', 'red']
         );
     })
     .on('/config', (_config) => {
@@ -217,7 +241,7 @@ socket
             });
 
         config.INSTANCE_COUNTRIES
-            .sort()
+            .sort((a, b) => COUNTRY_CODES[a] > COUNTRY_CODES[b])
             .forEach((key) => {
                 $countriesSection.append(
                     constructGenericLine(
