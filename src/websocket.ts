@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.150.0/http/server.ts';
 import { Server } from 'https://deno.land/x/socket_io@0.2.0/mod.ts';
+
 import {
     Config,
 } from './types.ts';
@@ -29,13 +30,22 @@ export const start = (io: Server) => {
         });
 
         socket.on('/config/save', async (_config: Config) => {
+            const prevInstanceProviders = JSON.stringify(config().INSTANCE_PROVIDERS);
             const prevInstanceProvidersDisabled = JSON.stringify(config().INSTANCE_PROVIDERS_DISABLED);
+
+            _config = core.setInstanceProviders(_config);
+            await models.saveConfig(_config);
+
+            const currentInstanceProviders = JSON.stringify(_config.INSTANCE_PROVIDERS);
             const currentInstanceProvidersDisabled = JSON.stringify(_config.INSTANCE_PROVIDERS_DISABLED);
-            if (prevInstanceProvidersDisabled != currentInstanceProvidersDisabled) {
-                _config = await core.setInstanceCountries(core.setInstanceProviders(_config));
+            const isInstanceProvidersDiff = prevInstanceProviders != currentInstanceProviders;
+            const isInstanceProvidersDisabledDiff = prevInstanceProvidersDisabled != currentInstanceProvidersDisabled;
+
+            if (isInstanceProvidersDiff || isInstanceProvidersDisabledDiff) {
+                _config = await core.setInstanceCountries(_config);
+                await models.saveConfig(_config);
             }
 
-            await models.saveConfig(_config);
             io.emit('/config', config());
         });
     });

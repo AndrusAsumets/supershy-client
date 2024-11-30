@@ -95,7 +95,7 @@ const tunnel = async (
             }
         }
         catch(err) {
-            logger.warn(JSON.stringify(err));
+            logger.warn(err);
             logger.warn(`Restarting SSH tunnel to ${proxy.instanceIp}:${port}.`);
         }
     }
@@ -198,7 +198,7 @@ const rotate = async () => {
         };
         const { instanceId, instanceIp } = await integrations.compute[instanceProvider].instances.create(instancePayload);
         logger.info(`Created ${instanceProvider} instance.`);
-        logger.info(JSON.stringify(instancePayload, null, 4));
+        logger.info(instancePayload);
         logger.info(`Found network at ${instanceIp}.`);
 
         let proxy: Proxy = {

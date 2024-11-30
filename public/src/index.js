@@ -163,7 +163,10 @@ const appendLogMessage = (message, key) => {
     const timeFormat = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
     const time = new Date(message[key][0]).toLocaleTimeString(timeLocale, timeFormat);
     message[key].shift();
-    const value = `${time} ${key}: ${message[key].join(', ')}\n`;
+    const line = JSON.stringify(message[key][0]).split('');
+    line.shift();
+    line.pop();
+    const value = `${time} ${key}: ${line.join('')}\n`;
     $logSection.innerText = value + $logSection.innerText;
 };
 

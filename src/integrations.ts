@@ -139,7 +139,7 @@ export const compute = {
                 const res = await fetch(`${config().DIGITAL_OCEAN_BASE_URL}/regions`, options);
                 const json: any = await res.json();
                 const regions = json.regions;
-                !regions && logger.error('digital_ocean.regions.list error ', JSON.stringify(json));
+                !regions && logger.error('digital_ocean.regions.list error ', json);
 
                 return regions
                     .filter((region: any) => region.sizes.includes(compute.digital_ocean.instanceSize))
@@ -174,7 +174,7 @@ export const compute = {
                     body: JSON.stringify(args),
                 });
                 const json: any = await res.json();
-                !json.droplet && logger.error('compute.digital_ocean.instances.create error', JSON.stringify(json));
+                !json.droplet && logger.error('compute.digital_ocean.instances.create error', json);
                 const instanceIp = await compute.digital_ocean.ip.get(json.droplet.id);
                 return {
                     instanceId: json.droplet.id,
@@ -334,7 +334,7 @@ export const compute = {
                 const res = await fetch(`${config().HETZNER_BASE_URL}/server_types?per_page=50`, options);
                 const json: any = await res.json();
                 const serverTypes = json.server_types;
-                !serverTypes && logger.error('hetzner.serverTypes.list error ', JSON.stringify(json));
+                !serverTypes && logger.error('hetzner.serverTypes.list error ', json);
 
                 const serverTypeId = serverTypes
                     .filter((serverType: any) => serverType.name === instanceSize)[0].id;
@@ -353,7 +353,7 @@ export const compute = {
                     body: JSON.stringify(args),
                 });
                 const json: any = await res.json();
-                !json.server && logger.error('compute.hetzner.instances.create error', JSON.stringify(json));
+                !json.server && logger.error('compute.hetzner.instances.create error', json);
                 return {
                     instanceId: json.server.id,
                     instanceIp: json.server.public_net.ipv4.ip,
@@ -537,7 +537,7 @@ export const compute = {
                     body: JSON.stringify(args),
                 });
                 const json: any = await res.json();
-                !json.instance && logger.error('compute.vultr.instances.create error', JSON.stringify(json));
+                !json.instance && logger.error('compute.vultr.instances.create error', json);
                 const instanceIp = await compute.vultr.ip.get(json.instance.id);
                 return {
                     instanceId: json.instance.id,
@@ -596,7 +596,7 @@ export const compute = {
                     body: JSON.stringify(body),
                 });
                 const json: any = await res.json();
-                !json['ssh_key'] && logger.error('vultr.keys.add error ', JSON.stringify(json));
+                !json['ssh_key'] && logger.error('vultr.keys.add error ', json);
                 return json['ssh_key']['id'];
             },
             list: async function () {
