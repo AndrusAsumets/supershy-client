@@ -19,13 +19,13 @@ export const start = (io: Server) => {
         io.emit('/config', config());
         io.emit('/proxy', proxies()[Object.keys(proxies())[0]]);
 
-        socket.on('/proxy/enable', async () => {
-            await models.saveConfig({...config(), 'PROXY_ENABLED': true});
+        socket.on('/proxy/enable', () => {
+            models.updateConfig({...config(), 'PROXY_ENABLED': true});
             core.exit('/proxy/enable', true);
         });
 
-        socket.on('/proxy/disable', async () => {
-            await models.saveConfig({...config(), 'PROXY_ENABLED': false});
+        socket.on('/proxy/disable', () => {
+            models.updateConfig({...config(), 'PROXY_ENABLED': false});
             core.exit('/proxy/disable', true);
         });
 
@@ -34,7 +34,7 @@ export const start = (io: Server) => {
             const prevInstanceProvidersDisabled = JSON.stringify(config().INSTANCE_PROVIDERS_DISABLED);
 
             _config = core.setInstanceProviders(_config);
-            await models.saveConfig(_config);
+            models.updateConfig(_config);
 
             const currentInstanceProviders = JSON.stringify(_config.INSTANCE_PROVIDERS);
             const currentInstanceProvidersDisabled = JSON.stringify(_config.INSTANCE_PROVIDERS_DISABLED);
@@ -43,7 +43,7 @@ export const start = (io: Server) => {
 
             if (isInstanceProvidersDiff || isInstanceProvidersDisabledDiff) {
                 _config = await core.setInstanceCountries(_config);
-                await models.saveConfig(_config);
+                models.updateConfig(_config);
             }
 
             io.emit('/config', config());

@@ -1,8 +1,5 @@
-import { Low } from 'npm:lowdb';
-import { JSONFile } from 'npm:lowdb/node';
-import lodash from 'npm:lodash';
+import { JSONFileSyncPreset } from 'npm:lowdb/node';
 import { config } from './constants.ts';
-
 const {
     DB_FILE_PATH,
 } = config;
@@ -17,27 +14,4 @@ const defaultData: DatabaseData = {
     [DatabaseKey.CONFIG]: config,
 };
 
-class LowWithLodash<T> extends Low<T> {
-    chain: lodash.ExpChain<this['data']> = lodash.chain(this).get('data');
-}
-
-const getDatabase = async (): Promise<LowWithLodash<DatabaseData>> => {
-    const adapter = new JSONFile<DatabaseData>(DB_FILE_PATH);
-    const db = new LowWithLodash(adapter, defaultData);
-    await db.read();
-    db.data = {
-        [DatabaseKey.PROXIES]: {...defaultData[DatabaseKey.PROXIES], ...db.data[DatabaseKey.PROXIES]},
-        [DatabaseKey.CONFIG]: {...defaultData[DatabaseKey.CONFIG], ...db.data[DatabaseKey.CONFIG]}
-    }
-    db.chain = lodash.chain(db.data);
-    await db.write();
-    return db;
-};
-
-const _db: LowWithLodash<DatabaseData> = await getDatabase();
-
-export const db = {
-	get: function () {
-        return _db;
-    }
-};
+export const db = JSONFileSyncPreset<DatabaseData>(DB_FILE_PATH, defaultData);
