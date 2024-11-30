@@ -36,6 +36,10 @@ might happen, I should able live to fight yet another day. It is also good to
 give something back to the humanity as kindness seems to be in short supply
 these days everywhere.
 
+![supershy screenshot](/public/assets/images/supershy-screenshot-top-1.png)
+![supershy screenshot](/public/assets/images/supershy-screenshot-bottom-1.png)
+
+
 ### Installation (properly tested only on Debian-based Linux thus far)
 
 ```
@@ -61,7 +65,7 @@ deno task start
 
 ```
 # .env
-PROXY_INTERVAL_SEC=how often you would like to recycle the exit nodes in seconds, defaults to 1800.
+PROXY_RECYCLE_INTERVAL_SEC=how often you would like to recycle the exit nodes in seconds, defaults to 1800.
 
 SSH_PORT_RANGE=colon separated [from:to] range of numbers for a random selection, overrides SSH_PORT if set.
 

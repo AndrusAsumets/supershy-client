@@ -10,16 +10,16 @@ const $configSection = document.getElementsByClassName('section-content config')
 const $logSection = document.getElementsByClassName('section-content log')[0];
 
 const visibleConfigKeys = {
-    'PROXY_INTERVAL_SEC': { editable: 'number' },
+    'PROXY_RECYCLE_INTERVAL_SEC': { editable: 'number' },
     'SSH_PORT_RANGE': { editable: 'string' },
     'SSH_KEY_ALGORITHM': { editable: 'string' },
     'SSH_KEY_LENGTH': { editable: 'number' },
-    'DIGITAL_OCEAN_API_KEY': { editable: 'string' },
-    'HETZNER_API_KEY': { editable: 'string' },
-    'VULTR_API_KEY': { editable: 'string' },
-    'CLOUDFLARE_ACCOUNT_ID': { editable: 'string' },
-    'CLOUDFLARE_API_KEY': { editable: 'string' },
-    'CLOUDFLARE_KV_NAMESPACE': { editable: 'string' },
+    'DIGITAL_OCEAN_API_KEY': { editable: 'password' },
+    'HETZNER_API_KEY': { editable: 'password' },
+    'VULTR_API_KEY': { editable: 'password' },
+    'CLOUDFLARE_ACCOUNT_ID': { editable: 'password' },
+    'CLOUDFLARE_API_KEY': { editable: 'password' },
+    'CLOUDFLARE_KV_NAMESPACE': { editable: 'password' },
     'WEB_SERVER_PORT': { editable: 'number' },
     'WEB_SOCKET_PORT': { editable: 'number'},
     'PROXY_LOCAL_TEST_PORT': { editable: 'number' },
@@ -77,9 +77,16 @@ const constructConfigLine = (
             $value.className += ' config-alert';
         }
 
+        if (value && visibleConfigKeys[key].editable == 'password') {
+            $value.className += ' config-password';
+        }
+
         setChangeListener($value, (event) => {
             switch(true) {
                 case visibleConfigKeys[key].editable == 'string':
+                    config[key] = String(event.target.innerText).replace('\n', '');
+                    break;
+                case visibleConfigKeys[key].editable == 'password':
                     config[key] = String(event.target.innerText).replace('\n', '');
                     break;
                 case visibleConfigKeys[key].editable == 'number':

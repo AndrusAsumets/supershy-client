@@ -72,6 +72,8 @@ body {
     font-size: 12px;
     overflow-y: scroll;
     line-height: 16px;
+    overscroll-behavior: none;
+    scrollbar-width: none;
 }
 
 .section {
@@ -127,6 +129,10 @@ body {
 
 .config-alert {
     border-bottom: 1px solid var(--alert-color);
+}
+
+.config-password:not(:hover) {
+    filter: blur(3px);
 }
 
 .line-value.has-events.config-editable:not(.config-alert):hover {

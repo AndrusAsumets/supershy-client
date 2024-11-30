@@ -32,9 +32,7 @@ export const start = (io: Server) => {
             const prevInstanceProvidersDisabled = JSON.stringify(config().INSTANCE_PROVIDERS_DISABLED);
             const currentInstanceProvidersDisabled = JSON.stringify(_config.INSTANCE_PROVIDERS_DISABLED);
             if (prevInstanceProvidersDisabled != currentInstanceProvidersDisabled) {
-                _config = core.setInstanceProviders(_config);
-                await models.saveConfig(_config);
-                _config = await core.setInstanceCountries(config());
+                _config = await core.setInstanceCountries(core.setInstanceProviders(_config));
             }
 
             await models.saveConfig(_config);

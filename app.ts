@@ -40,7 +40,7 @@ const {
     SSH_USER,
     PROXY_TYPES,
     SSH_PORT_RANGE,
-    PROXY_INTERVAL_SEC,
+    PROXY_RECYCLE_INTERVAL_SEC,
     AUTO_LAUNCH_WEB,
     WEB_URL,
     SSH_KEY_ALGORITHM,
@@ -216,7 +216,6 @@ const rotate = async () => {
             proxyType,
             sshUser: SSH_USER,
             passphrase,
-            proxyIntervalSec: PROXY_INTERVAL_SEC,
             proxyLocalTestPort: PROXY_LOCAL_TEST_PORT,
             proxyLocalPort: PROXY_LOCAL_PORT,
             proxyRemotePort: PROXY_REMOTE_PORT,
@@ -256,9 +255,9 @@ const loop = async () => {
     setTimeout(async () => {
         const isStillWorking = loopStatus == LoopStatus.ACTIVE;
         isStillWorking
-            ? await core.exit(`Timeout after passing ${PROXY_INTERVAL_SEC} seconds.`)
+            ? await core.exit(`Timeout after passing ${PROXY_RECYCLE_INTERVAL_SEC} seconds.`)
             : await loop();
-    }, PROXY_INTERVAL_SEC * 1000);
+    }, PROXY_RECYCLE_INTERVAL_SEC * 1000);
 
     try {
         updateStatus(LoopStatus.ACTIVE);

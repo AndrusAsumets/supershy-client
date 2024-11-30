@@ -1,11 +1,10 @@
 import * as path from 'https://deno.land/std@0.224.0/path/mod.ts';
 import { homedir } from 'node:os';
-
 import { ProxyType, Config, InstanceProvider } from './types.ts';
 
 const APP_ID = 'supershy-client';
 const ENV = 'dev';
-const PROXY_INTERVAL_SEC = 300;
+const PROXY_RECYCLE_INTERVAL_SEC = 1800;
 const AUTO_LAUNCH_WEB = true;
 const TUNNEL_CONNECT_TIMEOUT_SEC = 10;
 const SSH_PORT_RANGE: number[] = [10000, 65535];
@@ -81,7 +80,7 @@ export const config: Config = {
     HETZNER_INSTANCE_IMAGE,
     VULTR_INSTANCE_IMAGE,
     PROXY_ENABLED,
-    PROXY_INTERVAL_SEC,
+    PROXY_RECYCLE_INTERVAL_SEC,
     AUTO_LAUNCH_WEB,
     APP_ID,
     ENV,

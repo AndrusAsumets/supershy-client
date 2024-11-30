@@ -43,7 +43,6 @@ export interface Proxy {
 	sshKeyPath: string
 	connectionString: string
 	appId: string
-	proxyIntervalSec: number
 	sshPort: number
 	sshHostKey: string
 	sshLogPath: string
@@ -88,7 +87,7 @@ export interface CreateVultrInstance {
 export interface Config {
     APP_ID: string
     ENV: string
-    PROXY_INTERVAL_SEC: number
+    PROXY_RECYCLE_INTERVAL_SEC: number
 	AUTO_LAUNCH_WEB: boolean
     TUNNEL_CONNECT_TIMEOUT_SEC: number
     SSH_PORT_RANGE: number[]
