@@ -36,6 +36,10 @@ might happen, I should able live to fight yet another day. It is also good to
 give something back to the humanity as kindness seems to be in short supply
 these days everywhere.
 
+![supershy screenshot](/public/assets/images/supershy-screenshot-top-1.png)
+![supershy screenshot](/public/assets/images/supershy-screenshot-bottom-1.png)
+
+
 ### Installation (properly tested only on Debian-based Linux thus far)
 
 ```
@@ -44,30 +48,29 @@ https://docs.deno.com/runtime/getting_started/installation
 ```
 
 ```
-# Expect for Linux
-sudo apt install expect
+# Linux
+sudo apt install expect screen
 
 # Expect for Mac
 brew install expect
-```
-
-```
-# Forever
-sudo npm install forever -g
+brew install screen
 ```
 
 ```
 # supershy-client
 git clone git@github.com:AndrusAsumets/supershy-client.git
 cd supershy-client
-cp sample.env .env
+deno task start
+
+# Depending on VPS, the first launch might take up to 10 minutes
+# to have both Nodes prepared, so please be patient.
+
+# Supershy's UI can be accessed locally from: http://localhost:8080
 ```
 
 ```
 # .env
-LOOP_INTERVAL_SEC=how often you would like to recycle the exit nodes in seconds, defaults to 1800.
-
-SSH_PORT=Port for the SSH server, defaults to 22.
+PROXY_RECYCLE_INTERVAL_SEC=how often you would like to recycle the exit nodes in seconds, defaults to 1800.
 
 SSH_PORT_RANGE=colon separated [from:to] range of numbers for a random selection, overrides SSH_PORT if set.
 
@@ -126,17 +129,12 @@ CLOUDFLARE_API_KEY=
 
 ```
 # Start supershy
-forever start -c "deno run --allow-all app.ts" ./
+deno task stop
 ```
 
 ```
 # Log
 tail -f ~/.supershy-client/logs/*.log
-```
-
-```
-# Stop supershy
-forever stop -c "deno run --allow-all app.ts" ./
 ```
 
 ```

@@ -1,0 +1,141 @@
+@font-face {
+    font-family: SourceCodePro-Regular;
+    src: url(/assets/fonts/SourceCodePro-Regular.otf.woff);
+}
+
+@font-face {
+    font-family: SourceCodePro-Semibold;
+    src: url(/assets/fonts/SourceCodePro-Semibold.otf.woff);
+}
+
+.clickable {
+    font-family: SourceCodePro-Semibold;
+    cursor: pointer;
+    user-select: none;
+}
+
+::selection {
+    color: var(--primary-bg-color);
+    background: var(--active-color);
+}
+
+body {
+    --primary-bg-color: black;
+    --secondary-bg-color: white;
+    --primary-text-color: white;
+    --secondary-text-color: black;
+    --active-color: yellow;
+    --inactive-color: grey;
+    --alert-color: red;
+    font-family: SourceCodePro-Regular;
+    margin: 0;
+    padding: 0;
+    background: var(--primary-bg-color);
+    color: var(--primary-text-color);
+}
+
+.app {
+    position: relative;
+    width: 100vw;
+    max-width: 480px;
+    margin: 0 auto;
+    overflow-x: hidden;
+}
+
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    user-select: none;
+    font-family: SourceCodePro-Semibold;
+}
+
+.app-name {
+    font-size: 20px;
+    margin: 16px 0 0 16px;
+}
+
+.enablement-toggle {
+    width: fit-content;
+    margin: 16px;
+    padding: 8px 24px;
+    border: 1px solid var(--secondary-bg-color);
+    font-size: 12px;
+}
+
+.content {
+    overflow-x: hidden;
+    height: calc(100vh - 128px);
+    margin: 16px;
+    padding: 0 16px 16px 16px;
+    border: 1px solid var(--secondary-bg-color);
+    word-wrap: break-word;
+    font-size: 12px;
+    overflow-y: scroll;
+    line-height: 16px;
+    overscroll-behavior: none;
+    scrollbar-width: none;
+}
+
+.section {
+    margin-bottom: 16px;
+}
+
+.section-header {
+    position: sticky;
+    top: 0;
+    margin-bottom: 8px;
+    padding-top: 16px;
+    padding-bottom: 8px;
+    background: var(--primary-bg-color);
+    border-bottom: 1px solid var(--secondary-bg-color);
+    font-size: 14px;
+    font-family: SourceCodePro-Semibold;
+}
+
+.section-content {
+    margin-top: 12px;
+}
+
+.config-line {
+    display: flex;
+    justify-content: space-between;
+    overflow-x: hidden;
+}
+
+.line-key,
+.line-value {
+    border: 1px solid transparent;
+    padding: 4px;
+}
+
+.line-key {
+    max-width: calc(50% - 8px);
+}
+
+.line-value {
+    width: 100%;
+    max-width: calc(50% - 8px);
+    overflow-x: hidden;
+}
+
+.line-value.has-events.config-editable:not(.config-alert) {
+    border-bottom: 1px dotted var(--inactive-color);
+}
+
+.line-value:not(.config-editable),
+.disabled {
+    color: var(--inactive-color);
+}
+
+.config-alert {
+    border-bottom: 1px solid var(--alert-color);
+}
+
+.config-password:not(:hover) {
+    filter: blur(3px);
+}
+
+.line-value.has-events.config-editable:not(.config-alert):hover {
+    cursor: pointer;
+    border-bottom: 1px solid var(--active-color);
+}

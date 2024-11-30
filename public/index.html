@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>supershy</title>
+        <link rel="stylesheet" href="/src/index.css">
+        <link rel="shortcut icon" href="#" type="image/x-icon">
+    </head>
+    <body>
+        <div class="app">
+            <div class="app-header">
+                <div class="app-name">supershy</div>
+                <div class="enablement-toggle clickable">
+                    Loading ...
+                </div>
+            </div>
+            <div class="content">
+                <div class="section">
+                    <div class="section-header">
+                        Status
+                    </div>
+                    <div class="section-content status"></div>
+                </div>
+
+                <div class="section">
+                    <div class="section-header">
+                        VPS
+                    </div>
+                    <div class="section-content providers"></div>
+                </div>
+
+                <div class="section">
+                    <div class="section-header">
+                        Countries
+                    </div>
+                    <div class="section-content countries"></div>
+                </div>
+
+                <div class="section">
+                    <div class="section-header">
+                        Config
+                    </div>
+                    <div class="section-content config"></div>
+                </div>
+
+                <div class="section">
+                    <div class="section-header">
+                        Log
+                    </div>
+                    <div class="section-content log"></div>
+                </div>
+            </div>
+        </div>
+        <script src="/lib/socket.io.min.js"></script>
+        <script src="/lib/ISO3166-1.alpha2.js"></script>
+        <script src="/src/index.js"></script>
+    </body>
+</html>
