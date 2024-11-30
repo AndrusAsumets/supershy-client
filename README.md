@@ -62,7 +62,9 @@ brew install screen
 git clone git@github.com:AndrusAsumets/supershy-client.git
 cd supershy-client
 deno task start
+```
 
+```
 # Supershy's UI can be accessed locally from: http://localhost:8080
 ```
 
