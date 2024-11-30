@@ -62,14 +62,11 @@ git clone git@github.com:AndrusAsumets/supershy-client.git
 cd supershy-client
 deno task start
 
-# Depending on VPS, the first launch might take up to 10 minutes
-# to have both Nodes prepared, so please be patient.
-
 # Supershy's UI can be accessed locally from: http://localhost:8080
 ```
 
 ```
-# .env
+# Update Config through the Supershy's UI.
 PROXY_RECYCLE_INTERVAL_SEC=how often you would like to recycle the exit nodes in seconds, defaults to 1800.
 
 SSH_PORT_RANGE=colon separated [from:to] range of numbers for a random selection, overrides SSH_PORT if set.
@@ -125,6 +122,13 @@ CLOUDFLARE_API_KEY=
  -> Make sure it contains "All accounts - Workers KV Storage:Edit" below User API Tokens.
  -> Create Token.
  -> Click to copy the API token.
+```
+
+```
+ -> Click Enable Proxy on Supershy's UI.
+
+# Depending on VPS, the first launch might take up to 10 minutes
+# to have both Nodes prepared, so please be patient.
 ```
 
 ```
