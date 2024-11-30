@@ -128,7 +128,7 @@ CLOUDFLARE_API_KEY=
 ```
 
 ```
-# Start supershy
+# Stop supershy
 deno task stop
 ```
 
