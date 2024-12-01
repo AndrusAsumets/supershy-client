@@ -2,6 +2,7 @@
 
 import * as crypto from 'node:crypto';
 import { v7 as uuidv7 } from 'npm:uuid';
+import { existsSync } from 'https://deno.land/std@0.224.0/fs/mod.ts';
 import { Server } from 'https://deno.land/x/socket_io@0.2.0/mod.ts';
 import { open } from 'https://deno.land/x/open@v1.0.0/index.ts';
 import {
@@ -69,7 +70,7 @@ const tunnel = async (
 
     logger.info(`Starting SSH tunnel proxy to ${proxy.instanceIp}:${port}.`);
 
-    Deno.removeSync(proxy.sshLogPath);
+    existsSync(proxy.sshLogPath) && Deno.removeSync(proxy.sshLogPath);
     await integrations.shell.pkill(`${port}:`);
 
     // @ts-ignore: because
@@ -290,9 +291,9 @@ const heartbeat = async () => {
 };
 
 const connectProxy = async () => {
-    await integrations.fs.ensureFolder(DATA_PATH);
-    await integrations.fs.ensureFolder(SSH_KEY_PATH);
-    await integrations.fs.ensureFolder(LOG_PATH);
+    integrations.fs.ensureFolder(DATA_PATH);
+    integrations.fs.ensureFolder(SSH_KEY_PATH);
+    integrations.fs.ensureFolder(LOG_PATH);
 
     Deno.writeTextFileSync(`${TMP_PATH}/${GENERATE_SSH_KEY_FILE_NAME}`, GENERATE_SSH_KEY_FILE);
     Deno.writeTextFileSync(`${TMP_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME}`, CONNECT_SSH_TUNNEL_FILE);
@@ -300,8 +301,8 @@ const connectProxy = async () => {
     new Deno.Command('chmod', { args: ['+x', GENERATE_SSH_KEY_FILE_NAME] });
     new Deno.Command('chmod', { args: ['+x', CONNECT_SSH_TUNNEL_FILE_NAME] });
 
-    await Deno.chmod(`${TMP_PATH}/${GENERATE_SSH_KEY_FILE_NAME}`, 0o700);
-    await Deno.chmod(`${TMP_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME}`, 0o700);
+    Deno.chmodSync(`${TMP_PATH}/${GENERATE_SSH_KEY_FILE_NAME}`, 0o700);
+    Deno.chmodSync(`${TMP_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME}`, 0o700);
 
     loop();
     heartbeat();

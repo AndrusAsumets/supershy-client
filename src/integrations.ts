@@ -17,6 +17,7 @@ import {
     CreateHetznerInstance,
     CreateVultrInstance,
 } from './types.ts';
+import { existsSync } from "node:fs";
 
 export const shell = {
 	privateKey: {
@@ -49,9 +50,9 @@ export const shell = {
 };
 
 export const fs = {
-    ensureFolder: async function (path: string) {
-        if (!await exists(path)) {
-            await Deno.mkdir(path);
+    ensureFolder: function (path: string) {
+        if (!existsSync(path)) {
+            Deno.mkdirSync(path);
         }
     },
 };
