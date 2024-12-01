@@ -120,7 +120,7 @@ export const exit = async (
     onPurpose = false
 ) => {
     !onPurpose && logger.error(message);
-    const hasProxies = Object.keys(models.getProxies()).length > 0;
+    const hasProxies = Object.keys(models.proxies()).length > 0;
     onPurpose && hasProxies && await integrations.shell.pkill(`${APP_ID}-${ENV}`);
     await lib.sleep(1000);
     throw new Error();

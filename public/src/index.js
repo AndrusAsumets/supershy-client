@@ -276,7 +276,7 @@ socket
                 : 'Disabled'
         ]];
 
-        if (isProxyEnabled && Object.keys(proxy).length) {
+        if (isProxyEnabled && proxy && Object.keys(proxy).length) {
             status.push(['VPS', convertSnakeCaseToPascalCase(proxy.instanceProvider)]);
             status.push(['Country', COUNTRY_CODES[proxy.instanceCountry]]);
             status.push(['IPv4', proxy.instanceIp]);

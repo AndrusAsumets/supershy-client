@@ -6,42 +6,27 @@ import {
     Config
 } from './types.ts';
 
-export const getProxies = () => {
-    return db
-        .get()
-        .chain
-        .get(DatabaseKey.PROXIES)
-        .value();
+export const config = (): Config => {
+    return db.data[DatabaseKey.CONFIG] as Config;
 };
 
-export const proxies = getProxies;
-
-export const saveProxy = (
-    proxy: Proxy
-) => {
-    const proxies = getProxies();
-    proxies[proxy.proxyUuid] = proxy;
-    db.get().write();
+export const proxies = (): Proxies => {
+    return db.data[DatabaseKey.PROXIES] as Proxies;
 };
 
 export const updateProxy = (
     proxy: Proxy
 ) => {
-    const proxies = db
-        .get()
-        .chain
-        .get(DatabaseKey.PROXIES)
-        .value();
+    const proxies = db.data[DatabaseKey.PROXIES] as Proxies;
     proxies[proxy.proxyUuid] = proxy;
-    db.get().write();
+    db.write();
 };
 
 export const getInitialProxy = () => {
-    const proxies = getProxies();
     const proxy = Object
-        .keys(proxies)
+        .keys(proxies())
         .sort()
-        .map((proxyUuid: string) => proxies[proxyUuid])
+        .map((proxyUuid: string) => proxies()[proxyUuid])
         .filter((proxy: Proxy) => !proxy.isDeleted)
         .reverse()[0];
     return proxy;
@@ -50,28 +35,19 @@ export const getInitialProxy = () => {
 export const removeUsedProxies = (
     instanceIdsToKeep: string[]
 ) => {
-    const proxies = getProxies();
     const result: Proxies = {};
     Object
-        .keys(proxies)
-        .map((proxyUuid: string) => proxies[proxyUuid])
+        .keys(proxies())
+        .map((proxyUuid: string) => proxies()[proxyUuid])
         .filter((proxy: Proxy) => instanceIdsToKeep.includes(proxy.instanceId))
         .forEach((proxy: Proxy) => result[proxy.proxyUuid] = proxy);
-    db.get().data[DatabaseKey.PROXIES] = result;
-    db.get().write();
+    db.data[DatabaseKey.PROXIES] = result;
+    db.write();
 };
 
-export const config = (): Config => {
-    return db
-        .get()
-        .chain
-        .get(DatabaseKey.CONFIG)
-        .value();
-};
-
-export const saveConfig = async (
+export const updateConfig = (
     config: Config
 ) => {
-    db.get().data[DatabaseKey.CONFIG] = config;
-    await db.get().write();
+    db.data[DatabaseKey.CONFIG] = config;
+    db.write();
 };
