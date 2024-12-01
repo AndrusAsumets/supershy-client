@@ -89,7 +89,6 @@ export interface Config {
     ENV: string
     PROXY_RECYCLE_INTERVAL_SEC: number
 	AUTO_LAUNCH_WEB: boolean
-    TUNNEL_CONNECT_TIMEOUT_SEC: number
     SSH_PORT_RANGE: number[]
     PROXY_LOCAL_TEST_PORT: number
     PROXY_LOCAL_PORT: number

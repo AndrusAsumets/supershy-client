@@ -84,7 +84,6 @@ export const config: Config = {
     AUTO_LAUNCH_WEB,
     APP_ID,
     ENV,
-    TUNNEL_CONNECT_TIMEOUT_SEC,
     WEB_SERVER_PORT,
     WEB_URL,
     WEB_SOCKET_PORT,

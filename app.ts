@@ -30,7 +30,6 @@ const {
     PROXY_REMOTE_PORT,
     PROXY_URL,
     TEST_PROXY_URL,
-    TUNNEL_CONNECT_TIMEOUT_SEC,
     TMP_PATH,
     DATA_PATH,
     SSH_KEY_PATH,
@@ -70,22 +69,22 @@ const tunnel = async (
 
     logger.info(`Starting SSH tunnel proxy to ${proxy.instanceIp}:${port}.`);
 
+    Deno.removeSync(proxy.sshLogPath);
+    await integrations.shell.pkill(`${port}:`);
+
+    // @ts-ignore: because
+    const process = Deno.run({
+        cmd: proxy.connectionString.split(' '),
+        stdout: 'piped',
+        stderr: 'piped',
+        stdin: 'null',
+    });
+    await process.stderrOutput();
+
     let isConnected = false;
     while (!isConnected) {
         try {
-            await integrations.shell.pkill(`${port}:`);
-            await lib.sleep(1000);
-
-            // @ts-ignore: because
-            const process = Deno.run({
-                cmd: proxy.connectionString.split(' '),
-                stdout: 'piped',
-                stderr: 'piped',
-                stdin: 'null',
-            });
-            await lib.sleep(TUNNEL_CONNECT_TIMEOUT_SEC * 1000);
-            await process.stderrOutput();
-            const output = await Deno.readTextFile(proxy.sshLogPath);
+            const output = Deno.readTextFileSync(proxy.sshLogPath);
             isConnected = output.includes('pledge: network');
 
             if (isConnected) {
