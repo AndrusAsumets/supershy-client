@@ -83,6 +83,7 @@ body {
 .section-header {
     position: sticky;
     top: 0;
+    z-index: 1;
     margin-bottom: 8px;
     padding-top: 16px;
     padding-bottom: 8px;

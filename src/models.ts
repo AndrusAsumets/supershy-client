@@ -37,7 +37,7 @@ export const removeUsedProxies = (
 ) => {
     const result: Proxies = {};
     Object
-        .keys(proxies)
+        .keys(proxies())
         .map((proxyUuid: string) => proxies()[proxyUuid])
         .filter((proxy: Proxy) => instanceIdsToKeep.includes(proxy.instanceId))
         .forEach((proxy: Proxy) => result[proxy.proxyUuid] = proxy);
