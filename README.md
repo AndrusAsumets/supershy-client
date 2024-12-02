@@ -94,7 +94,7 @@ HETZNER_API_KEY=
  -> Click to copy.
 
 VULTR_API_KEY=
- -> Open ttps://my.vultr.com/settings/#settingsapi
+ -> Open https://my.vultr.com/settings/#settingsapi
  -> Click Allow all IPv4.
  -> Click Allow all IPv6.
  -> Click to copy the API Key.
