@@ -3,9 +3,9 @@
 import jwt from 'npm:jsonwebtoken';
 import { encodeBase64 } from 'jsr:@std/encoding/base64';
 import { existsSync } from 'https://deno.land/std@0.224.0/fs/mod.ts';
-
 import * as lib from './lib.ts';
 import * as models from './models.ts';
+import * as integrations from './integrations.ts';
 import { logger as _logger } from './logger.ts';
 
 const logger = _logger.get();
@@ -20,17 +20,26 @@ import {
 
 export const shell = {
 	privateKey: {
-		create: async function (
+		create: function (
             keyPath: string,
             passphrase: string,
         ) {
             const cmd =
                 `${config().TMP_PATH}/${config().GENERATE_SSH_KEY_FILE_NAME} ${passphrase} ${keyPath} ${config().SSH_KEY_ALGORITHM} ${config().SSH_KEY_LENGTH}`;
-            // @ts-ignore: because
-            const process = Deno.run({ cmd: cmd.split(' ') });
-            await process.status();
-            const publicKey = await Deno.readTextFile(`${keyPath}.pub`);
-            return publicKey;
+            const publicKeyPath = `${keyPath}.pub`;
+            integrations.shell.command(cmd);
+
+            while (true) {
+                try {
+                    const file = Deno.readTextFileSync(publicKeyPath);
+                    if (file) {
+                        return file;
+                    }
+                }
+                catch(_) {
+                    _;
+                }
+            }
         }
     },
     pkill: async function (input: string) {
@@ -231,6 +240,7 @@ export const compute = {
                     body: JSON.stringify(body),
                 });
                 const json: any = await res.json();
+                !json['ssh_key'] && logger.error('digital__ocean.keys.add error ', json);
                 return json['ssh_key']['id'];
             },
             list: async function () {

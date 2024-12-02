@@ -72,15 +72,7 @@ const tunnel = async (
 
     existsSync(proxy.sshLogPath) && Deno.removeSync(proxy.sshLogPath);
     await integrations.shell.pkill(`${port}:`);
-
-    // @ts-ignore: because
-    const process = Deno.run({
-        cmd: proxy.connectionString.split(' '),
-        stdout: 'piped',
-        stderr: 'piped',
-        stdin: 'null',
-    });
-    await process.stderrOutput();
+    integrations.shell.command(proxy.connectionString);
 
     let isConnected = false;
     while (!isConnected) {
@@ -175,7 +167,7 @@ const rotate = async () => {
         const { instanceSize, instanceImage } = integrations.compute[instanceProvider];
         const sshKeyPath = `${SSH_KEY_PATH}/${instanceName}`;
         const passphrase = crypto.randomBytes(64).toString('hex');
-        const publicKey = await integrations.shell.privateKey.create(sshKeyPath, passphrase);
+        const publicKey = integrations.shell.privateKey.create(sshKeyPath, passphrase);
         const instancePublicKeyId = await integrations.compute[instanceProvider].keys.add(publicKey, instanceName);
         const jwtSecret = crypto.randomBytes(64).toString('hex');
         const sshPort = lib.randomNumberFromRange(SSH_PORT_RANGE[0], SSH_PORT_RANGE[1]);
@@ -290,7 +282,7 @@ const heartbeat = async () => {
     }
 };
 
-const connectProxy = async () => {
+const connectProxy = () => {
     integrations.fs.ensureFolder(DATA_PATH);
     integrations.fs.ensureFolder(SSH_KEY_PATH);
     integrations.fs.ensureFolder(LOG_PATH);
@@ -311,6 +303,6 @@ const connectProxy = async () => {
 
 webserver.start();
 websocket.start(io);
-PROXY_ENABLED && connectProxy();
 AUTO_LAUNCH_WEB && open(WEB_URL);
 AUTO_LAUNCH_WEB && models.updateConfig({...config(), AUTO_LAUNCH_WEB: false});
+PROXY_ENABLED && connectProxy();
