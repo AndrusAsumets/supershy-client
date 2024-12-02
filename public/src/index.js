@@ -21,7 +21,6 @@ const visibleConfigKeys = {
     'CLOUDFLARE_API_KEY': { editable: 'password' },
     'CLOUDFLARE_KV_NAMESPACE': { editable: 'password' },
     'WEB_SERVER_PORT': { editable: 'number' },
-    'WEB_SOCKET_PORT': { editable: 'number'},
     'PROXY_LOCAL_TEST_PORT': { editable: 'number' },
     'PROXY_LOCAL_PORT': { editable: 'number' },
     'LOG_PATH': { editable: false },

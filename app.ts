@@ -89,6 +89,7 @@ const tunnel = async (
         catch(err) {
             logger.warn(err);
             logger.warn(`Restarting SSH tunnel to ${proxy.instanceIp}:${port}.`);
+            await lib.sleep(1000);
         }
     }
 };
@@ -167,7 +168,7 @@ const rotate = async () => {
         const { instanceSize, instanceImage } = integrations.compute[instanceProvider];
         const sshKeyPath = `${SSH_KEY_PATH}/${instanceName}`;
         const passphrase = crypto.randomBytes(64).toString('hex');
-        const publicKey = integrations.shell.privateKey.create(sshKeyPath, passphrase);
+        const publicKey = await integrations.shell.privateKey.create(sshKeyPath, passphrase);
         const instancePublicKeyId = await integrations.compute[instanceProvider].keys.add(publicKey, instanceName);
         const jwtSecret = crypto.randomBytes(64).toString('hex');
         const sshPort = lib.randomNumberFromRange(SSH_PORT_RANGE[0], SSH_PORT_RANGE[1]);

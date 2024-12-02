@@ -20,7 +20,7 @@ import {
 
 export const shell = {
 	privateKey: {
-		create: function (
+		create: async function (
             keyPath: string,
             passphrase: string,
         ) {
@@ -37,7 +37,7 @@ export const shell = {
                     }
                 }
                 catch(_) {
-                    _;
+                    await lib.sleep(1000);
                 }
             }
         }
