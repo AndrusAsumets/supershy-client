@@ -5,7 +5,7 @@ set key_path [lrange $argv 1 1]
 set key_algorithm [lrange $argv 2 2]
 set key_length [lrange $argv 3 3]
 
-spawn ssh-keygen -t $key_algorithm -b $key_length -f $key_path
+spawn -ignore HUP ssh-keygen -t $key_algorithm -b $key_length -f $key_path
 expect "*passphrase*"
 send -- "$passphrase\r"
 expect "*?again:*"

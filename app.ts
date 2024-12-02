@@ -4,6 +4,7 @@ import * as crypto from 'node:crypto';
 import { v7 as uuidv7 } from 'npm:uuid';
 import { Server } from 'https://deno.land/x/socket_io@0.2.0/mod.ts';
 import { open } from 'https://deno.land/x/open@v1.0.0/index.ts';
+import { existsSync } from 'https://deno.land/std@0.224.0/fs/mod.ts';
 import {
     LoopStatus,
     ProxyType,
@@ -30,7 +31,6 @@ const {
     PROXY_REMOTE_PORT,
     PROXY_URL,
     TEST_PROXY_URL,
-    TUNNEL_CONNECT_TIMEOUT_SEC,
     TMP_PATH,
     DATA_PATH,
     SSH_KEY_PATH,
@@ -70,22 +70,14 @@ const tunnel = async (
 
     logger.info(`Starting SSH tunnel proxy to ${proxy.instanceIp}:${port}.`);
 
+    existsSync(proxy.sshLogPath) && Deno.removeSync(proxy.sshLogPath);
+    await integrations.shell.pkill(`${port}:`);
+    integrations.shell.command(proxy.connectionString);
+
     let isConnected = false;
     while (!isConnected) {
         try {
-            await integrations.shell.pkill(`${port}:`);
-            await lib.sleep(1000);
-
-            // @ts-ignore: because
-            const process = Deno.run({
-                cmd: proxy.connectionString.split(' '),
-                stdout: 'piped',
-                stderr: 'piped',
-                stdin: 'null',
-            });
-            await lib.sleep(TUNNEL_CONNECT_TIMEOUT_SEC * 1000);
-            await process.stderrOutput();
-            const output = await Deno.readTextFile(proxy.sshLogPath);
+            const output = Deno.readTextFileSync(proxy.sshLogPath);
             isConnected = output.includes('pledge: network');
 
             if (isConnected) {
@@ -175,7 +167,7 @@ const rotate = async () => {
         const { instanceSize, instanceImage } = integrations.compute[instanceProvider];
         const sshKeyPath = `${SSH_KEY_PATH}/${instanceName}`;
         const passphrase = crypto.randomBytes(64).toString('hex');
-        const publicKey = await integrations.shell.privateKey.create(sshKeyPath, passphrase);
+        const publicKey = integrations.shell.privateKey.create(sshKeyPath, passphrase);
         const instancePublicKeyId = await integrations.compute[instanceProvider].keys.add(publicKey, instanceName);
         const jwtSecret = crypto.randomBytes(64).toString('hex');
         const sshPort = lib.randomNumberFromRange(SSH_PORT_RANGE[0], SSH_PORT_RANGE[1]);
@@ -290,10 +282,10 @@ const heartbeat = async () => {
     }
 };
 
-const connectProxy = async () => {
-    await integrations.fs.ensureFolder(DATA_PATH);
-    await integrations.fs.ensureFolder(SSH_KEY_PATH);
-    await integrations.fs.ensureFolder(LOG_PATH);
+const connectProxy = () => {
+    integrations.fs.ensureFolder(DATA_PATH);
+    integrations.fs.ensureFolder(SSH_KEY_PATH);
+    integrations.fs.ensureFolder(LOG_PATH);
 
     Deno.writeTextFileSync(`${TMP_PATH}/${GENERATE_SSH_KEY_FILE_NAME}`, GENERATE_SSH_KEY_FILE);
     Deno.writeTextFileSync(`${TMP_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME}`, CONNECT_SSH_TUNNEL_FILE);
@@ -301,8 +293,8 @@ const connectProxy = async () => {
     new Deno.Command('chmod', { args: ['+x', GENERATE_SSH_KEY_FILE_NAME] });
     new Deno.Command('chmod', { args: ['+x', CONNECT_SSH_TUNNEL_FILE_NAME] });
 
-    await Deno.chmod(`${TMP_PATH}/${GENERATE_SSH_KEY_FILE_NAME}`, 0o700);
-    await Deno.chmod(`${TMP_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME}`, 0o700);
+    Deno.chmodSync(`${TMP_PATH}/${GENERATE_SSH_KEY_FILE_NAME}`, 0o700);
+    Deno.chmodSync(`${TMP_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME}`, 0o700);
 
     loop();
     heartbeat();
@@ -311,6 +303,6 @@ const connectProxy = async () => {
 
 webserver.start();
 websocket.start(io);
-PROXY_ENABLED && connectProxy();
 AUTO_LAUNCH_WEB && open(WEB_URL);
 AUTO_LAUNCH_WEB && models.updateConfig({...config(), AUTO_LAUNCH_WEB: false});
+PROXY_ENABLED && connectProxy();

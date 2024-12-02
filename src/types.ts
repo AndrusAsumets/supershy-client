@@ -89,7 +89,6 @@ export interface Config {
     ENV: string
     PROXY_RECYCLE_INTERVAL_SEC: number
 	AUTO_LAUNCH_WEB: boolean
-    TUNNEL_CONNECT_TIMEOUT_SEC: number
     SSH_PORT_RANGE: number[]
     PROXY_LOCAL_TEST_PORT: number
     PROXY_LOCAL_PORT: number
@@ -108,8 +107,6 @@ export interface Config {
     HETZNER_BASE_URL: string
     VULTR_BASE_URL: string
     CLOUDFLARE_BASE_URL: string
-    __DIRNAME: string
-    ENV_PATH: string
     HOME_PATH: string
     DATA_PATH: string
     SSH_KEY_PATH: string
