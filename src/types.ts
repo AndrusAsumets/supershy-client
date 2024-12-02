@@ -107,8 +107,6 @@ export interface Config {
     HETZNER_BASE_URL: string
     VULTR_BASE_URL: string
     CLOUDFLARE_BASE_URL: string
-    __DIRNAME: string
-    ENV_PATH: string
     HOME_PATH: string
     DATA_PATH: string
     SSH_KEY_PATH: string

@@ -2,7 +2,7 @@
 
 import jwt from 'npm:jsonwebtoken';
 import { encodeBase64 } from 'jsr:@std/encoding/base64';
-import { exists } from 'https://deno.land/std@0.224.0/fs/mod.ts';
+import { existsSync } from 'https://deno.land/std@0.224.0/fs/mod.ts';
 
 import * as lib from './lib.ts';
 import * as models from './models.ts';
@@ -17,7 +17,6 @@ import {
     CreateHetznerInstance,
     CreateVultrInstance,
 } from './types.ts';
-import { existsSync } from "node:fs";
 
 export const shell = {
 	privateKey: {

@@ -1,4 +1,3 @@
-import * as path from 'https://deno.land/std@0.224.0/path/mod.ts';
 import { homedir } from 'node:os';
 import { ProxyType, Config, InstanceProvider } from './types.ts';
 
@@ -6,7 +5,6 @@ const APP_ID = 'supershy-client';
 const ENV = 'dev';
 const PROXY_RECYCLE_INTERVAL_SEC = 1800;
 const AUTO_LAUNCH_WEB = true;
-const TUNNEL_CONNECT_TIMEOUT_SEC = 10;
 const SSH_PORT_RANGE: number[] = [10000, 65535];
 const PROXY_LOCAL_TEST_PORT = 8887;
 const PROXY_LOCAL_PORT = 8888;
@@ -25,10 +23,8 @@ const DIGITAL_OCEAN_BASE_URL = 'https://api.digitalocean.com/v2';
 const HETZNER_BASE_URL = 'https://api.hetzner.cloud/v1';
 const VULTR_BASE_URL = 'https://api.vultr.com/v2';
 const CLOUDFLARE_BASE_URL = 'https://api.cloudflare.com/client/v4';
-const __DIRNAME = path.dirname(path.fromFileUrl(import.meta.url)).split('/src')[0];
-const ENV_PATH = `${__DIRNAME}/.env`;
 const HOME_PATH = homedir();
-const DATA_PATH = `${__DIRNAME}/.${APP_ID}`;
+const DATA_PATH = `${HOME_PATH}/.${APP_ID}`;
 const SSH_KEY_PATH = `${DATA_PATH}/.keys`;
 const TMP_PATH = '/tmp';
 const LOG_PATH = `${DATA_PATH}/logs`;
@@ -101,8 +97,6 @@ export const config: Config = {
     GENERATE_SSH_KEY_FILE_NAME,
     CONNECT_SSH_TUNNEL_FILE_NAME,
     HEARTBEAT_INTERVAL_SEC,
-    __DIRNAME,
-    ENV_PATH,
     HOME_PATH,
     DATA_PATH,
     SSH_KEY_PATH,
