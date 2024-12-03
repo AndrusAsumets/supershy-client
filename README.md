@@ -38,7 +38,7 @@ these days everywhere.
 
 ### User interface preview
 
-             |
+1⠀             | 2
 :-------------------------:|:-------------------------:
 ![](/public/assets/images/supershy-screenshot-top-1.png)  |  ![](/public/assets/images/supershy-screenshot-bottom-1.png)
 
