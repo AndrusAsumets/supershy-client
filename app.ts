@@ -84,13 +84,14 @@ const tunnel = async (
                 await integrations.kv.cloudflare.heartbeat(proxyUrl);
                 logger.info(`Connected SSH tunnel to ${proxy.instanceIp}:${port}.`);
                 models.updateProxy(proxy);
+                return;
             }
         }
         catch(err) {
             logger.warn(err);
             logger.warn(`Restarting SSH tunnel to ${proxy.instanceIp}:${port}.`);
-            await lib.sleep(1000);
         }
+        await lib.sleep(1000);
     }
 };
 

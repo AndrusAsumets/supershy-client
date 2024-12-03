@@ -37,8 +37,9 @@ export const shell = {
                     }
                 }
                 catch(_) {
-                    await lib.sleep(1000);
+                    _;
                 }
+                await lib.sleep(1000);
             }
         }
     },
