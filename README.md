@@ -37,8 +37,7 @@ give something back to the humanity as kindness seems to be in short supply
 these days everywhere.
 
 ### User interface preview
-![supershy screenshot](/public/assets/images/supershy-screenshot-top-1.png)
-![supershy screenshot](/public/assets/images/supershy-screenshot-bottom-1.png)
+![supershy screenshot](/public/assets/images/supershy-screenshot-top-1.png) ![supershy screenshot](/public/assets/images/supershy-screenshot-bottom-1.png)
 
 
 ### Installation (properly tested only on Debian-based Linux thus far)
