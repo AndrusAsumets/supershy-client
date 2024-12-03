@@ -52,7 +52,7 @@ https://docs.deno.com/runtime/getting_started/installation
 # Linux
 sudo apt install expect screen
 
-# Expect for Mac
+# Mac
 brew install expect
 brew install screen
 ```
