@@ -37,9 +37,10 @@ give something back to the humanity as kindness seems to be in short supply
 these days everywhere.
 
 ### User interface preview
-![supershy screenshot](/public/assets/images/supershy-screenshot-top-1.png)
-![supershy screenshot](/public/assets/images/supershy-screenshot-bottom-1.png)
 
+1⠀             | 2
+:-------------------------:|:-------------------------:
+![](/public/assets/images/supershy-screenshot-top-1.png)  |  ![](/public/assets/images/supershy-screenshot-bottom-1.png)
 
 ### Installation (properly tested only on Debian-based Linux thus far)
 
@@ -52,7 +53,7 @@ https://docs.deno.com/runtime/getting_started/installation
 # Linux
 sudo apt install expect screen
 
-# Expect for Mac
+# Mac
 brew install expect
 brew install screen
 ```
@@ -136,16 +137,6 @@ to have both Nodes prepared, so please be patient.
 ```
 
 ```
-# Stop supershy
-deno task stop
-```
-
-```
-# Log
-tail -f ~/.supershy-client/logs/*.log
-```
-
-```
 # Update your browser's proxy url:
 Firefox
  -> Open https://support.mozilla.org/en-US/kb/connection-settings-firefox
@@ -159,6 +150,16 @@ Firefox
 # Test that it's all working
  -> Open https://ipleak.net
  -> Make sure countries of both IP and DNS match with the region of Digital Ocean your supershy is currently connected to.
+```
+
+```
+# Stop supershy
+deno task stop
+```
+
+```
+# Log
+tail -f ~/.supershy-client/logs/*.log
 ```
 
 ```
