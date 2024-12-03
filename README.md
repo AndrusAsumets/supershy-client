@@ -136,16 +136,6 @@ to have both Nodes prepared, so please be patient.
 ```
 
 ```
-# Stop supershy
-deno task stop
-```
-
-```
-# Log
-tail -f ~/.supershy-client/logs/*.log
-```
-
-```
 # Update your browser's proxy url:
 Firefox
  -> Open https://support.mozilla.org/en-US/kb/connection-settings-firefox
@@ -159,6 +149,16 @@ Firefox
 # Test that it's all working
  -> Open https://ipleak.net
  -> Make sure countries of both IP and DNS match with the region of Digital Ocean your supershy is currently connected to.
+```
+
+```
+# Stop supershy
+deno task stop
+```
+
+```
+# Log
+tail -f ~/.supershy-client/logs/*.log
 ```
 
 ```
