@@ -58,14 +58,12 @@ const logger = _logger.get(io);
 
 let loopStatus: LoopStatus = LoopStatus.INACTIVE;
 
-const tunnel = async (
+const connect = async (
     proxy: Proxy,
-    port: number,
-    proxyUrl: string | null = null,
 ) => {
+    const port = PROXY_LOCAL_PORT;
     proxy.connectionString = core
         .getConnectionString(proxy)
-        .replace(` ${PROXY_LOCAL_PORT} `, ` ${port} `)
         .replace('\n', '');
 
     logger.info(`Starting SSH tunnel proxy to ${proxy.instanceIp}:${port}.`);
@@ -82,7 +80,7 @@ const tunnel = async (
             isConnected = output.includes('pledge: network');
 
             if (isConnected) {
-                await integrations.kv.cloudflare.heartbeat(proxyUrl);
+                await integrations.kv.cloudflare.heartbeat();
                 logger.info(`Connected SSH tunnel to ${proxy.instanceIp}:${port}.`);
                 models.updateProxy(proxy);
                 return;
@@ -94,13 +92,6 @@ const tunnel = async (
         }
         await lib.sleep(1000);
     }
-};
-
-const connect = async (
-    proxy: Proxy,
-) => {
-    await tunnel(proxy, PROXY_LOCAL_TEST_PORT, TEST_PROXY_URL);
-    await tunnel(proxy, PROXY_LOCAL_PORT);
 };
 
 const cleanup = async (
