@@ -72,6 +72,7 @@ const tunnel = async (
 
     existsSync(proxy.sshLogPath) && Deno.removeSync(proxy.sshLogPath);
     await integrations.shell.pkill(`${port}:`);
+    await lib.sleep(1000);
     integrations.shell.command(proxy.connectionString);
 
     let isConnected = false;
@@ -99,8 +100,6 @@ const connect = async (
     proxy: Proxy,
 ) => {
     await tunnel(proxy, PROXY_LOCAL_TEST_PORT, TEST_PROXY_URL);
-    await integrations.shell.pkill(`${PROXY_LOCAL_TEST_PORT}:`);
-    await lib.sleep(1000);
     await tunnel(proxy, PROXY_LOCAL_PORT);
 };
 
