@@ -26,11 +26,9 @@ const { config } = models;
 const {
     ENV,
     APP_ID,
-    PROXY_LOCAL_TEST_PORT,
     PROXY_LOCAL_PORT,
     PROXY_REMOTE_PORT,
     PROXY_URL,
-    TEST_PROXY_URL,
     TMP_PATH,
     DATA_PATH,
     SSH_KEY_PATH,
@@ -80,7 +78,6 @@ const connect = async (
             isConnected = output.includes('pledge: network');
 
             if (isConnected) {
-                await integrations.kv.cloudflare.heartbeat();
                 logger.info(`Connected SSH tunnel to ${proxy.instanceIp}:${port}.`);
                 models.updateProxy(proxy);
                 return;
@@ -200,7 +197,6 @@ const rotate = async () => {
             proxyType,
             sshUser: SSH_USER,
             passphrase,
-            proxyLocalTestPort: PROXY_LOCAL_TEST_PORT,
             proxyLocalPort: PROXY_LOCAL_PORT,
             proxyRemotePort: PROXY_REMOTE_PORT,
             sshHostKey: '',
@@ -263,7 +259,7 @@ const loop = async () => {
 
 const heartbeat = async () => {
     try {
-        await integrations.kv.cloudflare.heartbeat(PROXY_URL);
+        await integrations.kv.cloudflare.heartbeat();
     }
     catch(err) {
         const isLooped = loopStatus == LoopStatus.FINISHED;

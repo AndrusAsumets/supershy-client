@@ -20,10 +20,10 @@ import {
 
 export const shell = {
 	privateKey: {
-		create: async function (
+		create: async (
             keyPath: string,
             passphrase: string,
-        ) {
+        ) => {
             const cmd =
                 `${config().TMP_PATH}/${config().GENERATE_SSH_KEY_FILE_NAME} ${passphrase} ${keyPath} ${config().SSH_KEY_ALGORITHM} ${config().SSH_KEY_LENGTH}`;
             const publicKeyPath = `${keyPath}.pub`;
@@ -43,13 +43,13 @@ export const shell = {
             }
         }
     },
-    pkill: async function (input: string) {
+    pkill: async (input: string) => {
         const cmd = 'pkill';
         const args = `-f ${input}`.split(' ');
         const command = new Deno.Command(cmd, { args });
         await command.output();
     },
-    command: function (input: string) {
+    command: (input: string) => {
         const args = input.split(' ');
         const cmd = args[0];
         args.shift();
@@ -59,7 +59,7 @@ export const shell = {
 };
 
 export const fs = {
-    ensureFolder: function (path: string) {
+    ensureFolder: (path: string) => {
         if (!existsSync(path)) {
             Deno.mkdirSync(path);
         }
@@ -68,23 +68,20 @@ export const fs = {
 
 export const kv = {
     cloudflare: {
-        heartbeat: async function (proxyUrl: string | null = null) {
+        heartbeat: async () => {
             const options: any = {
                 method: 'GET',
                 signal: AbortSignal.timeout(config().HEARTBEAT_INTERVAL_SEC),
             };
-            if (proxyUrl) {
-                options.client = Deno.createHttpClient({ proxy: { url: proxyUrl } });
-            }
             const res = await fetch(config().CLOUDFLARE_BASE_URL, options);
             await res.json();
             logger.info('Heartbeat.');
         },
         hostKey: {
-            get: async function (
+            get: async (
                 proxyUuid: string,
                 jwtSecret: string,
-            ) {
+            ) => {
                 let hostKey: string = '';
                 while (!hostKey) {
                     try {
@@ -106,10 +103,10 @@ export const kv = {
 
                 return hostKey;
             },
-            update: async function (
+            update: async (
                 proxy: Proxy,
                 jwtSecret: string,
-            ) {
+            ) => {
                 const { proxyUuid, instanceIp } = proxy;
 
                 proxy.sshHostKey = await kv.cloudflare.hostKey.get(proxy.proxyUuid, jwtSecret);
@@ -133,19 +130,16 @@ export const compute = {
         instanceSize: config().DIGITAL_OCEAN_INSTANCE_SIZE,
         instanceImage: config().DIGITAL_OCEAN_INSTANCE_IMAGE,
         userData: {
-            format: function (userData: string) {
+            format: (userData: string) => {
                 return userData;
             }
         },
         regions: {
-            all: async function (proxyUrl: string | null = null) {
+            all: async () => {
                 const headers = {
                     Authorization: `Bearer ${config().DIGITAL_OCEAN_API_KEY}`,
                 };
                 const options: any = { method: 'GET', headers };
-                if (proxyUrl) {
-                    options.client = Deno.createHttpClient({ proxy: { url: proxyUrl } });
-                }
                 const res = await fetch(`${config().DIGITAL_OCEAN_BASE_URL}/regions`, options);
                 const json: any = await res.json();
                 const regions = json.regions;
@@ -155,8 +149,8 @@ export const compute = {
                     .filter((region: any) => region.sizes.includes(compute.digital_ocean.instanceSize))
                     .map((region: any) => region.slug);
             },
-            parse: async function (proxyUrl: string | null = null) {
-                const regions = await compute.digital_ocean.regions.all(proxyUrl);
+            parse: async () => {
+                const regions = await compute.digital_ocean.regions.all();
                 return regions
                     .filter((region: string) =>
                         !config().INSTANCE_COUNTRIES_DISABLED.includes(
@@ -166,14 +160,14 @@ export const compute = {
             },
         },
         countries: {
-            list: async function (proxyUrl: string | null = null) {
-                const regions = await compute.digital_ocean.regions.all(proxyUrl);
+            list: async () => {
+                const regions = await compute.digital_ocean.regions.all();
                 return regions
                     .map((region: string) => config().DIGITAL_OCEAN_REGIONS[region.replace(/[0-9]/g, '')]);
             },
         },
         instances: {
-            create: async function (args: CreateDigitalOceanInstance) {
+            create: async (args: CreateDigitalOceanInstance) => {
                 const headers = {
                     Authorization: `Bearer ${config().DIGITAL_OCEAN_API_KEY}`,
                     'Content-Type': 'application/json',
@@ -191,7 +185,7 @@ export const compute = {
                     instanceIp,
                 };
             },
-            get: async function (dropletId: string) {
+            get: async (dropletId: string) => {
                 const headers = {
                     Authorization: `Bearer ${config().DIGITAL_OCEAN_API_KEY}`,
                 };
@@ -199,7 +193,7 @@ export const compute = {
                 const json: any = await res.json();
                 return json.droplet;
             },
-            list: async function () {
+            list: async () => {
                 const headers = {
                     Authorization: `Bearer ${config().DIGITAL_OCEAN_API_KEY}`,
                 };
@@ -207,7 +201,7 @@ export const compute = {
                 const json: any = await res.json();
                 return json.droplets;
             },
-            delete: async function (ids: string[]) {
+            delete: async (ids: string[]) => {
                 let index = 0;
 
                 while (index < ids.length) {
@@ -226,7 +220,10 @@ export const compute = {
             },
         },
         keys: {
-            add: async function(publicKey: string, name: string) {
+            add: async (
+                publicKey: string,
+                name: string,
+            ) => {
                 const headers = {
                     Authorization: `Bearer ${config().DIGITAL_OCEAN_API_KEY}`,
                     'Content-Type': 'application/json',
@@ -244,7 +241,7 @@ export const compute = {
                 !json['ssh_key'] && logger.error('digital__ocean.keys.add error ', json);
                 return json['ssh_key']['id'];
             },
-            list: async function () {
+            list: async () => {
                 const headers = {
                     Authorization: `Bearer ${config().DIGITAL_OCEAN_API_KEY}`,
                 };
@@ -255,7 +252,7 @@ export const compute = {
                 const json: any = await res.json();
                 return json['ssh_keys'];
             },
-            delete: async function (ids: string[]) {
+            delete: async (ids: string[]) => {
                 let index = 0;
 
                 while (index < ids.length) {
@@ -274,7 +271,7 @@ export const compute = {
             },
         },
         ip: {
-            get: async function (dropletId: string) {
+            get: async (dropletId: string) => {
                 let ip = null;
 
                 while (!ip) {
@@ -294,30 +291,27 @@ export const compute = {
         instanceSize: config().HETZNER_SERVER_TYPE,
         instanceImage: config().HETZNER_INSTANCE_IMAGE,
         userData: {
-            format: function (userData: string) {
+            format: (userData: string) => {
                 return userData;
             }
         },
         regions: {
-            all: async function (proxyUrl: string | null = null) {
+            all: async () => {
                 const headers = {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${config().HETZNER_API_KEY}`
                 };
                 const options: any = { method: 'GET', headers };
-                if (proxyUrl) {
-                    options.client = Deno.createHttpClient({ proxy: { url: proxyUrl } });
-                }
                 const res = await fetch(`${config().HETZNER_BASE_URL}/datacenters`, options);
                 const json: any = await res.json();
-                const serverTypeId = await compute.hetzner.serverTypes.getId(proxyUrl, compute.hetzner.instanceSize);
+                const serverTypeId = await compute.hetzner.serverTypes.getId(compute.hetzner.instanceSize);
                 const regions = json
                     .datacenters
                     .filter((data: any) => data.server_types.available.includes(serverTypeId));
                 return regions;
             },
-            parse: async function (proxyUrl: string | null = null) {
-                const regions = await compute.hetzner.regions.all(proxyUrl);
+            parse: async () => {
+                const regions = await compute.hetzner.regions.all();
                 return regions
                     .filter((data: any) =>
                         !config().INSTANCE_COUNTRIES_DISABLED.includes(data.location.country)
@@ -326,22 +320,19 @@ export const compute = {
             },
         },
         countries: {
-            list: async function (proxyUrl: string | null = null) {
-                const regions = await compute.hetzner.regions.all(proxyUrl);
+            list: async () => {
+                const regions = await compute.hetzner.regions.all();
                 return regions
                     .map((data: any) => data.location.country);
             },
         },
         serverTypes: {
-            getId: async function (proxyUrl: string | null = null, instanceSize: string) {
+            getId: async (instanceSize: string) => {
                 const headers = {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${config().HETZNER_API_KEY}`
                 };
                 const options: any = { method: 'GET', headers };
-                if (proxyUrl) {
-                    options.client = Deno.createHttpClient({ proxy: { url: proxyUrl } });
-                }
                 const res = await fetch(`${config().HETZNER_BASE_URL}/server_types?per_page=50`, options);
                 const json: any = await res.json();
                 const serverTypes = json.server_types;
@@ -353,7 +344,7 @@ export const compute = {
             },
         },
         instances: {
-            create: async function (args: CreateHetznerInstance) {
+            create: async (args: CreateHetznerInstance) => {
                 const headers = {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${config().HETZNER_API_KEY}`
@@ -370,7 +361,7 @@ export const compute = {
                     instanceIp: json.server.public_net.ipv4.ip,
                 }
             },
-            list: async function () {
+            list: async () => {
                 const headers = {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${config().HETZNER_API_KEY}`
@@ -379,7 +370,7 @@ export const compute = {
                 const json: any = await res.json();
                 return json.servers;
             },
-            delete: async function (ids: string[]) {
+            delete: async (ids: string[]) => {
                 let index = 0;
 
                 while (index < ids.length) {
@@ -398,7 +389,10 @@ export const compute = {
             },
         },
         keys: {
-            add: async function(publicKey: string, name: string) {
+            add: async (
+                publicKey: string,
+                name: string,
+            ) => {
                 const headers = {
                     Authorization: `Bearer ${config().HETZNER_API_KEY}`,
                     'Content-Type': 'application/json',
@@ -415,7 +409,7 @@ export const compute = {
                 const json: any = await res.json();
                 return json['ssh_key']['id'];
             },
-            list: async function () {
+            list: async () => {
                 const headers = {
                     Authorization: `Bearer ${config().HETZNER_API_KEY}`,
                     'Content-Type': 'application/json',
@@ -427,7 +421,7 @@ export const compute = {
                 const json: any = await res.json();
                 return json['ssh_keys'];
             },
-            delete: async function (ids: number[]) {
+            delete: async (ids: number[]) => {
                 let index = 0;
 
                 while (index < ids.length) {
@@ -450,62 +444,54 @@ export const compute = {
         instanceSize: config().VULTR_INSTANCE_PLAN,
         instanceImage: config().VULTR_INSTANCE_IMAGE,
         userData: {
-            format: function (userData: string) {
+            format: (userData: string) => {
                 return encodeBase64(userData);
             }
         },
         regions: {
-            availability: async function (proxyUrl: string | null = null, regionId: string) {
+            availability: async (regionId: string) => {
                 const headers = {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${config().VULTR_API_KEY}`
                 };
                 const options: any = { method: 'GET', headers };
-                if (proxyUrl) {
-                    options.client = Deno.createHttpClient({ proxy: { url: proxyUrl } });
-                }
                 const res = await fetch(`${config().VULTR_BASE_URL}/regions/${regionId}/availability`, options);
                 const json: any = await res.json();
-
                 const availablePlans = json.available_plans;
-
                 return availablePlans;
             },
-            all: async function (proxyUrl: string | null = null) {
+            all: async () => {
                 const headers = {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${config().VULTR_API_KEY}`
                 };
                 const options: any = { method: 'GET', headers };
-                if (proxyUrl) {
-                    options.client = Deno.createHttpClient({ proxy: { url: proxyUrl } });
-                }
                 const res = await fetch(`${config().VULTR_BASE_URL}/regions`, options);
                 const json: any = await res.json();
                 return json.regions;
             },
-            parse: async function (proxyUrl: string | null = null) {
-                const regions = await compute.vultr.regions.all(proxyUrl);
+            parse: async () => {
+                const regions = await compute.vultr.regions.all();
                 return regions
                     .filter((data: any) =>
                         !config().INSTANCE_COUNTRIES_DISABLED.includes(data.country)
                     )
                     .filter(async(data: any) => {
-                        const availablePlans = await compute.vultr.regions.availability(proxyUrl, data.id);
+                        const availablePlans = await compute.vultr.regions.availability(data.id);
                         return availablePlans.includes(compute.vultr.instanceSize);
                     })
                     .map((data: any) => [data.id, data.country]);
             },
         },
         countries: {
-            list: async function (proxyUrl: string | null = null) {
-                const regions = await compute.vultr.regions.all(proxyUrl);
+            list: async () => {
+                const regions = await compute.vultr.regions.all();
                 return regions
                     .map((data: any) => data.country);
             },
         },
         os: {
-            getId: async function (instanceImage: string) {
+            getId: async (instanceImage: string) => {
                 let results: any[] = [];
                 let cursor = '';
                 const headers = {
@@ -535,7 +521,7 @@ export const compute = {
             },
         },
         instances: {
-            create: async function (args: CreateVultrInstance) {
+            create: async (args: CreateVultrInstance) => {
                 const osId = await compute.vultr.os.getId(compute.vultr.instanceImage);
                 args.os_id = osId;
                 const headers = {
@@ -555,7 +541,7 @@ export const compute = {
                     instanceIp,
                 }
             },
-            get: async function (instanceId: string) {
+            get: async (instanceId: string) => {
                 const headers = {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${config().VULTR_API_KEY}`
@@ -564,7 +550,7 @@ export const compute = {
                 const json: any = await res.json();
                 return json.instance;
             },
-            list: async function () {
+            list: async () => {
                 const headers = {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${config().VULTR_API_KEY}`
@@ -573,7 +559,7 @@ export const compute = {
                 const json: any = await res.json();
                 return json.instances;
             },
-            delete: async function (ids: number[]) {
+            delete: async (ids: number[]) => {
                 let index = 0;
 
                 while (index < ids.length) {
@@ -592,7 +578,10 @@ export const compute = {
             },
         },
         keys: {
-            add: async function(publicKey: string, name: string) {
+            add: async function(
+                publicKey: string,
+                name: string,
+            ) {
                 const headers = {
                     Authorization: `Bearer ${config().VULTR_API_KEY}`,
                     'Content-Type': 'application/json',
@@ -610,7 +599,7 @@ export const compute = {
                 !json['ssh_key'] && logger.error('vultr.keys.add error ', json);
                 return json['ssh_key']['id'];
             },
-            list: async function () {
+            list: async () => {
                 const headers = {
                     Authorization: `Bearer ${config().VULTR_API_KEY}`,
                     'Content-Type': 'application/json',
@@ -622,7 +611,7 @@ export const compute = {
                 const json: any = await res.json();
                 return json['ssh_keys'];
             },
-            delete: async function (ids: number[]) {
+            delete: async (ids: number[]) => {
                 let index = 0;
 
                 while (index < ids.length) {
@@ -641,7 +630,7 @@ export const compute = {
             },
         },
         ip: {
-            get: async function (instanceId: string) {
+            get: async (instanceId: string) => {
                 let ip = null;
 
                 while (!ip) {
