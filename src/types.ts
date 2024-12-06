@@ -35,7 +35,6 @@ export interface Proxy {
 	instancePublicKeyId: number
 	sshUser: string
 	passphrase: string
-	proxyLocalTestPort: number
 	proxyLocalPort: number
 	proxyRemotePort: number
 	sshKeyAlgorithm: string
@@ -90,7 +89,6 @@ export interface Config {
     PROXY_RECYCLE_INTERVAL_SEC: number
 	AUTO_LAUNCH_WEB: boolean
     SSH_PORT_RANGE: number[]
-    PROXY_LOCAL_TEST_PORT: number
     PROXY_LOCAL_PORT: number
     PROXY_REMOTE_PORT: number
     SSH_KEY_ALGORITHM: string
@@ -101,7 +99,6 @@ export interface Config {
     CLOUDFLARE_ACCOUNT_ID: string
     CLOUDFLARE_API_KEY: string
     CLOUDFLARE_KV_NAMESPACE: string
-    TEST_PROXY_URL: string
     PROXY_URL: string
     DIGITAL_OCEAN_BASE_URL: string
     HETZNER_BASE_URL: string

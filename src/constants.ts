@@ -6,7 +6,6 @@ const ENV = 'dev';
 const PROXY_RECYCLE_INTERVAL_SEC = 1800;
 const AUTO_LAUNCH_WEB = true;
 const SSH_PORT_RANGE: number[] = [10000, 65535];
-const PROXY_LOCAL_TEST_PORT = 8887;
 const PROXY_LOCAL_PORT = 8888;
 const PROXY_REMOTE_PORT = 8888;
 const SSH_KEY_ALGORITHM = 'ed25519';
@@ -17,7 +16,6 @@ const VULTR_API_KEY = '';
 const CLOUDFLARE_ACCOUNT_ID = '';
 const CLOUDFLARE_API_KEY = '';
 const CLOUDFLARE_KV_NAMESPACE = '';
-const TEST_PROXY_URL = `http://localhost:${PROXY_LOCAL_TEST_PORT}`;
 const PROXY_URL = `http://localhost:${PROXY_LOCAL_PORT}`;
 const DIGITAL_OCEAN_BASE_URL = 'https://api.digitalocean.com/v2';
 const HETZNER_BASE_URL = 'https://api.hetzner.cloud/v1';
@@ -83,10 +81,8 @@ export const config: Config = {
     WEB_SERVER_PORT,
     WEB_URL,
     WEB_SOCKET_PORT,
-    PROXY_LOCAL_TEST_PORT,
     PROXY_LOCAL_PORT,
     PROXY_REMOTE_PORT,
-    TEST_PROXY_URL,
     PROXY_URL,
     DIGITAL_OCEAN_BASE_URL,
     HETZNER_BASE_URL,
