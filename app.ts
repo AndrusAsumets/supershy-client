@@ -1,4 +1,4 @@
-// deno-lint-ignore-file ban-unused-ignore no-explicit-any no-deprecated-deno-api
+// deno-lint-ignore-file no-explicit-any
 
 import * as crypto from 'node:crypto';
 import { v7 as uuidv7 } from 'npm:uuid';
@@ -28,7 +28,6 @@ const {
     APP_ID,
     PROXY_LOCAL_PORT,
     PROXY_REMOTE_PORT,
-    PROXY_URL,
     TMP_PATH,
     DATA_PATH,
     SSH_KEY_PATH,
@@ -66,6 +65,7 @@ const connect = async (
 
     logger.info(`Starting SSH tunnel proxy to ${proxy.instanceIp}:${port}.`);
 
+    integrations.fs.hostKey.save(proxy);
     existsSync(proxy.sshLogPath) && Deno.removeSync(proxy.sshLogPath);
     await integrations.shell.pkill(`${port}:`);
     await lib.sleep(1000);
@@ -211,15 +211,13 @@ const rotate = async () => {
             modifiedTime: null,
             deletedTime: null,
         };
-        proxy = await integrations.kv.cloudflare.hostKey.update(proxy, jwtSecret);
+        proxy = await integrations.kv.cloudflare.hostKey.get(proxy, jwtSecret);
         models.updateProxy(proxy);
         activeProxies.push(proxy);
         proxyIndex = proxyIndex + 1;
     }
 
-    if (!initialProxy) {
-        await connect(activeProxies[0]);
-    }
+    !initialProxy && await connect(activeProxies[0]);
 
     await cleanup(
         activeProxies.map(proxy => proxy.instanceId)

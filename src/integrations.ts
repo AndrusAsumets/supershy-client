@@ -60,16 +60,27 @@ export const shell = {
 
 export const fs = {
     ensureFolder: (path: string) => {
-        if (!existsSync(path)) {
-            Deno.mkdirSync(path);
-        }
+        !existsSync(path) && Deno.mkdirSync(path);
+    },
+    hostKey: {
+        save: (proxy: Proxy) => {
+            const isFoundFromKnownHostsFile = Deno
+                .readTextFileSync(config().SSH_KNOWN_HOSTS_PATH)
+                .includes(proxy.sshHostKey);
+
+            !isFoundFromKnownHostsFile && Deno.writeTextFileSync(
+                config().SSH_KNOWN_HOSTS_PATH,
+                `${proxy.instanceIp} ssh-${config().SSH_KEY_ALGORITHM} ${proxy.sshHostKey}\n`,
+                { append: true },
+            );
+        },
     },
 };
 
 export const kv = {
     cloudflare: {
         heartbeat: async () => {
-            const options: any = {
+            const options = {
                 method: 'GET',
                 signal: AbortSignal.timeout(config().HEARTBEAT_INTERVAL_SEC),
             };
@@ -79,45 +90,27 @@ export const kv = {
         },
         hostKey: {
             get: async (
-                proxyUuid: string,
+                proxy: Proxy,
                 jwtSecret: string,
             ) => {
-                let hostKey: string = '';
-                while (!hostKey) {
+                while (!proxy.sshHostKey) {
                     try {
                         const headers = {
                             Authorization: `Bearer ${config().CLOUDFLARE_API_KEY}`,
                         };
-                        const options: any = { method: 'GET', headers };
+                        const options = { method: 'GET', headers };
                         const url =
-                            `${config().CLOUDFLARE_BASE_URL}/accounts/${config().CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${config().CLOUDFLARE_KV_NAMESPACE}/values/${proxyUuid}`;
+                            `${config().CLOUDFLARE_BASE_URL}/accounts/${config().CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${config().CLOUDFLARE_KV_NAMESPACE}/values/${proxy.proxyUuid}`;
                         const res = await fetch(url, options);
                         const text = await res.text();
                         text.includes('errors') && !text.includes('key not found') && logger.error('kv.cloudflare.hostKey.get error ', text);
                         const decoded = jwt.verify(text, jwtSecret);
-                        hostKey = decoded.hostKey;
+                        proxy.sshHostKey = decoded.sshHostKey;
+                        logger.info(`Fetched host key for proxy ${proxy.proxyUuid}.`);
                     } catch (_) {
                         await lib.sleep(1000);
                     }
                 }
-
-                return hostKey;
-            },
-            update: async (
-                proxy: Proxy,
-                jwtSecret: string,
-            ) => {
-                const { proxyUuid, instanceIp } = proxy;
-
-                proxy.sshHostKey = await kv.cloudflare.hostKey.get(proxy.proxyUuid, jwtSecret);
-                logger.info(`Fetched host key for proxy ${proxyUuid}.`);
-
-                Deno.writeTextFileSync(
-                    config().SSH_KNOWN_HOSTS_PATH,
-                    `${instanceIp} ssh-${config().SSH_KEY_ALGORITHM} ${proxy.sshHostKey}\n`,
-                    { append: true },
-                );
-                logger.info(`Added host key for ${instanceIp} to known hosts.`);
 
                 return proxy;
             },
@@ -139,9 +132,9 @@ export const compute = {
                 const headers = {
                     Authorization: `Bearer ${config().DIGITAL_OCEAN_API_KEY}`,
                 };
-                const options: any = { method: 'GET', headers };
+                const options = { method: 'GET', headers };
                 const res = await fetch(`${config().DIGITAL_OCEAN_BASE_URL}/regions`, options);
-                const json: any = await res.json();
+                const json = await res.json();
                 const regions = json.regions;
                 !regions && logger.error('digital_ocean.regions.list error ', json);
 
@@ -177,7 +170,7 @@ export const compute = {
                     headers,
                     body: JSON.stringify(args),
                 });
-                const json: any = await res.json();
+                const json = await res.json();
                 !json.droplet && logger.error('compute.digital_ocean.instances.create error', json);
                 const instanceIp = await compute.digital_ocean.ip.get(json.droplet.id);
                 return {
@@ -190,7 +183,7 @@ export const compute = {
                     Authorization: `Bearer ${config().DIGITAL_OCEAN_API_KEY}`,
                 };
                 const res = await fetch(`${config().DIGITAL_OCEAN_BASE_URL}/droplets/${dropletId}`, { method: 'GET', headers });
-                const json: any = await res.json();
+                const json = await res.json();
                 return json.droplet;
             },
             list: async () => {
@@ -198,7 +191,7 @@ export const compute = {
                     Authorization: `Bearer ${config().DIGITAL_OCEAN_API_KEY}`,
                 };
                 const res = await fetch(`${config().DIGITAL_OCEAN_BASE_URL}/droplets`, { method: 'GET', headers });
-                const json: any = await res.json();
+                const json = await res.json();
                 return json.droplets;
             },
             delete: async (ids: string[]) => {
@@ -237,7 +230,7 @@ export const compute = {
                     headers,
                     body: JSON.stringify(body),
                 });
-                const json: any = await res.json();
+                const json = await res.json();
                 !json['ssh_key'] && logger.error('digital__ocean.keys.add error ', json);
                 return json['ssh_key']['id'];
             },
@@ -249,7 +242,7 @@ export const compute = {
                     method: 'GET',
                     headers,
                 });
-                const json: any = await res.json();
+                const json = await res.json();
                 return json['ssh_keys'];
             },
             delete: async (ids: string[]) => {
@@ -301,9 +294,9 @@ export const compute = {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${config().HETZNER_API_KEY}`
                 };
-                const options: any = { method: 'GET', headers };
+                const options = { method: 'GET', headers };
                 const res = await fetch(`${config().HETZNER_BASE_URL}/datacenters`, options);
-                const json: any = await res.json();
+                const json = await res.json();
                 const serverTypeId = await compute.hetzner.serverTypes.getId(compute.hetzner.instanceSize);
                 const regions = json
                     .datacenters
@@ -332,9 +325,9 @@ export const compute = {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${config().HETZNER_API_KEY}`
                 };
-                const options: any = { method: 'GET', headers };
+                const options = { method: 'GET', headers };
                 const res = await fetch(`${config().HETZNER_BASE_URL}/server_types?per_page=50`, options);
-                const json: any = await res.json();
+                const json = await res.json();
                 const serverTypes = json.server_types;
                 !serverTypes && logger.error('hetzner.serverTypes.list error ', json);
 
@@ -354,7 +347,7 @@ export const compute = {
                     headers,
                     body: JSON.stringify(args),
                 });
-                const json: any = await res.json();
+                const json = await res.json();
                 !json.server && logger.error('compute.hetzner.instances.create error', json);
                 return {
                     instanceId: json.server.id,
@@ -367,7 +360,7 @@ export const compute = {
                     Authorization: `Bearer ${config().HETZNER_API_KEY}`
                 };
                 const res = await fetch(`${config().HETZNER_BASE_URL}/servers`, { method: 'GET', headers });
-                const json: any = await res.json();
+                const json = await res.json();
                 return json.servers;
             },
             delete: async (ids: string[]) => {
@@ -406,7 +399,7 @@ export const compute = {
                     headers,
                     body: JSON.stringify(body),
                 });
-                const json: any = await res.json();
+                const json = await res.json();
                 return json['ssh_key']['id'];
             },
             list: async () => {
@@ -418,7 +411,7 @@ export const compute = {
                     method: 'GET',
                     headers,
                 });
-                const json: any = await res.json();
+                const json = await res.json();
                 return json['ssh_keys'];
             },
             delete: async (ids: number[]) => {
@@ -454,9 +447,9 @@ export const compute = {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${config().VULTR_API_KEY}`
                 };
-                const options: any = { method: 'GET', headers };
+                const options = { method: 'GET', headers };
                 const res = await fetch(`${config().VULTR_BASE_URL}/regions/${regionId}/availability`, options);
-                const json: any = await res.json();
+                const json = await res.json();
                 const availablePlans = json.available_plans;
                 return availablePlans;
             },
@@ -465,9 +458,9 @@ export const compute = {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${config().VULTR_API_KEY}`
                 };
-                const options: any = { method: 'GET', headers };
+                const options = { method: 'GET', headers };
                 const res = await fetch(`${config().VULTR_BASE_URL}/regions`, options);
-                const json: any = await res.json();
+                const json = await res.json();
                 return json.regions;
             },
             parse: async () => {
@@ -498,7 +491,7 @@ export const compute = {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${config().VULTR_API_KEY}`
                 };
-                const options: any = { method: 'GET', headers };
+                const options = { method: 'GET', headers };
 
                 let canLoop = true;
                 while (canLoop) {
@@ -508,7 +501,7 @@ export const compute = {
                     }
 
                     const res = await fetch(url, options);
-                    const json: any = await res.json();
+                    const json = await res.json();
 
                     results = results.concat(json.os);
                     cursor = json.meta.links.next;
@@ -533,7 +526,7 @@ export const compute = {
                     headers,
                     body: JSON.stringify(args),
                 });
-                const json: any = await res.json();
+                const json = await res.json();
                 !json.instance && logger.error('compute.vultr.instances.create error', json);
                 const instanceIp = await compute.vultr.ip.get(json.instance.id);
                 return {
@@ -547,7 +540,7 @@ export const compute = {
                     Authorization: `Bearer ${config().VULTR_API_KEY}`
                 };
                 const res = await fetch(`${config().VULTR_BASE_URL}/instances/${instanceId}`, { method: 'GET', headers });
-                const json: any = await res.json();
+                const json = await res.json();
                 return json.instance;
             },
             list: async () => {
@@ -556,7 +549,7 @@ export const compute = {
                     Authorization: `Bearer ${config().VULTR_API_KEY}`
                 };
                 const res = await fetch(`${config().VULTR_BASE_URL}/instances`, { method: 'GET', headers });
-                const json: any = await res.json();
+                const json = await res.json();
                 return json.instances;
             },
             delete: async (ids: number[]) => {
@@ -595,7 +588,7 @@ export const compute = {
                     headers,
                     body: JSON.stringify(body),
                 });
-                const json: any = await res.json();
+                const json = await res.json();
                 !json['ssh_key'] && logger.error('vultr.keys.add error ', json);
                 return json['ssh_key']['id'];
             },
@@ -608,7 +601,7 @@ export const compute = {
                     method: 'GET',
                     headers,
                 });
-                const json: any = await res.json();
+                const json = await res.json();
                 return json['ssh_keys'];
             },
             delete: async (ids: number[]) => {
