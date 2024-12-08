@@ -2,6 +2,6 @@
     "tasks": {
         "start": "deno task stop | sleep 1 && screen -dm bash -c './supershy.sh' &",
         "stop": "pkill -f supershy.sh",
-        "compile": "deno compile --allow-all --output dist/ app.ts"
+        "compile": "deno compile --allow-all --include src/ui --output dist/supershy app.ts"
     }
 }

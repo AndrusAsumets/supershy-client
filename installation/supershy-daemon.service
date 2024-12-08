@@ -1,0 +1,9 @@
+[Unit]
+Description=Supershy
+
+[Service]
+ExecStart=supershy
+Restart=always
+
+[Install]
+WantedBy=default.target
