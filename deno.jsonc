@@ -2,6 +2,7 @@
     "tasks": {
         "start": "deno task stop | sleep 1 && screen -dm bash -c './supershy.sh' &",
         "stop": "pkill -f supershy.sh",
-        "compile": "deno compile --allow-all --include src/ui --output dist/supershy app.ts"
+        "compile": "deno compile --allow-all --include src/ui --output dist/supershy app.ts",
+        "compile-test": "deno task compile && sudo mv dist/supershy /usr/bin/supershy && systemctl --user enable supershy-daemon.service && systemctl --user restart supershy-daemon.service"
     }
 }

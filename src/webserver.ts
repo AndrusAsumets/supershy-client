@@ -4,7 +4,7 @@ import * as models from './models.ts';
 const { config } = models;
 const {
     WEB_SERVER_PORT,
-    UI_PATH
+    UI_PATH,
 } = config();
 
 export const start = () => {
