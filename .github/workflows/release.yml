@@ -6,8 +6,10 @@ jobs:
   build:
     name: Upload Release Asset
     runs-on: ubuntu-latest
-    permissions: 
-      actions: write
+    permissions:
+      contents: write
+      pull-requests: write
+      repository-projects: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
