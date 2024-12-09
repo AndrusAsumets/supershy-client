@@ -28,17 +28,13 @@ jobs:
         run: |
           deno upgrade
 
-      - name: Install SHA256SUM
-        run: |
-          sudo apt-get install sha256sum
-
       - name: Build project
         run: |
           for i in macos-x86_64 macos-arm64 linux-x86_64 linux-arm64
           do
             deno task compile-$i
             zip --junk-paths supershy-$i supershy
-            sha256sum supershy-$i > supershy-$i.zip.sha256sum
+            sha256sum supershy-$i.zip > supershy-$i.zip.sha256sum
           done
 
       - name: Create Release
