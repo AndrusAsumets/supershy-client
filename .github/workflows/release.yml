@@ -29,7 +29,7 @@ jobs:
         run: |
           deno upgrade
 
-      - name: Build project # This would actually build your project, using zip for an example artifact
+      - name: Build project
         run: |
           for i in macos-x86_64 macos-arm64 linux-x86_64 linux-arm64
           do
