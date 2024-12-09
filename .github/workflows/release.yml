@@ -17,6 +17,7 @@ jobs:
         run: |
           zip --junk-paths my-artifact README.md
       - name: Create release
+        id: create-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref_name }}
