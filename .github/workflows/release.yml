@@ -34,8 +34,8 @@ jobs:
           for i in macos-x86_64 macos-arm64 linux-x86_64 linux-arm64
           do
             deno task compile-$i
-            zip --junk-paths supershy-$i dist/supershy
-            tar -czvf supershy-$i.tar.gz dist/supershy
+            zip --junk-paths supershy-$i supershy
+            tar -czvf supershy-$i.tar.gz supershy
           done
 
       - name: Create Release

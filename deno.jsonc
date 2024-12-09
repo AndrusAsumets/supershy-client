@@ -2,10 +2,10 @@
     "tasks": {
         "start": "deno task stop | sleep 1 && screen -dm bash -c './supershy.sh' &",
         "stop": "pkill -f supershy.sh",
-        "compile-macos-x86_64": "deno compile --target x86_64-apple-darwin --allow-all --include src/ui --output dist/supershy app.ts",
-        "compile-macos-arm64": "deno compile --target aarch64-apple-darwin --allow-all --include src/ui --output dist/supershy app.ts",
-        "compile-linux-x86_64": "deno compile --target x86_64-unknown-linux-gnu --allow-all --include src/ui --output dist/supershy app.ts",
-        "compile-linux-arm64": "deno compile --target aarch64-unknown-linux-gnu --allow-all --include src/ui --output dist/supershy app.ts",
-        "compile-test": "deno task compile && sudo mv dist/supershy /usr/bin/supershy && systemctl --user enable supershy-daemon.service && systemctl --user restart supershy-daemon.service"
+        "compile-macos-x86_64": "deno compile --target x86_64-apple-darwin --allow-all --include src/ui --output supershy app.ts",
+        "compile-macos-arm64": "deno compile --target aarch64-apple-darwin --allow-all --include src/ui --output supershy app.ts",
+        "compile-linux-x86_64": "deno compile --target x86_64-unknown-linux-gnu --allow-all --include src/ui --output supershy app.ts",
+        "compile-linux-arm64": "deno compile --target aarch64-unknown-linux-gnu --allow-all --include src/ui --output supershy app.ts",
+        "compile-test": "sudo mv supershy /usr/bin/supershy && systemctl --user enable supershy-daemon.service && systemctl --user restart supershy-daemon.service"
     }
 }
