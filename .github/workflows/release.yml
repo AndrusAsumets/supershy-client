@@ -53,13 +53,79 @@ jobs:
             - First Change
             - Second Change
 
+      - name: Upload Release Asset MacOS x86 Zip
+        id: upload-release-asset-macos-x86_64-zip
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./supershy-macos-x86_64.zip
+          asset_name: supershy-macos-x86_64.zip
+          asset_content_type: application/zip
+
+      - name: Upload Release Asset MacOS x86 Gzip
+        id: upload-release-asset-macos-x86_64-tar-gz
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./supershy-macos-x86_64.tar.gz
+          asset_name: supershy-macos-x86_64.tar.gz
+          asset_content_type: application/gzip
+
+      - name: Upload Release Asset MacOS ARM64 Zip
+        id: upload-release-asset-macos-arm64-zip
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./supershy-macos-arm64.zip
+          asset_name: supershy-macos-arm64.zip
+          asset_content_type: application/zip
+
+      - name: Upload Release Asset MacOS ARM64 Gzip
+        id: upload-release-asset-macos-arm64-tar-gz
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./supershy-macos-arm64.tar.gz
+          asset_name: supershy-macos-arm64.tar.gz
+          asset_content_type: application/gzip
+
+      - name: Upload Release Asset Linux x86 Zip
+        id: upload-release-asset-linux-x86_64-zip
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./supershy-linux-x86_64.zip
+          asset_name: supershy-linux-x86_64.zip
+          asset_content_type: application/zip
+
+      - name: Upload Release Asset Linux x86 Gzip
+        id: upload-release-asset-linux-x86_64-tar-gz
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./supershy-linux-x86_64.tar.gz
+          asset_name: supershy-linux-x86_64.tar.gz
+          asset_content_type: application/gzip
+
       - name: Upload Release Asset Linux ARM64 Zip
         id: upload-release-asset-linux-arm64-zip
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./supershy-linux-arm64.zip
           asset_name: supershy-linux-arm64.zip
           asset_content_type: application/zip
@@ -70,7 +136,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./supershy-linux-arm64.tar.gz
           asset_name: supershy-linux-arm64.tar.gz
           asset_content_type: application/gzip
