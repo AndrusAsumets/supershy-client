@@ -1,4 +1,4 @@
-v2
+v3
 
 Supershy is a DIY SSH tunnel proxy with a rotating exit node.
 
