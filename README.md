@@ -1,3 +1,5 @@
+v0
+
 Supershy is a DIY SSH tunnel proxy with a rotating exit node.
 
 During its initiation, the client creates two new VPS instances (let's call them
