@@ -7,7 +7,7 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  release:
     name: Upload Release Asset
     runs-on: ubuntu-22.04
     steps:
