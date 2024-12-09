@@ -31,9 +31,12 @@ jobs:
 
       - name: Build project # This would actually build your project, using zip for an example artifact
         run: |
-          deno task compile-linux-arm64
-          zip --junk-paths supershy-linux-arm64 dist/supershy
-          tar -czvf supershy-linux-arm64.tar.gz dist/supershy
+          for i in linux-arm64
+          do
+            deno task compile-$i
+            zip --junk-paths supershy-$i dist/supershy
+            tar -czvf supershy-$i.tar.gz dist/supershy
+          done
 
       - name: Create Release
         id: create_release
