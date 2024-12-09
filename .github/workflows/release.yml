@@ -25,6 +25,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Upgrade deno
+	  	run: deno upgrade
+
       - name: Build project # This would actually build your project, using zip for an example artifact
         run: |
           deno task compile-linux-arm64
