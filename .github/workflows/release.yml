@@ -1,21 +1,43 @@
 on:
   push:
-    # Sequence of patterns matched against refs/tags
     tags:
-    - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+      - v*
 
-name: Upload Release Asset
+permissions:
+  contents: write
+
+name: Upload Release Asset  
 
 jobs:
   build:
     name: Upload Release Asset
     runs-on: ubuntu-latest
     steps:
+      - name: Setup repo
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        # uses: denoland/setup-deno@v1
+        uses: denoland/setup-deno@61fe2df320078202e33d7d5ad347e7dcfa0e8f31  # v1.1.2
+        with:
+          deno-version: v1.x
+
       - name: Checkout code
         uses: actions/checkout@v2
+
+      - name: Upgrade deno
+        run: |
+          deno upgrade
+
       - name: Build project # This would actually build your project, using zip for an example artifact
         run: |
-          zip --junk-paths my-artifact README.md
+          for i in macos-x86_64 macos-arm64 linux-x86_64 linux-arm64
+          do
+            deno task compile-$i
+            zip --junk-paths supershy-$i dist/supershy
+            tar -czvf supershy-$i.tar.gz dist/supershy
+          done
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -26,13 +48,95 @@ jobs:
           release_name: Release ${{ github.ref }}
           draft: false
           prerelease: false
-      - name: Upload Release Asset
-        id: upload-release-asset 
+          body: |
+            Changes in this Release
+            - First Change
+            - Second Change
+
+      - name: Upload Release Asset MacOS x86 Zip
+        id: upload-release-asset-macos-x86_64-zip
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./my-artifact.zip
-          asset_name: my-artifact.zip
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./supershy-macos-x86_64.zip
+          asset_name: supershy-macos-x86_64.zip
           asset_content_type: application/zip
+
+      - name: Upload Release Asset MacOS x86 Gzip
+        id: upload-release-asset-macos-x86_64-tar-gz
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./supershy-macos-x86_64.tar.gz
+          asset_name: supershy-macos-x86_64.tar.gz
+          asset_content_type: application/gzip
+
+      - name: Upload Release Asset MacOS ARM64 Zip
+        id: upload-release-asset-macos-arm64-zip
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./supershy-macos-arm64.zip
+          asset_name: supershy-macos-arm64.zip
+          asset_content_type: application/zip
+
+      - name: Upload Release Asset MacOS ARM64 Gzip
+        id: upload-release-asset-macos-arm64-tar-gz
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./supershy-macos-arm64.tar.gz
+          asset_name: supershy-macos-arm64.tar.gz
+          asset_content_type: application/gzip
+
+      - name: Upload Release Asset Linux x86 Zip
+        id: upload-release-asset-linux-x86_64-zip
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./supershy-linux-x86_64.zip
+          asset_name: supershy-linux-x86_64.zip
+          asset_content_type: application/zip
+
+      - name: Upload Release Asset Linux x86 Gzip
+        id: upload-release-asset-linux-x86_64-tar-gz
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./supershy-linux-x86_64.tar.gz
+          asset_name: supershy-linux-x86_64.tar.gz
+          asset_content_type: application/gzip
+
+      - name: Upload Release Asset Linux ARM64 Zip
+        id: upload-release-asset-linux-arm64-zip
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./supershy-linux-arm64.zip
+          asset_name: supershy-linux-arm64.zip
+          asset_content_type: application/zip
+
+      - name: Upload Release Asset Linux ARM64 Gzip
+        id: upload-release-asset-linux-arm64-tar-gz
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./supershy-linux-arm64.tar.gz
+          asset_name: supershy-linux-arm64.tar.gz
+          asset_content_type: application/gzip
