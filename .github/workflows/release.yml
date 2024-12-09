@@ -31,7 +31,7 @@ jobs:
 
       - name: Build project # This would actually build your project, using zip for an example artifact
         run: |
-          for i in  macos-x86_64, macos-arm64, linux-x86_64, linux-arm64
+          for i in macos-x86_64,macos-arm64,linux-x86_64,linux-arm64
           do
             deno task compile-$i
             zip --junk-paths supershy-$i dist/supershy
