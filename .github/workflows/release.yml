@@ -50,8 +50,8 @@ jobs:
             - First Change
             - Second Change
 
-      - name: Upload Release Asset
-        id: upload-release-asset 
+      - name: Upload Release Asset Linux ARM64 Zip
+        id: upload-release-asset-linux-arm64-zip
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -61,8 +61,8 @@ jobs:
           asset_name: supershy-linux-arm64.zip
           asset_content_type: application/zip
 
-      - name: Upload Release Asset
-        id: upload-release-asset 
+      - name: Upload Release Asset Linux ARM64 Gzip
+        id: upload-release-asset-linux-arm64-tar-gz
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
