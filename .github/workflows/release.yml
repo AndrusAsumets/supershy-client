@@ -28,6 +28,10 @@ jobs:
         run: |
           deno upgrade
 
+      - name: Install SHA256SUM
+        run: |
+          sudo apt-get install sha256sum
+
       - name: Build project
         run: |
           for i in macos-x86_64 macos-arm64 linux-x86_64 linux-arm64
