@@ -36,7 +36,7 @@ might happen, I should able live to fight yet another day. It is also good to
 give something back to the humanity as kindness seems to be in short supply
 these days everywhere.
 
-### User interface preview 
+### User interface preview
 
 1⠀             | 2
 :-------------------------:|:-------------------------:
