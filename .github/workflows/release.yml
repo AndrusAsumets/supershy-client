@@ -34,7 +34,7 @@ jobs:
           do
             deno task compile-$i
             zip --junk-paths supershy-$i supershy
-            tar -czvf supershy-$i.tar.gz supershy
+            sha256sum supershy-$i > supershy-$i.zip.sha256sum
           done
 
       - name: Create Release
@@ -45,7 +45,7 @@ jobs:
         with:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
-          draft: true
+          draft: false
           prerelease: false
 
       - name: Upload Release Asset MacOS x86 Zip
@@ -59,17 +59,6 @@ jobs:
           asset_name: supershy-macos-x86_64.zip
           asset_content_type: application/zip
 
-      - name: Upload Release Asset MacOS x86 Gzip
-        id: upload-release-asset-macos-x86_64-tar-gz
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./supershy-macos-x86_64.tar.gz
-          asset_name: supershy-macos-x86_64.tar.gz
-          asset_content_type: application/gzip
-
       - name: Upload Release Asset MacOS ARM64 Zip
         id: upload-release-asset-macos-arm64-zip
         uses: actions/upload-release-asset@v1
@@ -80,17 +69,6 @@ jobs:
           asset_path: ./supershy-macos-arm64.zip
           asset_name: supershy-macos-arm64.zip
           asset_content_type: application/zip
-
-      - name: Upload Release Asset MacOS ARM64 Gzip
-        id: upload-release-asset-macos-arm64-tar-gz
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./supershy-macos-arm64.tar.gz
-          asset_name: supershy-macos-arm64.tar.gz
-          asset_content_type: application/gzip
 
       - name: Upload Release Asset Linux x86 Zip
         id: upload-release-asset-linux-x86_64-zip
@@ -103,17 +81,6 @@ jobs:
           asset_name: supershy-linux-x86_64.zip
           asset_content_type: application/zip
 
-      - name: Upload Release Asset Linux x86 Gzip
-        id: upload-release-asset-linux-x86_64-tar-gz
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./supershy-linux-x86_64.tar.gz
-          asset_name: supershy-linux-x86_64.tar.gz
-          asset_content_type: application/gzip
-
       - name: Upload Release Asset Linux ARM64 Zip
         id: upload-release-asset-linux-arm64-zip
         uses: actions/upload-release-asset@v1
@@ -125,13 +92,46 @@ jobs:
           asset_name: supershy-linux-arm64.zip
           asset_content_type: application/zip
 
-      - name: Upload Release Asset Linux ARM64 Gzip
-        id: upload-release-asset-linux-arm64-tar-gz
+      - name: Upload Release Asset MacOS x86 Zip SHA256SUM
+        id: upload-release-asset-macos-x86_64-zip-sha256sum
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./supershy-linux-arm64.tar.gz
-          asset_name: supershy-linux-arm64.tar.gz
-          asset_content_type: application/gzip
+          asset_path: ./supershy-macos-x86_64.zip.sha256sum
+          asset_name: supershy-macos-x86_64.zip.sha256sum
+          asset_content_type: application/text
+
+      - name: Upload Release Asset MacOS ARM64 Zip SHA256SUM
+        id: upload-release-asset-macos-arm64-zip-sha256sum
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./supershy-macos-arm64.zip.sha256sum
+          asset_name: supershy-macos-arm64.zip.sha256sum
+          asset_content_type: application/text
+
+      - name: Upload Release Asset Linux x86 Zip SHA256SUM
+        id: upload-release-asset-linux-x86_64-zip-sha256sum
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./supershy-linux-x86_64.zip.sha256sum
+          asset_name: supershy-linux-x86_64.zip.sha256sum
+          asset_content_type: application/text
+
+      - name: Upload Release Asset Linux ARM64 Zip SHA256SUM
+        id: upload-release-asset-linux-arm64-zip-sha256sum
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./supershy-linux-arm64.zip.sha256sum
+          asset_name: supershy-linux-arm64.zip.sha256sum
+          asset_content_type: application/text
