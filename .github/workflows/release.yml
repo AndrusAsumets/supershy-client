@@ -11,7 +11,7 @@ name: Upload Release Asset
 jobs:
   build:
     name: Upload Release Asset
-    runs-on: debian-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -29,6 +29,10 @@ jobs:
           release_name: Release ${{ github.ref }}
           draft: false
           prerelease: false
+          body: |
+            Changes in this Release
+            - First Change
+            - Second Change
       - name: Upload Release Asset
         id: upload-release-asset 
         uses: actions/upload-release-asset@v1
