@@ -20,19 +20,19 @@ jobs:
         # uses: denoland/setup-deno@v1
         uses: denoland/setup-deno@61fe2df320078202e33d7d5ad347e7dcfa0e8f31  # v1.1.2
         with:
-			deno-version: v1.x
+          deno-version: v1.x
 
       - name: Checkout code
         uses: actions/checkout@v2
 
       - name: Upgrade deno
-	  	run: |
-			deno upgrade
+	  	  run: |
+			    deno upgrade
 
       - name: Build project # This would actually build your project, using zip for an example artifact
         run: |
-			deno task compile-linux-arm64
-			zip --junk-paths supershy-linux-arm64 dist/supershy
+          deno task compile-linux-arm64
+          zip --junk-paths supershy-linux-arm64 dist/supershy
 
       - name: Create Release
         id: create_release
