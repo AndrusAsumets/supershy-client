@@ -46,7 +46,7 @@ these days everywhere.
 
 ```
 # Linux
-curl -fsSL https://install.supershy.org | sudo sh -s $(whoami)
+curl -fsSL https://install.supershy.org | sudo bash -s $(whoami)
 ```
 
 ```
