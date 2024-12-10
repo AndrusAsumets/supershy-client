@@ -50,7 +50,7 @@ case $target in
         rm -f $daemon
 
         # create new daemon service
-        echo $linux_service >> $daemon
+        echo $linux_service > $daemon
 
         # run supershy daemon in background
         USER=$1
