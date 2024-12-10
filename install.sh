@@ -9,6 +9,9 @@ case $distro in
     *Fedora*)
         sudo dnf install unzip expect -y
         ;;
+    *CentOS*)
+        yum install unzip expect -y
+        ;;
     *)
 esac
 
