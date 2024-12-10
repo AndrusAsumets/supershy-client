@@ -1,19 +1,12 @@
-distro=$(cat /etc/*release)
-case $distro in
-    *Ubuntu*)
+case true in
+    $apt*)
         sudo apt install unzip expect -y
         ;;
-    *Debian*)
-        sudo apt install unzip expect -y
-        ;;
-    *Fedora*)
+    $dnf*)
         sudo dnf install unzip expect -y
         ;;
-    *CentOS*)
-        yum install unzip expect -y
-        ;;
-    *AlmaLinux*)
-        yum install unzip expect -y
+    $yum*)
+        sudo yum install unzip expect -y
         ;;
     *)
 esac
