@@ -48,7 +48,8 @@ case $target in
         sudo echo 'WantedBy=default.target' >> $daemon
 
         # run supershy daemon in background
+	sudo -u $user XDG_RUNTIME_DIR="/run/user/$(id -u $user)" systemctl --user daemon-reload
         sudo -u $user XDG_RUNTIME_DIR="/run/user/$(id -u $user)" systemctl --user enable supershy-daemon.service
-        sudo -u $user XDG_RUNTIME_DIR="/run/user/$(id -u $user)" systemctl --user start supershy-daemon.service
+        sudo -u $user XDG_RUNTIME_DIR="/run/user/$(id -u $user)" systemctl --user restart supershy-daemon.service
     ;;
 esac
