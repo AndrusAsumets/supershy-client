@@ -1,4 +1,5 @@
 import { homedir } from 'node:os';
+import * as path from 'https://deno.land/std@0.224.0/path/mod.ts';
 import { ProxyType, Config, InstanceProvider } from './types.ts';
 
 const APP_ID = 'supershy-client';
@@ -22,7 +23,9 @@ const HETZNER_BASE_URL = 'https://api.hetzner.cloud/v1';
 const VULTR_BASE_URL = 'https://api.vultr.com/v2';
 const CLOUDFLARE_BASE_URL = 'https://api.cloudflare.com/client/v4';
 const HOME_PATH = homedir();
-const DATA_PATH = `${HOME_PATH}/.${APP_ID}`;
+const __DIRNAME = path.dirname(path.fromFileUrl(import.meta.url));
+const UI_PATH = `${__DIRNAME}/ui`;
+const DATA_PATH = `${HOME_PATH}/.supershy-data`;
 const SSH_KEY_PATH = `${DATA_PATH}/.keys`;
 const TMP_PATH = '/tmp';
 const LOG_PATH = `${DATA_PATH}/logs`;
@@ -96,6 +99,7 @@ export const config: Config = {
     HOME_PATH,
     DATA_PATH,
     SSH_KEY_PATH,
+    UI_PATH,
     TMP_PATH,
     SSH_PORT_RANGE,
     SSH_KEY_ALGORITHM,

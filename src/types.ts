@@ -107,6 +107,7 @@ export interface Config {
     HOME_PATH: string
     DATA_PATH: string
     SSH_KEY_PATH: string
+	UI_PATH: string
     TMP_PATH: string
     LOG_PATH: string
     SSH_KNOWN_HOSTS_PATH: string

@@ -45,24 +45,8 @@ these days everywhere.
 ### Installation (properly tested only on Debian-based Linux thus far)
 
 ```
-# Deno
-https://docs.deno.com/runtime/getting_started/installation
-```
-
-```
 # Linux
-sudo apt install expect screen
-
-# Mac
-brew install expect
-brew install screen
-```
-
-```
-# supershy-client
-git clone git@github.com:AndrusAsumets/supershy-client.git
-cd supershy-client
-deno task start
+curl -fsSL https://install.supershy.org | sudo sh -s $(whoami)
 ```
 
 ```
@@ -152,6 +136,28 @@ Firefox
  -> Make sure countries of both IP and DNS match with the region of Digital Ocean your supershy is currently connected to.
 ```
 
+### Development
+```
+# Deno
+https://docs.deno.com/runtime/getting_started/installation
+```
+
+```
+# Linux
+sudo apt install expect screen
+
+# Mac
+brew install expect
+brew install screen
+```
+
+```
+# supershy-client
+git clone git@github.com:AndrusAsumets/supershy-client.git
+cd supershy-client
+deno task start
+```
+
 ```
 # Stop supershy
 deno task stop
@@ -164,7 +170,11 @@ tail -f ~/.supershy-client/logs/*.log
 
 ```
 # Uninstall
-rm -rf ~/.supershy-client
+rm -rf ~/.supershy-data
+rm -rf /usr/bin/supershy
+systemctl --user stop supershy-daemon.service
+systemctl --user disable supershy-daemon.service
+sudo rm /etc/systemd/user/supershy-daemon.service
 ```
 
 Safe travels!
