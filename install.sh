@@ -1,15 +1,15 @@
 distro=$(cat /etc/*release)
 case $distro in
-    "*Ubuntu*")
+    *Ubuntu*)
         sudo apt install unzip expect -y
         ;;
-    "*Debian*")
+    *Debian*)
         sudo apt install unzip expect -y
         ;;
-    "*Fedora*")
+    *Fedora*)
         sudo dnf install unzip expect -y
         ;;
-    *) sudo apt install unzip expect -y
+    *)
 esac
 
 case $(uname -sm) in
