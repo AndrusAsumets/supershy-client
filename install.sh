@@ -32,21 +32,22 @@ fi
 chmod +x "$exe"
 rm "$zip"
 
+# create daemon service
 case $target in
     *"linux"*)
         # remove old daemon service
         rm -f $daemon
 
         # create new daemon service
-        echo '[Unit]' > $daemon
-        echo 'Description=supershy' > $daemon
+        sudo echo '[Unit]' >> $daemon
+        sudo echo 'Description=supershy' >> $daemon
 
-        echo '[Service]' > $daemon
-        echo 'ExecStart=supershy' > $daemon
-        echo 'Restart=always' > $daemon
+        sudo echo '[Service]' >> $daemon
+        sudo echo 'ExecStart=supershy' >> $daemon
+        sudo echo 'Restart=always' >> $daemon
 
-        echo '[Install]' > $daemon
-        echo 'WantedBy=default.target' > $daemon
+        sudo echo '[Install]' >> $daemon
+        sudo echo 'WantedBy=default.target' >> $daemon
 
         # run supershy daemon in background
         USER=$1
