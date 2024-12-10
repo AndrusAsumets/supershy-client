@@ -6,6 +6,7 @@ case $(uname -sm) in
 esac
 
 distro=$(( lsb_release -ds || cat /etc/*release || uname -om ) 2>/dev/null | head -n1)
+
 case $distro in
 	"*Ubuntu*") sudo apt install unzip expect -y ;;
 	"*Debian*") sudo apt install unzip expect -y ;;
