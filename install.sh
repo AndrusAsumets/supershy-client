@@ -12,25 +12,28 @@ esac
 
 version="$(curl -s https://version.supershy.org/)"
 uri="https://github.com/AndrusAsumets/supershy-client/releases/download/${version}/${target}.zip"
-bin_dir="/usb/bin"
-zip="/tmp/supershy.zip"
+tmp_dir="/tmp"
+bin_dir="/usr/bin"
+zip="$tmp_dir/supershy.zip"
+tmp_exe="$tmp_dir/supershy"
 exe="$bin_dir/supershy"
 daemon="/etc/systemd/user/supershy-daemon.service"
 
 # remove old installation
-rm -f $exe 
+sudo rm -rf $exe
 
 # download the binary
 curl --fail --location --progress-bar --output "$zip" "$uri"
 
 # unzip
 if command -v unzip >/dev/null; then
-	unzip -d "$bin_dir" -o "$zip"
+	unzip -d "$tmp_dir" -o "$zip"
 else
-	7z x -o"$bin_dir" -y "$zip"
+	7z x -o "$tmp_dir" -y "$zip"
 fi
-chmod +x "$exe"
-rm "$zip"
+
+# move to binaries
+sudo mv $tmp_exe $exe
 
 # create daemon service
 case $target in
