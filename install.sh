@@ -1,8 +1,3 @@
-if ! command -v unzip >/dev/null && ! command -v 7z >/dev/null; then
-	echo "Error: either unzip or 7z is required to install supershy." 1>&2
-	exit 1
-fi
-
 case $(uname -sm) in
 	"Darwin x86_64") target="supershy-macos-x86_64" ;;
 	"Darwin arm64") target="supershy-macos-arm64" ;;
@@ -10,6 +5,7 @@ case $(uname -sm) in
 	*) target="supershy-linux-x86_64" ;;
 esac
 
+user=$1
 version="$(curl -s https://version.supershy.org/)"
 uri="https://github.com/AndrusAsumets/supershy-client/releases/download/${version}/${target}.zip"
 tmp_dir="/tmp"
@@ -20,7 +16,7 @@ exe="$bin_dir/supershy"
 daemon="/etc/systemd/user/supershy-daemon.service"
 
 # dependencies
-sudo apt install expect -y
+sudo apt install unzip expect -y
 
 # remove old installation
 sudo rm -rf $exe
@@ -29,11 +25,7 @@ sudo rm -rf $exe
 curl --fail --location --progress-bar --output "$zip" "$uri"
 
 # unzip
-if command -v unzip >/dev/null; then
-	unzip -d "$tmp_dir" -o "$zip"
-else
-	7z x -o "$tmp_dir" -y "$zip"
-fi
+unzip -d "$tmp_dir" -o "$zip"
 
 # move to binaries
 sudo mv $tmp_exe $exe
@@ -56,8 +48,7 @@ case $target in
         sudo echo 'WantedBy=default.target' >> $daemon
 
         # run supershy daemon in background
-        USER=$1
-        sudo -u $USER XDG_RUNTIME_DIR="/run/user/$(id -u $USER)" systemctl --user enable supershy-daemon.service
-        sudo -u $USER XDG_RUNTIME_DIR="/run/user/$(id -u $USER)" systemctl --user start supershy-daemon.service
+        sudo -u $user XDG_RUNTIME_DIR="/run/user/$(id -u $user)" systemctl --user enable supershy-daemon.service
+        sudo -u $user XDG_RUNTIME_DIR="/run/user/$(id -u $user)" systemctl --user start supershy-daemon.service
     ;;
 esac
