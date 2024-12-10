@@ -12,8 +12,6 @@ esac
 
 version="$(curl -s https://version.supershy.org/)"
 uri="https://github.com/AndrusAsumets/supershy-client/releases/download/${version}/${target}.zip"
-echo $uri
-
 bin_dir="/usb/bin"
 zip="/tmp/supershy.zip"
 exe="$bin_dir/supershy"
@@ -51,5 +49,6 @@ WantedBy=default.target
 END
 
 # run supershy daemon in background
-sudo -u $1 XDG_RUNTIME_DIR="/run/user/$(id -u $1)" systemctl --user enable supershy-daemon.service
-sudo -u $1 XDG_RUNTIME_DIR="/run/user/$(id -u $1)" systemctl --user start supershy-daemon.service
+USER=$1
+sudo -u $USER XDG_RUNTIME_DIR="/run/user/$(id -u $USER)" systemctl --user enable supershy-daemon.service
+sudo -u $USER XDG_RUNTIME_DIR="/run/user/$(id -u $USER)" systemctl --user start supershy-daemon.service
