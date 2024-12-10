@@ -29,10 +29,10 @@ daemon="/etc/systemd/user/supershy-daemon.service"
 sudo rm -rf $exe
 
 # download the binary
-curl --fail --location --progress-bar --output "$zip" "$uri"
+sudo curl --fail --location --progress-bar --output "$zip" "$uri"
 
 # unzip
-unzip -d "$tmp_dir" -o "$zip"
+sudo unzip -d "$tmp_dir" -o "$zip"
 
 # move to binaries
 sudo mv $tmp_exe $exe
