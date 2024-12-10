@@ -1,4 +1,4 @@
-#distro=$(( lsb_release -ds || cat /etc/*release || uname -om ) 2>/dev/null | head -n1)
+distro=$(( lsb_release -ds || cat /etc/*release || uname -om ) 2>/dev/null | head -n1)
 
 case $(uname -sm) in
 	"Darwin x86_64") target="supershy-macos-x86_64" ;;
