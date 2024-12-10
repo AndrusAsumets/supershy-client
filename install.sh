@@ -38,15 +38,15 @@ case $target in
         rm -f $daemon
 
         # create new daemon service
-        echo [Unit] >> $daemon
-        echo Description=supershy >> $daemon
+        echo '[Unit]' >> $daemon
+        echo 'Description=supershy' >> $daemon
 
-        echo [Service] >> $daemon
-        echo ExecStart=supershy >> $daemon
-        echo Restart=always >> $daemon
+        echo '[Service]' >> $daemon
+        echo 'ExecStart=supershy' >> $daemon
+        echo 'Restart=always' >> $daemon
 
-        echo [Install] >> $daemon
-        echo WantedBy=default.target >> $daemon
+        echo '[Install]' >> $daemon
+        echo 'WantedBy=default.target' >> $daemon
 
         # run supershy daemon in background
         USER=$1
