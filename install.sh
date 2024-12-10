@@ -17,15 +17,15 @@ zip="/tmp/supershy.zip"
 exe="$bin_dir/supershy"
 daemon="/etc/systemd/user/supershy-daemon.service"
 linux_service="
-    [Unit]
-    Description=supershy
+    [Unit]\n
+    Description=supershy\n
 
-    [Service]
-    ExecStart=supershy
-    Restart=always
+    [Service]\n
+    ExecStart=supershy\n
+    Restart=always\n
 
-    [Install]
-    WantedBy=default.target"
+    [Install]\n
+    WantedBy=default.target"\n
 
 # remove old installation
 rm -f $exe 
