@@ -40,7 +40,7 @@ these days everywhere.
 
 1⠀             | 2
 :-------------------------:|:-------------------------:
-![](/src/ui/images/supershy-screenshot-top-1.png)  |  ![](/src/ui/images/supershy-screenshot-bottom-1.png)
+![](/src/ui/assets/images/supershy-screenshot-top-1.png)  |  ![](/src/ui/assets/images/supershy-screenshot-bottom-1.png)
 
 ### Installation (properly tested only on Debian-based Linux thus far)
 
