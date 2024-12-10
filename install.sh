@@ -14,19 +14,18 @@ version="$(curl -s https://version.supershy.org/)"
 uri="https://github.com/AndrusAsumets/supershy-client/releases/download/${version}/${target}.zip"
 echo $uri
 
-bin_dir="$HOME"
+bin_dir="/usb/bin"
 zip="/tmp/supershy.zip"
 exe="$bin_dir/supershy"
+daemon="/etc/systemd/user/supershy-daemon.service"
 
-if [ ! -d "$bin_dir" ]; then
-	mkdir -p "$bin_dir"
-fi
+# remove old installation
+rm -f $exe 
 
-rm -f $exe
-
+# download the binary
 curl --fail --location --progress-bar --output "$zip" "$uri"
-chmod 700 $zip
 
+# unzip
 if command -v unzip >/dev/null; then
 	unzip -d "$bin_dir" -o "$zip"
 else
@@ -34,3 +33,23 @@ else
 fi
 chmod +x "$exe"
 rm "$zip"
+
+# remove old daemon service
+rm -f $daemon
+
+# create new daemon service
+tee -a $daemon << END
+[Unit]
+Description=supershy
+
+[Service]
+ExecStart=supershy
+Restart=always
+
+[Install]
+WantedBy=default.target
+END
+
+# run supershy daemon in background
+sudo -u $SUDO_USER XDG_RUNTIME_DIR="/run/user/$(id -u $SUDO_USER)" systemctl --user enable supershy-daemon.service
+sudo -u $SUDO_USER XDG_RUNTIME_DIR="/run/user/$(id -u $SUDO_USER)" systemctl --user start supershy-daemon.service
