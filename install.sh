@@ -16,7 +16,7 @@ bin_dir="/usb/bin"
 zip="/tmp/supershy.zip"
 exe="$bin_dir/supershy"
 daemon="/etc/systemd/user/supershy-daemon.service"
-linux_service="
+linux_service=$(cat <<-END
     [Unit]\n
     Description=supershy\n
 
@@ -26,6 +26,8 @@ linux_service="
 
     [Install]\n
     WantedBy=default.target"\n
+END
+)
 
 # remove old installation
 rm -f $exe 
