@@ -5,6 +5,21 @@ case $(uname -sm) in
 	*) target="supershy-linux-x86_64" ;;
 esac
 
+distro=$(( lsb_release -ds || cat /etc/*release || uname -om ) 2>/dev/null | head -n1)
+case $distro in 
+  *Debian*)
+    sudo apt install unzip expect -y
+    ;;
+case $distro in 
+  *Ubuntu*)
+    sudo apt install unzip expect -y
+    ;;
+case $distro in 
+  *Fedora*)
+    sudo dnf install unzip expect -y
+    ;;
+esac
+
 user=$1
 version="$(curl -s https://version.supershy.org/)"
 uri="https://github.com/AndrusAsumets/supershy-client/releases/download/${version}/${target}.zip"
@@ -16,7 +31,7 @@ exe="$bin_dir/supershy"
 daemon="/etc/systemd/user/supershy-daemon.service"
 
 # dependencies
-sudo apt install unzip expect -y
+
 
 # remove old installation
 sudo rm -rf $exe
