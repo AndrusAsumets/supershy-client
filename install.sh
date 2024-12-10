@@ -16,6 +16,18 @@ bin_dir="/usb/bin"
 zip="/tmp/supershy.zip"
 exe="$bin_dir/supershy"
 daemon="/etc/systemd/user/supershy-daemon.service"
+linux_service=$(cat <<-END
+    [Unit]
+    Description=supershy
+
+    [Service]
+    ExecStart=supershy
+    Restart=always
+
+    [Install]
+    WantedBy=default.target
+END
+)
 
 # remove old installation
 rm -f $exe 
@@ -32,25 +44,17 @@ fi
 chmod +x "$exe"
 rm "$zip"
 
-if [[ $target == *"linux"* ]]; then
-    # remove old daemon service
-    rm -f $daemon
+case $target in
+    *"linux"*)
+        # remove old daemon service
+        rm -f $daemon
 
-    # create new daemon service
-    tee -a $daemon << END
-    [Unit]
-    Description=supershy
+        # create new daemon service
+        echo $linux_service >> $daemon
 
-    [Service]
-    ExecStart=supershy
-    Restart=always
-
-    [Install]
-    WantedBy=default.target
-    END
-
-    # run supershy daemon in background
-    USER=$1
-    sudo -u $USER XDG_RUNTIME_DIR="/run/user/$(id -u $USER)" systemctl --user enable supershy-daemon.service
-    sudo -u $USER XDG_RUNTIME_DIR="/run/user/$(id -u $USER)" systemctl --user start supershy-daemon.service
-fi
+        # run supershy daemon in background
+        USER=$1
+        sudo -u $USER XDG_RUNTIME_DIR="/run/user/$(id -u $USER)" systemctl --user enable supershy-daemon.service
+        sudo -u $USER XDG_RUNTIME_DIR="/run/user/$(id -u $USER)" systemctl --user start supershy-daemon.service
+    ;;
+esac
