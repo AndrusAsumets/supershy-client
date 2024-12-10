@@ -12,6 +12,9 @@ case $distro in
     *CentOS*)
         yum install unzip expect -y
         ;;
+    *AlmaLinux*)
+        yum install unzip expect -y
+        ;;
     *)
 esac
 
