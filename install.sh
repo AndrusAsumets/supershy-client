@@ -16,18 +16,6 @@ bin_dir="/usb/bin"
 zip="/tmp/supershy.zip"
 exe="$bin_dir/supershy"
 daemon="/etc/systemd/user/supershy-daemon.service"
-linux_service=$(cat <<-END
-    [Unit]\n
-    Description=supershy\n
-
-    [Service]\n
-    ExecStart=supershy\n
-    Restart=always\n
-
-    [Install]\n
-    WantedBy=default.target"\n
-END
-)
 
 # remove old installation
 rm -f $exe 
@@ -50,7 +38,15 @@ case $target in
         rm -f $daemon
 
         # create new daemon service
-        echo $linux_service > $daemon
+        echo [Unit] > $daemon
+        echo Description=supershy > $daemon
+
+        echo [Service] > $daemon
+        echo ExecStart=supershy > $daemon
+        echo Restart=always > $daemon
+
+        echo [Install]
+        echo WantedBy=default.target
 
         # run supershy daemon in background
         USER=$1
