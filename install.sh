@@ -1,15 +1,12 @@
-case true in
-    $apt*)
-        sudo apt install unzip expect -y
-        ;;
-    $dnf*)
-        sudo dnf install unzip expect -y
-        ;;
-    $yum*)
-        sudo yum install unzip expect -y
-        ;;
-    *)
-esac
+if [[ ! -z $(type -p yum) ]]; then
+    sudo yum install unzip expect -y
+elif [[ ! -z $(type -p dnf) ]]; then
+    sudo dnf install unzip expect -y
+elif [[ ! -z $(type -p apt) ]]; then
+    sudo apt install unzip expect -y
+else
+    echo "Warning: Can't install packages as no package manager was found."
+fi
 
 case $(uname -sm) in
 	"Darwin x86_64") target="supershy-macos-x86_64" ;;
