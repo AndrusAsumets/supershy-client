@@ -32,23 +32,25 @@ fi
 chmod +x "$exe"
 rm "$zip"
 
-# remove old daemon service
-rm -f $daemon
+if [[ $target == *"linux"* ]]; then
+    # remove old daemon service
+    rm -f $daemon
 
-# create new daemon service
-tee -a $daemon << END
-[Unit]
-Description=supershy
+    # create new daemon service
+    tee -a $daemon << END
+    [Unit]
+    Description=supershy
 
-[Service]
-ExecStart=supershy
-Restart=always
+    [Service]
+    ExecStart=supershy
+    Restart=always
 
-[Install]
-WantedBy=default.target
-END
+    [Install]
+    WantedBy=default.target
+    END
 
-# run supershy daemon in background
-USER=$1
-sudo -u $USER XDG_RUNTIME_DIR="/run/user/$(id -u $USER)" systemctl --user enable supershy-daemon.service
-sudo -u $USER XDG_RUNTIME_DIR="/run/user/$(id -u $USER)" systemctl --user start supershy-daemon.service
+    # run supershy daemon in background
+    USER=$1
+    sudo -u $USER XDG_RUNTIME_DIR="/run/user/$(id -u $USER)" systemctl --user enable supershy-daemon.service
+    sudo -u $USER XDG_RUNTIME_DIR="/run/user/$(id -u $USER)" systemctl --user start supershy-daemon.service
+fi
