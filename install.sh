@@ -25,9 +25,6 @@ tmp_exe="$tmp_dir/supershy"
 exe="$bin_dir/supershy"
 daemon="/etc/systemd/user/supershy-daemon.service"
 
-# dependencies
-
-
 # remove old installation
 sudo rm -rf $exe
 
