@@ -1,8 +1,12 @@
-if [[ ! -z $(type -p yum) ]]; then
+yum_cmd=$(type -p yum)
+dnf_cmd=$(type -p dnf)
+apt_cmd=$(type -p apt)
+
+if [[ ! -z $yum_cmd ]]; then
     sudo yum install unzip expect -y
-elif [[ ! -z $(type -p dnf) ]]; then
+elif [[ ! -z $dnf_cmd ]]; then
     sudo dnf install unzip expect -y
-elif [[ ! -z $(type -p apt) ]]; then
+elif [[ ! -z $apt_cmd ]]; then
     sudo apt install unzip expect -y
 else
     echo "Warning: Can't install packages as no package manager was found."
