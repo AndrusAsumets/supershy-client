@@ -51,5 +51,6 @@ WantedBy=default.target
 END
 
 # run supershy daemon in background
-sudo -u $SUDO_USER XDG_RUNTIME_DIR="/run/user/$(id -u $SUDO_USER)" systemctl --user enable supershy-daemon.service
-sudo -u $SUDO_USER XDG_RUNTIME_DIR="/run/user/$(id -u $SUDO_USER)" systemctl --user start supershy-daemon.service
+USER=$1
+sudo -u $USER XDG_RUNTIME_DIR="/run/user/$(id -u $USER)" systemctl --user enable supershy-daemon.service
+sudo -u $USER XDG_RUNTIME_DIR="/run/user/$(id -u $USER)" systemctl --user start supershy-daemon.service
