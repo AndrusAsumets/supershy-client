@@ -27,9 +27,9 @@ const __DIRNAME = path.dirname(path.fromFileUrl(import.meta.url));
 const UI_PATH = `${__DIRNAME}/ui`;
 const DATA_PATH = `${HOME_PATH}/.supershy-data`;
 const SSH_KEY_PATH = `${DATA_PATH}/.keys`;
-const TMP_PATH = '/tmp';
 const LOG_PATH = `${DATA_PATH}/logs`;
-const SSH_KNOWN_HOSTS_PATH = `${HOME_PATH}/.ssh/known_hosts`;
+const SSH_PATH = `${HOME_PATH}/.ssh`;
+const SSH_KNOWN_HOSTS_PATH = `${SSH_PATH}/known_hosts`;
 const DB_FILE_PATH = `${DATA_PATH}/.database.${ENV}.json`;
 const SSH_LOG_EXTENSION = '.ssh.log';
 const SSH_USER = 'root';
@@ -100,10 +100,10 @@ export const config: Config = {
     DATA_PATH,
     SSH_KEY_PATH,
     UI_PATH,
-    TMP_PATH,
     SSH_PORT_RANGE,
     SSH_KEY_ALGORITHM,
     SSH_KEY_LENGTH,
+    SSH_PATH,
     SSH_KNOWN_HOSTS_PATH,
     DB_FILE_PATH,
     LOG_PATH,

@@ -4,7 +4,7 @@ import * as models from './models.ts';
 const { config } = models;
 const {
     CLOUDFLARE_BASE_URL,
-    TMP_PATH,
+    DATA_PATH,
     CONNECT_SSH_TUNNEL_FILE_NAME,
     SSH_USER,
     LOG_PATH,
@@ -108,7 +108,7 @@ export const getConnectionString = (
         sshKeyPath,
         sshLogPath
     } = proxy;
-    return `${TMP_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${instanceIp} ${SSH_USER} ${sshPort} ${PROXY_LOCAL_PORT} ${PROXY_REMOTE_PORT} ${sshKeyPath} ${sshLogPath}`;
+    return `${DATA_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${instanceIp} ${SSH_USER} ${sshPort} ${PROXY_LOCAL_PORT} ${PROXY_REMOTE_PORT} ${sshKeyPath} ${sshLogPath}`;
 };
 
 export const getSshLogPath = (
