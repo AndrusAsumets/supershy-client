@@ -83,18 +83,18 @@ case $target in
         sudo echo "<string>${app_id}</string>" >> $daemon
         sudo echo '<key>ProgramArguments</key>' >> $daemon
         sudo echo '<array>' >> $daemon
-        sudo echo '<string>supershyd</string>' >> $daemon
+        sudo echo "<string>${exe}</string>" >> $daemon
         sudo echo '</array>' >> $daemon
         sudo echo '<key>RunAtLoad</key>' >> $daemon
         sudo echo '<true/>' >> $daemon
         sudo echo '<key>KeepAlive</key>' >> $daemon
         sudo echo '<true/>' >> $daemon
+        sudo echo '<key>UserName</key>' >> $daemon
+        sudo echo "<string>${user}</string>" >> $daemon
         sudo echo '</dict>' >> $daemon
         sudo echo '</plist>' >> $daemon
 
-        sudo chown -R $user $daemon
-
         # run supershy daemon in background
-        launchctl enable user/501/${app_id}.plist
+        sudo -u $user launchctl load $daemon
     ;;
 esac
