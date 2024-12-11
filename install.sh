@@ -95,6 +95,7 @@ case $target in
         sudo echo '</plist>' >> $daemon
 
         # run supershy daemon in background
+        sudo -u $user launchctl unload $daemon || true
         sudo -u $user launchctl load $daemon
     ;;
 esac
