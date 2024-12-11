@@ -32,7 +32,7 @@ if [[ $target == *"macos"* ]]; then
     sudo mkdir -p $launch_agents_dir
     sudo chown -R $user $launch_agents_dir
     daemon="${launch_agents_dir}/${app_id}.plist"
-    bin_dir="/usr/local/bin"
+    bin_dir="/Users/${user}"
 fi
 tmp_dir="/tmp"
 zip="$tmp_dir/supershy.zip"
@@ -89,8 +89,6 @@ case $target in
         sudo echo '<true/>' >> $daemon
         sudo echo '<key>KeepAlive</key>' >> $daemon
         sudo echo '<true/>' >> $daemon
-        sudo echo '<key>UserName</key>' >> $daemon
-        sudo echo "<string>${user}</string>" >> $daemon
         sudo echo '</dict>' >> $daemon
         sudo echo '</plist>' >> $daemon
 
