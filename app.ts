@@ -42,6 +42,7 @@ const {
     SSH_KEY_ALGORITHM,
     SSH_KEY_LENGTH,
     SSH_PATH,
+    SSH_KNOWN_HOSTS_PATH,
     HEARTBEAT_INTERVAL_SEC,
     PROXY_ENABLED,
 } = config();
@@ -274,6 +275,7 @@ const connectProxy = () => {
     integrations.fs.ensureFolder(SSH_KEY_PATH);
     integrations.fs.ensureFolder(LOG_PATH);
 
+    !existsSync(SSH_KNOWN_HOSTS_PATH) && Deno.writeTextFileSync(SSH_KNOWN_HOSTS_PATH, '');
     Deno.writeTextFileSync(`${DATA_PATH}/${GENERATE_SSH_KEY_FILE_NAME}`, GENERATE_SSH_KEY_FILE);
     Deno.writeTextFileSync(`${DATA_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME}`, CONNECT_SSH_TUNNEL_FILE);
 
