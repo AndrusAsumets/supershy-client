@@ -20,7 +20,7 @@ case $(uname -sm) in
 	"Darwin arm64") target="supershy-macos-arm64" ;;
 	"Linux aarch64") target="supershy-linux-arm64" ;;
 	*) target="supershy-linux-x86_64" ;;
-esac
+esacm94
 
 version="$(curl -s https://version.supershy.org/)"
 uri="https://github.com/AndrusAsumets/supershy-client/releases/download/${version}/${target}.zip"
@@ -28,7 +28,10 @@ app_id="org.supershy.supershyd"
 daemon="/etc/systemd/user/supershy-daemon.service"
 bin_dir="/usr/bin"
 if [[ $target == *"macos"* ]]; then
-    daemon="/Users/$user/Library/LaunchAgents/${app_id}.plist"
+    launch_agents_dir="/Users/${user}/Library/LaunchAgents"
+    sudo mkdir -p $launch_agents_dir
+    sudo chown -R $user $launch_agents_dir
+    daemon="${launch_agents_dir}/${app_id}.plist"
     bin_dir="/usr/local/bin"
 fi
 tmp_dir="/tmp"
