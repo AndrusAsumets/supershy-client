@@ -1,9 +1,6 @@
 yum_cmd=$(type -p yum)
 dnf_cmd=$(type -p dnf)
 apt_cmd=$(type -p apt)
-yum_cmd=$(type -p yum)
-dnf_cmd=$(type -p dnf)
-apt_cmd=$(type -p apt)
 
 if [[ ! -z $yum_cmd ]]; then
     sudo yum install unzip expect -y
