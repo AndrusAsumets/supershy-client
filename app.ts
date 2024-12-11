@@ -28,7 +28,6 @@ const {
     APP_ID,
     PROXY_LOCAL_PORT,
     PROXY_REMOTE_PORT,
-    TMP_PATH,
     DATA_PATH,
     SSH_KEY_PATH,
     LOG_PATH,
@@ -273,14 +272,14 @@ const connectProxy = () => {
     integrations.fs.ensureFolder(SSH_KEY_PATH);
     integrations.fs.ensureFolder(LOG_PATH);
 
-    Deno.writeTextFileSync(`${TMP_PATH}/${GENERATE_SSH_KEY_FILE_NAME}`, GENERATE_SSH_KEY_FILE);
-    Deno.writeTextFileSync(`${TMP_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME}`, CONNECT_SSH_TUNNEL_FILE);
+    Deno.writeTextFileSync(`${DATA_PATH}/${GENERATE_SSH_KEY_FILE_NAME}`, GENERATE_SSH_KEY_FILE);
+    Deno.writeTextFileSync(`${DATA_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME}`, CONNECT_SSH_TUNNEL_FILE);
 
     new Deno.Command('chmod', { args: ['+x', GENERATE_SSH_KEY_FILE_NAME] });
     new Deno.Command('chmod', { args: ['+x', CONNECT_SSH_TUNNEL_FILE_NAME] });
 
-    Deno.chmodSync(`${TMP_PATH}/${GENERATE_SSH_KEY_FILE_NAME}`, 0o700);
-    Deno.chmodSync(`${TMP_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME}`, 0o700);
+    Deno.chmodSync(`${DATA_PATH}/${GENERATE_SSH_KEY_FILE_NAME}`, 0o700);
+    Deno.chmodSync(`${DATA_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME}`, 0o700);
 
     loop();
     heartbeat();
