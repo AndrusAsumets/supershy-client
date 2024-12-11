@@ -39,7 +39,7 @@ curl --fail --location --progress-bar --output "$zip" "$uri"
 unzip -d "$tmp_dir" -o "$zip"
 
 # move to binaries
-sudo mv $tmp_exe $exe
+mv $tmp_exe $exe
 
 # create daemon service
 case $target in
