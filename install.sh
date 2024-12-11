@@ -20,7 +20,7 @@ case $(uname -sm) in
 	"Darwin arm64") target="supershy-macos-arm64" ;;
 	"Linux aarch64") target="supershy-linux-arm64" ;;
 	*) target="supershy-linux-x86_64" ;;
-esacm94
+esac
 
 version="$(curl -s https://version.supershy.org/)"
 uri="https://github.com/AndrusAsumets/supershy-client/releases/download/${version}/${target}.zip"
