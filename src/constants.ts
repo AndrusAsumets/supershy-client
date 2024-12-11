@@ -28,7 +28,8 @@ const UI_PATH = `${__DIRNAME}/ui`;
 const DATA_PATH = `${HOME_PATH}/.supershy-data`;
 const SSH_KEY_PATH = `${DATA_PATH}/.keys`;
 const LOG_PATH = `${DATA_PATH}/logs`;
-const SSH_KNOWN_HOSTS_PATH = `${HOME_PATH}/.ssh/known_hosts`;
+const SSH_PATH = `${HOME_PATH}/.ssh`;
+const SSH_KNOWN_HOSTS_PATH = `${SSH_PATH}/known_hosts`;
 const DB_FILE_PATH = `${DATA_PATH}/.database.${ENV}.json`;
 const SSH_LOG_EXTENSION = '.ssh.log';
 const SSH_USER = 'root';
@@ -102,6 +103,7 @@ export const config: Config = {
     SSH_PORT_RANGE,
     SSH_KEY_ALGORITHM,
     SSH_KEY_LENGTH,
+    SSH_PATH,
     SSH_KNOWN_HOSTS_PATH,
     DB_FILE_PATH,
     LOG_PATH,

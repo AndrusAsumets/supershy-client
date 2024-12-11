@@ -41,6 +41,7 @@ const {
     WEB_URL,
     SSH_KEY_ALGORITHM,
     SSH_KEY_LENGTH,
+    SSH_PATH,
     HEARTBEAT_INTERVAL_SEC,
     PROXY_ENABLED,
 } = config();
@@ -269,6 +270,7 @@ const heartbeat = async () => {
 
 const connectProxy = () => {
     integrations.fs.ensureFolder(DATA_PATH);
+    integrations.fs.ensureFolder(SSH_PATH);
     integrations.fs.ensureFolder(SSH_KEY_PATH);
     integrations.fs.ensureFolder(LOG_PATH);
 

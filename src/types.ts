@@ -84,49 +84,50 @@ export interface CreateVultrInstance {
 }
 
 export interface Config {
-    APP_ID: string
-    ENV: string
-    PROXY_RECYCLE_INTERVAL_SEC: number
+	APP_ID: string
+	ENV: string
+	PROXY_RECYCLE_INTERVAL_SEC: number
 	AUTO_LAUNCH_WEB: boolean
-    SSH_PORT_RANGE: number[]
-    PROXY_LOCAL_PORT: number
-    PROXY_REMOTE_PORT: number
-    SSH_KEY_ALGORITHM: string
-    SSH_KEY_LENGTH: number
-    DIGITAL_OCEAN_API_KEY: string
-    HETZNER_API_KEY: string
-    VULTR_API_KEY: string
-    CLOUDFLARE_ACCOUNT_ID: string
-    CLOUDFLARE_API_KEY: string
-    CLOUDFLARE_KV_NAMESPACE: string
-    PROXY_URL: string
-    DIGITAL_OCEAN_BASE_URL: string
-    HETZNER_BASE_URL: string
-    VULTR_BASE_URL: string
-    CLOUDFLARE_BASE_URL: string
-    HOME_PATH: string
-    DATA_PATH: string
-    SSH_KEY_PATH: string
+	SSH_PORT_RANGE: number[]
+	PROXY_LOCAL_PORT: number
+	PROXY_REMOTE_PORT: number
+	SSH_KEY_ALGORITHM: string
+	SSH_KEY_LENGTH: number
+	DIGITAL_OCEAN_API_KEY: string
+	HETZNER_API_KEY: string
+	VULTR_API_KEY: string
+	CLOUDFLARE_ACCOUNT_ID: string
+	CLOUDFLARE_API_KEY: string
+	CLOUDFLARE_KV_NAMESPACE: string
+	PROXY_URL: string
+	DIGITAL_OCEAN_BASE_URL: string
+	HETZNER_BASE_URL: string
+	VULTR_BASE_URL: string
+	CLOUDFLARE_BASE_URL: string
+	HOME_PATH: string
+	DATA_PATH: string
+	SSH_KEY_PATH: string
 	UI_PATH: string
-    LOG_PATH: string
-    SSH_KNOWN_HOSTS_PATH: string
-    DB_FILE_PATH: string
-    SSH_LOG_EXTENSION: string
-    SSH_USER: string
-    PROXY_TYPES: ProxyType[]
-    DIGITAL_OCEAN_INSTANCE_SIZE: string
-    HETZNER_SERVER_TYPE: string
-    VULTR_INSTANCE_PLAN: string
-    DIGITAL_OCEAN_INSTANCE_IMAGE: string
-    HETZNER_INSTANCE_IMAGE: string
-    VULTR_INSTANCE_IMAGE: string
-    GENERATE_SSH_KEY_FILE_NAME: string
-    CONNECT_SSH_TUNNEL_FILE_NAME: string
-    HEARTBEAT_INTERVAL_SEC: number
-    WEB_SERVER_PORT: number
+	LOG_PATH: string
+	SSH_PATH: string
+	SSH_KNOWN_HOSTS_PATH: string
+	DB_FILE_PATH: string
+	SSH_LOG_EXTENSION: string
+	SSH_USER: string
+	PROXY_TYPES: ProxyType[]
+	DIGITAL_OCEAN_INSTANCE_SIZE: string
+	HETZNER_SERVER_TYPE: string
+	VULTR_INSTANCE_PLAN: string
+	DIGITAL_OCEAN_INSTANCE_IMAGE: string
+	HETZNER_INSTANCE_IMAGE: string
+	VULTR_INSTANCE_IMAGE: string
+	GENERATE_SSH_KEY_FILE_NAME: string
+	CONNECT_SSH_TUNNEL_FILE_NAME: string
+	HEARTBEAT_INTERVAL_SEC: number
+	WEB_SERVER_PORT: number
 	WEB_URL: string
-    WEB_SOCKET_PORT: number
-    PROXY_ENABLED: boolean
+	WEB_SOCKET_PORT: number
+	PROXY_ENABLED: boolean
 	DIGITAL_OCEAN_REGIONS: Record<string, string>
 	INSTANCE_PROVIDERS: InstanceProvider[]
 	INSTANCE_PROVIDERS_DISABLED: InstanceProvider[]
