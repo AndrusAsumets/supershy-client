@@ -25,8 +25,8 @@ uri="https://github.com/AndrusAsumets/supershy-client/releases/download/${versio
 tmp_dir="/tmp"
 bin_dir="/usr/bin"
 zip="$tmp_dir/supershy.zip"
-tmp_exe="$tmp_dir/supershy"
-exe="$bin_dir/supershy"
+tmp_exe="$tmp_dir/supershyd"
+exe="$bin_dir/supershyd"
 daemon="/etc/systemd/user/supershy-daemon.service"
 
 # remove old installation
@@ -49,10 +49,10 @@ case $target in
 
         # create new daemon service
         sudo echo '[Unit]' >> $daemon
-        sudo echo 'Description=supershy' >> $daemon
+        sudo echo 'Description=supershyd' >> $daemon
 
         sudo echo '[Service]' >> $daemon
-        sudo echo 'ExecStart=supershy' >> $daemon
+        sudo echo 'ExecStart=supershyd' >> $daemon
         sudo echo 'Restart=always' >> $daemon
 
         sudo echo '[Install]' >> $daemon
