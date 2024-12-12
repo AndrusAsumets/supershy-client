@@ -40,13 +40,13 @@ might happen, I should able live to fight yet another day. It is also good to
 give something back to the humanity as kindness seems to be in short supply
 these days everywhere.
 
-# Supported VPS
+### Supported VPS
 Digital Ocean, Hetzner, Vultr
 
-# Supported countries
+### Supported countries
 Australia, Brazil, Canada, Chile, Finland, France, Germany, India, Israel, Japan, Korea, Mexico, Netherlands, Poland, Singapore, South Africa, Spain, Sweden, United Kingdom, United States
 
-### Installation
+## Installation
 
 ```
 # Linux, MacOS
@@ -140,7 +140,7 @@ Firefox
  -> Make sure countries of both IP and DNS match with the region of Digital Ocean your supershy is currently connected to.
 ```
 
-### Development
+## Development
 ```
 # Deno
 https://docs.deno.com/runtime/getting_started/installation
