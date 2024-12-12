@@ -1,8 +1,6 @@
 Supershy is a DIY SSH tunnel proxy with a rotating exit node.
 
-<p align="center">
-  <img width="480" height="974" src="https://assets.supershy.org/videos/supershy-recording-1.gif">
-</p>
+![Screen recording](https://assets.supershy.org/videos/supershy-recording-1.gif)
 
 During its initiation, the client creates two new VPS instances (let's call them
 First Node and Second Node) inside Digital Ocean, Hetzner and/or Vultr containing
