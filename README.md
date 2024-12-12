@@ -1,5 +1,9 @@
 Supershy is a DIY SSH tunnel proxy with a rotating exit node.
 
+<p align="center">
+  <img width="480" height="974" src="https://assets.supershy.org/videos/supershy-recording-1.gif">
+</p>
+
 During its initiation, the client creates two new VPS instances (let's call them
 First Node and Second Node) inside Digital Ocean, Hetzner and/or Vultr containing
 nothing else but a simple Tinyproxy proxy daemon. Next up, it creates a SSH
@@ -35,12 +39,6 @@ which led me to reason that if I will be able to change the server before that
 might happen, I should able live to fight yet another day. It is also good to
 give something back to the humanity as kindness seems to be in short supply
 these days everywhere.
-
-### Preview
-
-1⠀             | 2
-:-------------------------:|:-------------------------:
-![](/src/ui/assets/images/supershy-screenshot-top-1.png)  |  ![](/src/ui/assets/images/supershy-screenshot-bottom-1.png)
 
 ### Installation
 
@@ -165,7 +163,7 @@ deno task stop
 
 ```
 # Log
-tail -f ~/.supershy-client/logs/*.log
+tail -f ~/.supershy-data/logs/*.log
 ```
 
 ```
