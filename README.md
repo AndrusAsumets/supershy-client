@@ -33,7 +33,7 @@ some reason you aren't able to use Mullvad, Proton or any other of the mainstrea
 VPNs either because they are blocked in your region or because you might not
 trust them enough, then Supershy could be the next option to try. Secondly, if
 you would like to have Tor-like experience, yet think Tor is too slow, then
-perhaps you should also check out Supershy
+perhaps you should also check out Supershy.
 
 The motivation for creating the project derives from the fact that my own
 communications started to be intercepted by several malicious nation-state
