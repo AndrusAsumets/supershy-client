@@ -114,6 +114,7 @@ export interface Config {
 	DB_FILE_PATH: string
 	SSH_LOG_EXTENSION: string
 	SSH_USER: string
+	SSH_CONNECTION_TIMEOUT_SEC: number
 	PROXY_TYPES: ProxyType[]
 	DIGITAL_OCEAN_INSTANCE_SIZE: string
 	HETZNER_SERVER_TYPE: string

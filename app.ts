@@ -68,12 +68,14 @@ const connect = async (
 
     integrations.fs.hostKey.save(proxy);
     existsSync(proxy.sshLogPath) && Deno.removeSync(proxy.sshLogPath);
-    await integrations.shell.pkill(`${port}:`);
-    await lib.sleep(1000);
-    integrations.shell.command(proxy.connectionString);
 
     let isConnected = false;
     while (!isConnected) {
+        await integrations.shell.pkill(`${port}:`);
+        await lib.sleep(1000);
+        integrations.shell.command(proxy.connectionString);
+        await lib.sleep(config().SSH_CONNECTION_TIMEOUT_SEC * 1000);
+
         try {
             const output = Deno.readTextFileSync(proxy.sshLogPath);
             isConnected = output.includes('pledge: network');
