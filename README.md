@@ -21,13 +21,19 @@ speeds.
 Each time a new instance is created, a phonehome call is made from it to
 Cloudflare KV containing instance's public host key, which will be then queried
 by supershy, and henceforth added to your SSH's known_hosts file. When SSH
-client is connecting to the SSH server, strict_host_key_checking will be
-enabled. This adds a layer of security against possible MITM attacks.
+client is connecting to the SSH server, StrictHostKeyChecking=yes will be set. This adds a layer of security against possible MITM attacks.
 
 The logic behind jumping from one exit node to another is that it helps you to
 keep your communications safe. Should anyone try to pinpoint you using your exit
 node's IP, then by the time they get to probing the server, the server will have
 been long gone.
+
+Supershy's use cases will depend on your possible adversaries. Firstly, if for
+some reason you aren't able to use Mullvad, Proton or any other of the mainstream
+VPNs either because they are blocked in your region or because you might not
+trust them enough, then Supershy could be the next option to try. Secondly, if
+you would like to have Tor-like experience, yet think Tor is too slow, then
+perhaps you should also check out Supershy
 
 The motivation for creating the project derives from the fact that my own
 communications started to be intercepted by several malicious nation-state
@@ -41,10 +47,10 @@ give something back to the humanity as kindness seems to be in short supply
 these days everywhere.
 
 ### Supported VPS
-Digital Ocean, Hetzner, Vultr
+Digital Ocean, Hetzner, Vultr.
 
 ### Supported countries
-Australia, Brazil, Canada, Chile, Finland, France, Germany, India, Israel, Japan, Korea, Mexico, Netherlands, Poland, Singapore, South Africa, Spain, Sweden, United Kingdom, United States
+Australia, Brazil, Canada, Chile, Finland, France, Germany, India, Israel, Japan, Korea, Mexico, Netherlands, Poland, Singapore, South Africa, Spain, Sweden, United Kingdom, United States.
 
 ## Installation
 
@@ -54,7 +60,7 @@ curl -fsSL https://install.supershy.org | sudo bash -s $(whoami)
 ```
 
 ```
-# Supershy's UI can be accessed locally from: http://localhost:8080
+# Supershy's UI can then be accessed locally from: http://localhost:8080
 ```
 
 ```
@@ -63,7 +69,7 @@ PROXY_RECYCLE_INTERVAL_SEC=how often you would like to recycle the exit nodes in
 
 SSH_PORT_RANGE=colon separated [from:to] range of numbers for a random selection, overrides SSH_PORT if set.
 
-DIGITAL_OCEAN_API_KEY=
+DIGITAL_OCEAN_API_KEY
  -> Open https://cloud.digitalocean.com/account/api/tokens
  -> Generate New Token.
  -> Regions: read.
@@ -71,7 +77,7 @@ DIGITAL_OCEAN_API_KEY=
  -> ssh_key: create, read, delete.
  -> Click to copy the API key.
 
-HETZNER_API_KEY=
+HETZNER_API_KEY
  -> Open https://console.hetzner.cloud/projects
  -> Select your Project.
  -> Security.
@@ -82,7 +88,7 @@ HETZNER_API_KEY=
  -> Click to show.
  -> Click to copy.
 
-VULTR_API_KEY=
+VULTR_API_KEY
  -> Open https://my.vultr.com/settings/#settingsapi
  -> Click Allow all IPv4.
  -> Click Allow all IPv6.
@@ -91,12 +97,12 @@ VULTR_API_KEY=
 The client will expect an API_KEY from at least one of the VPS providers,
 but it will pick a random one if multiple were set.
 
-CLOUDFLARE_ACCOUNT_ID=
+CLOUDFLARE_ACCOUNT_ID
  -> Open https://dash.cloudflare.com
  -> Workers & Pages.
  -> Click to copy Account ID.
 
-CLOUDFLARE_KV_NAMESPACE=
+CLOUDFLARE_KV_NAMESPACE
  -> https://dash.cloudflare.com
  -> Workers & Pages.
  -> KV.
@@ -104,7 +110,7 @@ CLOUDFLARE_KV_NAMESPACE=
  -> Name it.
  -> Click to copy ID.
 
-CLOUDFLARE_API_KEY=
+CLOUDFLARE_API_KEY
  -> Open https://dash.cloudflare.com/profile/api-tokens
  -> Create Token.
  -> Get started on Create Custom Token from below.
@@ -137,7 +143,7 @@ Firefox
 ```
 # Test that it's all working
  -> Open https://ipleak.net
- -> Make sure countries of both IP and DNS match with the region of Digital Ocean your supershy is currently connected to.
+ -> Make sure its IP matches with the IP found inside Status tab on Supershy's UI.
 ```
 
 ## Development
