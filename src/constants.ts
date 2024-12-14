@@ -5,6 +5,7 @@ import { ProxyType, Config, InstanceProvider } from './types.ts';
 const APP_ID = 'supershy-client';
 const ENV = 'dev';
 const PROXY_RECYCLE_INTERVAL_SEC = 1800;
+const PROXY_SYSTEM_WIDE = false;
 const AUTO_LAUNCH_WEB = true;
 const SSH_PORT_RANGE: number[] = [10000, 65535];
 const PROXY_LOCAL_PORT = 8888;
@@ -65,6 +66,8 @@ const INSTANCE_COUNTRIES: string[] = [];
 const INSTANCE_COUNTRIES_DISABLED: string[] = [];
 
 export const config: Config = {
+    PROXY_SYSTEM_WIDE,
+    PROXY_RECYCLE_INTERVAL_SEC,
     DIGITAL_OCEAN_API_KEY,
     HETZNER_API_KEY,
     VULTR_API_KEY,
@@ -78,7 +81,6 @@ export const config: Config = {
     HETZNER_INSTANCE_IMAGE,
     VULTR_INSTANCE_IMAGE,
     PROXY_ENABLED,
-    PROXY_RECYCLE_INTERVAL_SEC,
     AUTO_LAUNCH_WEB,
     APP_ID,
     ENV,

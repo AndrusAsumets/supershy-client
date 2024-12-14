@@ -2,11 +2,11 @@ user=$1
 
 # install dependencies
 if [[ ! -z $(type -p yum) ]]; then
-    sudo yum install unzip expect -y
+    sudo yum install unzip expect ufw -y
 elif [[ ! -z $(type -p dnf) ]]; then
-    sudo dnf install unzip expect -y
+    sudo dnf install unzip expect ufw -y
 elif [[ ! -z $(type -p apt) ]]; then
-    sudo apt install unzip expect -y
+    sudo apt install unzip expect ufw -y
 elif [[ ! -z $(type -p brew) ]]; then
     sudo -u $user brew install unzip
     sudo -u $user brew install expect

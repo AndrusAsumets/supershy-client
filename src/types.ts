@@ -87,6 +87,7 @@ export interface Config {
 	APP_ID: string
 	ENV: string
 	PROXY_RECYCLE_INTERVAL_SEC: number
+	PROXY_SYSTEM_WIDE: boolean
 	AUTO_LAUNCH_WEB: boolean
 	SSH_PORT_RANGE: number[]
 	PROXY_LOCAL_PORT: number

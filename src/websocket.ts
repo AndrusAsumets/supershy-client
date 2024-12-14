@@ -6,6 +6,7 @@ import {
 } from './types.ts';
 import * as core from './core.ts';
 import * as models from './models.ts';
+import * as lib from './lib.ts';
 
 const { config, proxies } = models;
 const {
@@ -32,14 +33,18 @@ export const start = (io: Server) => {
         socket.on('/config/save', async (_config: Config) => {
             const prevInstanceProviders = JSON.stringify(config().INSTANCE_PROVIDERS);
             const prevInstanceProvidersDisabled = JSON.stringify(config().INSTANCE_PROVIDERS_DISABLED);
+            const prevProxySystemWide = JSON.stringify(config().PROXY_SYSTEM_WIDE);
 
             _config = core.setInstanceProviders(_config);
             models.updateConfig(_config);
 
             const currentInstanceProviders = JSON.stringify(_config.INSTANCE_PROVIDERS);
             const currentInstanceProvidersDisabled = JSON.stringify(_config.INSTANCE_PROVIDERS_DISABLED);
-            const isInstanceProvidersDiff = prevInstanceProviders != currentInstanceProviders;
-            const isInstanceProvidersDisabledDiff = prevInstanceProvidersDisabled != currentInstanceProvidersDisabled;
+            const currentProxySystemWide = JSON.stringify(_config.PROXY_SYSTEM_WIDE);
+
+            const isInstanceProvidersDiff = lib.isDiff(prevInstanceProviders, currentInstanceProviders);
+            const isInstanceProvidersDisabledDiff = lib.isDiff(prevInstanceProvidersDisabled, currentInstanceProvidersDisabled);
+            const isCurrentProxySystemWideDiff = lib.isDiff(prevProxySystemWide, currentProxySystemWide);
 
             if (isInstanceProvidersDiff || isInstanceProvidersDisabledDiff) {
                 _config = await core.setInstanceCountries(_config);

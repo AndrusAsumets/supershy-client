@@ -181,7 +181,8 @@ tail -f ~/.supershy-data/logs/*.log
 ```
 # Uninstall
 rm -rf ~/.supershy-data
-rm -rf /usr/bin/supershy
+rm -rf /usr/bin/supershyd
+rm -rf ~/supershyd
 systemctl --user stop supershy-daemon.service
 systemctl --user disable supershy-daemon.service
 sudo rm /etc/systemd/user/supershy-daemon.service

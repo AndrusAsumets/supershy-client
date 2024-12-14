@@ -11,6 +11,7 @@ const $logSection = document.getElementsByClassName('section-content log')[0];
 
 const visibleConfigKeys = {
     'PROXY_RECYCLE_INTERVAL_SEC': { editable: 'number' },
+    'PROXY_SYSTEM_WIDE': { editable: 'boolean' },
     'SSH_PORT_RANGE': { editable: 'string' },
     'SSH_KEY_ALGORITHM': { editable: 'string' },
     'SSH_KEY_LENGTH': { editable: 'number' },
@@ -53,20 +54,30 @@ const constructConfigLine = (
     isEditable = false,
     hasApiKey = false,
 ) => {
+    const isEditableBoolean = visibleConfigKeys[key].editable === 'boolean';
+    const isEditablePassword = visibleConfigKeys[key].editable === 'password';
+    const isEditableString = visibleConfigKeys[key].editable == 'string';
+    const isEditableNumber = visibleConfigKeys[key].editable == 'number';
     const $key = document.createElement('div');
     $key.className = 'line-key';
     $key.innerText = key;
 
     const $value = document.createElement('div');
+    $value.innerText = value;
+
+    if (isEditableBoolean) {
+        $value.innerText = value
+            ? 'Enabled'
+            : 'Disabled'
+    }
     const hasEvents = emitPath
         ? 'has-events'
         : '';
-    $value.className = `${key} line-value ${hasEvents}`;
-    $value.innerText = value;
+    $value.className = `${key} line-value ${hasEvents} ${$value.innerText.toLowerCase()}`;
     $value.spellcheck = false;
+
     if (isEditable) {
         $value.className += ' config-editable';
-        $value.contentEditable = true;
 
         if (apiKeys.includes(key) && !hasApiKey) {
             $value.className += ' config-alert';
@@ -75,25 +86,35 @@ const constructConfigLine = (
             $value.className += ' config-alert';
         }
 
-        if (value && visibleConfigKeys[key].editable == 'password') {
+        if (value && isEditablePassword) {
             $value.className += ' config-password';
         }
 
-        setChangeListener($value, (event) => {
-            switch(true) {
-                case visibleConfigKeys[key].editable == 'string':
-                    config[key] = String(event.target.innerText).replace('\n', '');
-                    break;
-                case visibleConfigKeys[key].editable == 'password':
-                    config[key] = String(event.target.innerText).replace('\n', '');
-                    break;
-                case visibleConfigKeys[key].editable == 'number':
-                    config[key] = Number(event.target.innerText);
-                    break;
-            }
+        if (isEditableBoolean) {
+            setClickListener($value, () => {
+                config[key] = !config[key];
+                socket.emit(emitPath, config);
+            });
+        }
+        else {
+            $value.contentEditable = true;
 
-            socket.emit(emitPath, config);
-        });
+            setChangeListener($value, (event) => {
+                switch(true) {
+                    case isEditableString:
+                        config[key] = String(event.target.innerText).replace('\n', '');
+                        break;
+                    case isEditablePassword:
+                        config[key] = String(event.target.innerText).replace('\n', '');
+                        break;
+                    case isEditableNumber:
+                        config[key] = Number(event.target.innerText);
+                        break;
+                }
+
+                socket.emit(emitPath, config);
+            });
+        }
     }
 
     const $configLine = document.createElement('div');
