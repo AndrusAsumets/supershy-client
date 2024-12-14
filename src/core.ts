@@ -25,29 +25,22 @@ const logger = _logger.get();
 
 export const setInstanceProviders = (
     config: Config
-) => {
-
-
+): Config => {
     config.INSTANCE_PROVIDERS = [];
-
-    if (config.DIGITAL_OCEAN_API_KEY) {
-        config.INSTANCE_PROVIDERS.push(InstanceProvider.DIGITAL_OCEAN);
-    }
-
-    if (config.HETZNER_API_KEY) {
-        config.INSTANCE_PROVIDERS.push(InstanceProvider.HETZNER);
-    }
-
-    if (config.VULTR_API_KEY) {
-        config.INSTANCE_PROVIDERS.push(InstanceProvider.VULTR);
-    }
-
+    config.DIGITAL_OCEAN_API_KEY && config.INSTANCE_PROVIDERS.push(InstanceProvider.DIGITAL_OCEAN);
+    config.HETZNER_API_KEY && config.INSTANCE_PROVIDERS.push(InstanceProvider.HETZNER);
+    config.VULTR_API_KEY && config.INSTANCE_PROVIDERS.push(InstanceProvider.VULTR);
     return config;
 };
 
 export const setInstanceCountries = async (
     config: Config
-) => {
+): Promise<Config> => {
+    const hasHeartbeat = await integrations.kv.cloudflare.heartbeat();
+    if (!hasHeartbeat) {
+        return config;
+    }
+
     const instanceProviders: InstanceProvider[] = config
         .INSTANCE_PROVIDERS
         .filter((instanceProvider: InstanceProvider) =>
