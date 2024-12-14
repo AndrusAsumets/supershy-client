@@ -259,14 +259,12 @@ const loop = async () => {
 };
 
 const heartbeat = async () => {
-    try {
-        await integrations.kv.cloudflare.heartbeat();
-    }
-    catch(err) {
+    const hasHeartbeat = await integrations.kv.cloudflare.heartbeat();
+    if (!hasHeartbeat) {
         const isLooped = loopStatus == LoopStatus.FINISHED;
 
         if (isLooped) {
-            await core.exit(`Heartbeat failure: ${err}`);
+            await core.exit('Heartbeat failure');
         }
     }
 };

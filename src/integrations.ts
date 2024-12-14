@@ -79,14 +79,21 @@ export const fs = {
 
 export const kv = {
     cloudflare: {
-        heartbeat: async () => {
-            const options = {
-                method: 'GET',
-                signal: AbortSignal.timeout(config().HEARTBEAT_INTERVAL_SEC),
-            };
-            const res = await fetch(config().CLOUDFLARE_BASE_URL, options);
-            await res.json();
-            logger.info('Heartbeat.');
+        heartbeat: async (): Promise<boolean> => {
+            try {
+                const options = {
+                    method: 'GET',
+                    signal: AbortSignal.timeout(config().HEARTBEAT_INTERVAL_SEC),
+                };
+                const res = await fetch(config().CLOUDFLARE_BASE_URL, options);
+                await res.json();
+                logger.info('Heartbeat.');
+                return true;
+            }
+            catch(_) {
+                return false;
+            }
+
         },
         hostKey: {
             get: async (

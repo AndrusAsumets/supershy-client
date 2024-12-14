@@ -26,6 +26,8 @@ const logger = _logger.get();
 export const setInstanceProviders = (
     config: Config
 ) => {
+
+
     config.INSTANCE_PROVIDERS = [];
 
     if (config.DIGITAL_OCEAN_API_KEY) {
