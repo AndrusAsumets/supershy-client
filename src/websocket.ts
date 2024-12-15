@@ -30,26 +30,15 @@ export const start = (io: Server) => {
             core.exit('/proxy/disable', true);
         });
 
-        socket.on('/config/save', async (_config: Config) => {
-            const prevInstanceProviders = JSON.stringify(config().INSTANCE_PROVIDERS);
-            const prevInstanceProvidersDisabled = JSON.stringify(config().INSTANCE_PROVIDERS_DISABLED);
-            const prevProxySystemWide = JSON.stringify(config().PROXY_SYSTEM_WIDE);
+        socket.on('/config/save', async (newConfig: Config) => {
+            const prevConfig: Config = JSON.parse(JSON.stringify(config()));
+            models.updateConfig(core.setInstanceProviders(newConfig));
 
-            _config = core.setInstanceProviders(_config);
-            models.updateConfig(_config);
+            const isInstanceProvidersDiff = lib.isDiff(prevConfig.INSTANCE_PROVIDERS, config().INSTANCE_PROVIDERS);
+            const isInstanceProvidersDisabledDiff = lib.isDiff(prevConfig.INSTANCE_PROVIDERS_DISABLED, config().INSTANCE_PROVIDERS_DISABLED);
+            const isCurrentProxySystemWideDiff = lib.isDiff(prevConfig.PROXY_SYSTEM_WIDE, config().PROXY_SYSTEM_WIDE);
 
-            const currentInstanceProviders = JSON.stringify(_config.INSTANCE_PROVIDERS);
-            const currentInstanceProvidersDisabled = JSON.stringify(_config.INSTANCE_PROVIDERS_DISABLED);
-            const currentProxySystemWide = JSON.stringify(_config.PROXY_SYSTEM_WIDE);
-
-            const isInstanceProvidersDiff = lib.isDiff(prevInstanceProviders, currentInstanceProviders);
-            const isInstanceProvidersDisabledDiff = lib.isDiff(prevInstanceProvidersDisabled, currentInstanceProvidersDisabled);
-            const isCurrentProxySystemWideDiff = lib.isDiff(prevProxySystemWide, currentProxySystemWide);
-
-            if (isInstanceProvidersDiff || isInstanceProvidersDisabledDiff) {
-                _config = await core.setInstanceCountries(_config);
-                models.updateConfig(_config);
-            }
+            (isInstanceProvidersDiff || isInstanceProvidersDisabledDiff) && models.updateConfig(await core.setInstanceCountries(config()));
 
             io.emit('/config', config());
         });

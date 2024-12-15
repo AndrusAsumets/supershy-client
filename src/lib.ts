@@ -4,4 +4,4 @@ export const randomNumberFromRange = (min: number, max: number) => Math.floor(Ma
 
 export const shuffle = (array: any) => array.sort(() => Math.random() - 0.5);
 
-export const isDiff = (a: string, b: string): boolean => a != b;
+export const isDiff = (a: unknown, b: unknown): boolean => JSON.stringify(a) != JSON.stringify(b);
