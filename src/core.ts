@@ -1,5 +1,6 @@
 import { logger as _logger } from './logger.ts';
 import * as models from './models.ts';
+import { existsSync } from 'https://deno.land/std@0.224.0/fs/mod.ts';
 
 const { config } = models;
 const {
@@ -12,6 +13,7 @@ const {
     SSH_LOG_EXTENSION,
     APP_ID,
     ENV,
+    PROXY_PROTOCOLS,
     PROXY_LOCAL_PORT,
     PROXY_REMOTE_PORT,
     CLOUDFLARE_ACCOUNT_ID,
@@ -111,10 +113,26 @@ export const getSshLogPath = (
     proxyUuid: string
 ): string =>`${LOG_PATH}/${proxyUuid}${SSH_LOG_EXTENSION}`;
 
+const readProxyFile = (): string => {
+    if (!existsSync(ENVIRONMENT_FILE_PATH)) {
+        return '';
+    }
+
+    const lineSeparator = '\n';
+    return Deno
+        .readTextFileSync(ENVIRONMENT_FILE_PATH)
+        .split(lineSeparator)
+        .filter((line: string) => !new RegExp(PROXY_PROTOCOLS.join('|')).test(line))
+        .join(lineSeparator);
+};
+
 export const enableSystemWideProxy = () => {
-    const command = `bash system-writer.sh Listen 0.0.0.6`;
-    const result = integrations.shell.command(command);
-    logger.info(result);
+    const proxyUrls = PROXY_PROTOCOLS
+        .map((protocol: string) => `${protocol}_proxy="${protocol}://localhost:${PROXY_LOCAL_PORT}/"`)
+        .join('\n');
+    const args = `${readProxyFile()}${proxyUrls}`;
+    const command = `bash recreate-text-file.sh ${ENVIRONMENT_FILE_PATH} ${args}`;
+    integrations.shell.command(command);
 };
 
 export const exit = async (

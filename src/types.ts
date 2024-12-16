@@ -130,6 +130,7 @@ export interface Config {
 	WEB_SERVER_PORT: number
 	WEB_URL: string
 	WEB_SOCKET_PORT: number
+	PROXY_PROTOCOLS: string[]
 	PROXY_ENABLED: boolean
 	DIGITAL_OCEAN_REGIONS: Record<string, string>
 	INSTANCE_PROVIDERS: InstanceProvider[]
