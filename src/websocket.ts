@@ -39,6 +39,7 @@ export const start = (io: Server) => {
             const isCurrentProxySystemWideDiff = lib.isDiff(prevConfig.PROXY_SYSTEM_WIDE, config().PROXY_SYSTEM_WIDE);
 
             (isInstanceProvidersDiff || isInstanceProvidersDisabledDiff) && models.updateConfig(await core.setInstanceCountries(config()));
+            (isCurrentProxySystemWideDiff && config().PROXY_SYSTEM_WIDE == true) && core.enableSystemWideProxy();
 
             io.emit('/config', config());
         });

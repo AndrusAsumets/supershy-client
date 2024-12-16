@@ -54,7 +54,12 @@ export const shell = {
         const cmd = args[0];
         args.shift();
         const response = new Deno.Command(cmd, { args });
-        return response.outputSync();
+        const output = response.outputSync()
+        const textDecoder = new TextDecoder();
+        return [{
+            stdout: textDecoder.decode(output.stdout),
+            stderr: textDecoder.decode(output.stderr)
+        }];
     }
 };
 

@@ -6,6 +6,7 @@ const {
     CLOUDFLARE_BASE_URL,
     DATA_PATH,
     CONNECT_SSH_TUNNEL_FILE_NAME,
+    ENVIRONMENT_FILE_PATH,
     SSH_USER,
     LOG_PATH,
     SSH_LOG_EXTENSION,
@@ -109,6 +110,12 @@ export const getConnectionString = (
 export const getSshLogPath = (
     proxyUuid: string
 ): string =>`${LOG_PATH}/${proxyUuid}${SSH_LOG_EXTENSION}`;
+
+export const enableSystemWideProxy = () => {
+    const command = `bash system-writer.sh Listen 0.0.0.6`;
+    const result = integrations.shell.command(command);
+    logger.info(result);
+};
 
 export const exit = async (
     message: string,

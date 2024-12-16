@@ -113,6 +113,7 @@ export interface Config {
 	SSH_PATH: string
 	SSH_KNOWN_HOSTS_PATH: string
 	DB_FILE_PATH: string
+	ENVIRONMENT_FILE_PATH: string
 	SSH_LOG_EXTENSION: string
 	SSH_USER: string
 	SSH_CONNECTION_TIMEOUT_SEC: number

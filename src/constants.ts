@@ -32,6 +32,7 @@ const LOG_PATH = `${DATA_PATH}/logs`;
 const SSH_PATH = `${HOME_PATH}/.ssh`;
 const SSH_KNOWN_HOSTS_PATH = `${SSH_PATH}/known_hosts`;
 const DB_FILE_PATH = `${DATA_PATH}/.database.${ENV}.json`;
+const ENVIRONMENT_FILE_PATH = '/etc/environment';
 const SSH_LOG_EXTENSION = '.ssh.log';
 const SSH_USER = 'root';
 const SSH_CONNECTION_TIMEOUT_SEC = 5;
@@ -110,6 +111,7 @@ export const config: Config = {
     SSH_CONNECTION_TIMEOUT_SEC,
     SSH_KNOWN_HOSTS_PATH,
     DB_FILE_PATH,
+    ENVIRONMENT_FILE_PATH,
     LOG_PATH,
     SSH_LOG_EXTENSION,
     SSH_USER,

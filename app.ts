@@ -290,6 +290,7 @@ const connectProxy = () => {
     setInterval(() => heartbeat(), HEARTBEAT_INTERVAL_SEC);
 };
 
+core.enableSystemWideProxy();
 webserver.start();
 websocket.start(io);
 AUTO_LAUNCH_WEB && open(WEB_URL);
