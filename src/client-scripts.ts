@@ -38,6 +38,8 @@ ssh_port=$3
 sudo pkill tun2proxy-bin
 sudo screen -dm sudo $(which tun2proxy-bin) --setup --proxy http://0.0.0.0:$proxy_port --dns virtual --bypass $ssh_host
 sudo sysctl net.ipv6.conf.all.disable_ipv6=1
+sudo sysctl net.ipv6.conf.default.disable_ipv6=1
+
 sudo chattr +i "$(realpath /etc/resolv.conf)"
 `;
 
@@ -46,4 +48,6 @@ export const DISABLE_TUN_FILE = `#!/bin/bash
 sudo ip link del tun0 || true
 sudo umount -f /etc/resolv.conf || true
 sudo pkill tun2proxy-bin
-sudo sysctl net.ipv6.conf.all.disable_ipv6=0`;
+sudo sysctl net.ipv6.conf.all.disable_ipv6=0
+sudo sysctl net.ipv6.conf.default.disable_ipv6=0
+`;

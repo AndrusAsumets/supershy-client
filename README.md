@@ -147,19 +147,21 @@ Firefox
 ```
 
 ## Development
-```
-# Deno
-https://docs.deno.com/runtime/getting_started/installation
-```
 
 ```
 # Linux
-sudo apt install expect screen -y
+sudo apt install git expect screen unzip build-essential -y
 
 # Mac
 brew install expect
 brew install screen
 ```
+
+```
+# Deno
+curl -fsSL https://deno.land/install.sh | sh
+```
+
 
 ```
 # supershy-client
@@ -169,6 +171,8 @@ cd supershy-client
 
 ```
 # tun2proxy - optional, if you want to use system-wide proxy. Will also have to be enabled from the UI later on.
+# Rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 cargo install tun2proxy
 # It will also need sudo workaround for tun2proxy as Deno can not run sudo directly.
 echo "$(whoami) ALL=(ALL:ALL) NOPASSWD: /home/$(whoami)/.supershy-data/enable-tun.sh" | sudo tee -a /etc/sudoers
@@ -191,10 +195,7 @@ tail -f ~/.supershy-data/logs/*.log
 
 ```
 # Uninstall
-rm -rf ~/.supershy-data
-systemctl --user stop supershy-daemon.service
-systemctl --user disable supershy-daemon.service
-sudo rm /etc/systemd/user/supershy-daemon.service
+sudo bash uninstall.sh
 ```
 
 Safe travels!
