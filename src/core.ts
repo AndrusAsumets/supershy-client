@@ -5,6 +5,7 @@ const { config } = models;
 const {
     CLOUDFLARE_BASE_URL,
     DATA_PATH,
+    SCRIPT_PATH,
     CONNECT_SSH_TUNNEL_FILE_NAME,
     SSH_USER,
     LOG_PATH,
@@ -105,7 +106,7 @@ export const getConnectionString = (
         sshKeyPath,
         sshLogPath
     } = proxy;
-    return `${DATA_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${instanceIp} ${SSH_USER} ${sshPort} ${PROXY_LOCAL_PORT} ${PROXY_REMOTE_PORT} ${sshKeyPath} ${sshLogPath}`;
+    return `${SCRIPT_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${instanceIp} ${SSH_USER} ${sshPort} ${PROXY_LOCAL_PORT} ${PROXY_REMOTE_PORT} ${sshKeyPath} ${sshLogPath}`;
 };
 
 export const getSshLogPath = (
@@ -113,11 +114,11 @@ export const getSshLogPath = (
 ): string =>`${LOG_PATH}/${proxyUuid}${SSH_LOG_EXTENSION}`;
 
 export const enableSystemWideProxy = (proxy: Proxy) => {
-    integrations.shell.command(`bash ${DATA_PATH}/${ENABLE_TUN_FILE_NAME} ${proxy.proxyLocalPort} ${proxy.instanceIp}`);
+    integrations.shell.command(`bash ${SCRIPT_PATH}/${ENABLE_TUN_FILE_NAME} ${proxy.proxyLocalPort} ${proxy.instanceIp} ${proxy.sshPort}`);
 };
 
 export const disableSystemWideProxy = () => {
-    integrations.shell.command(`bash ${DATA_PATH}/${DISABLE_TUN_FILE_NAME}`);
+    integrations.shell.command(`bash ${SCRIPT_PATH}/${DISABLE_TUN_FILE_NAME}`);
 };
 
 export const exit = async (

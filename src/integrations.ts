@@ -25,7 +25,7 @@ export const shell = {
             passphrase: string,
         ) => {
             const cmd =
-                `${config().DATA_PATH}/${config().GENERATE_SSH_KEY_FILE_NAME} ${passphrase} ${keyPath} ${config().SSH_KEY_ALGORITHM} ${config().SSH_KEY_LENGTH}`;
+                `${config().SCRIPT_PATH}/${config().GENERATE_SSH_KEY_FILE_NAME} ${passphrase} ${keyPath} ${config().SSH_KEY_ALGORITHM} ${config().SSH_KEY_LENGTH}`;
             const publicKeyPath = `${keyPath}.pub`;
             integrations.shell.command(cmd);
 

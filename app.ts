@@ -29,6 +29,7 @@ const {
     PROXY_LOCAL_PORT,
     PROXY_REMOTE_PORT,
     DATA_PATH,
+    SCRIPT_PATH,
     SSH_KEY_PATH,
     LOG_PATH,
     GENERATE_SSH_KEY_FILE_NAME,
@@ -53,7 +54,7 @@ import {
     CONNECT_SSH_TUNNEL_FILE,
     ENABLE_TUN_FILE,
     DISABLE_TUN_FILE,
-} from './src/connection.ts';
+} from './src/client-scripts.ts';
 
 const io = new Server({ cors: { origin: '*' }});
 const logger = _logger.get(io);
@@ -72,11 +73,11 @@ const connect = async (
 
     integrations.fs.hostKey.save(proxy);
     existsSync(proxy.sshLogPath) && Deno.removeSync(proxy.sshLogPath);
-    core.disableSystemWideProxy();
-    await lib.sleep(1000);
-    core.enableSystemWideProxy(proxy);
-    logger.info(`Enabled tun2proxy.`);
 
+    if (config().PROXY_SYSTEM_WIDE) {
+        core.enableSystemWideProxy(proxy);
+        logger.info(`Enabled system-wide proxy via tun2proxy.`);
+    }
 
     let isConnected = false;
     while (!isConnected) {
@@ -281,6 +282,7 @@ const heartbeat = async () => {
 
 const connectProxy = () => {
     integrations.fs.ensureFolder(DATA_PATH);
+    integrations.fs.ensureFolder(SCRIPT_PATH);
     integrations.fs.ensureFolder(SSH_PATH);
     integrations.fs.ensureFolder(SSH_KEY_PATH);
     integrations.fs.ensureFolder(LOG_PATH);
@@ -293,9 +295,9 @@ const connectProxy = () => {
         [ENABLE_TUN_FILE_NAME, ENABLE_TUN_FILE],
         [DISABLE_TUN_FILE_NAME, DISABLE_TUN_FILE],
     ].forEach((file: string[]) => {
-        Deno.writeTextFileSync(`${DATA_PATH}/${file[0]}`, file[1]);
+        Deno.writeTextFileSync(`${SCRIPT_PATH}/${file[0]}`, file[1]);
         new Deno.Command('chmod', { args: ['+x', file[0]] });
-        Deno.chmodSync(`${DATA_PATH}/${file[0]}`, 0o700);
+        Deno.chmodSync(`${SCRIPT_PATH}/${file[0]}`, 0o700);
     });
 
     loop();

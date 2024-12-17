@@ -107,6 +107,7 @@ export interface Config {
 	CLOUDFLARE_BASE_URL: string
 	HOME_PATH: string
 	DATA_PATH: string
+	SCRIPT_PATH: string
 	SSH_KEY_PATH: string
 	UI_PATH: string
 	LOG_PATH: string

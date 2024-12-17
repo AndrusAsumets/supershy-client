@@ -2,11 +2,11 @@ user=$1
 
 # install dependencies
 if [[ ! -z $(type -p yum) ]]; then
-    sudo yum install unzip expect ufw -y
+    sudo yum install unzip expect -y
 elif [[ ! -z $(type -p dnf) ]]; then
-    sudo dnf install unzip expect ufw -y
+    sudo dnf install unzip expect -y
 elif [[ ! -z $(type -p apt) ]]; then
-    sudo apt install unzip expect ufw -y
+    sudo apt install unzip expect -y
 elif [[ ! -z $(type -p brew) ]]; then
     sudo -u $user brew install unzip
     sudo -u $user brew install expect
@@ -16,14 +16,14 @@ fi
 
 # set platform target
 case $(uname -sm) in
-	"Darwin x86_64") target="supershy-macos-x86_64" ;;
-	"Darwin arm64") target="supershy-macos-arm64" ;;
-	"Linux aarch64") target="supershy-linux-arm64" ;;
-	*) target="supershy-linux-x86_64" ;;
+	"Darwin x86_64") target="macos-x86_64" ;;
+	"Darwin arm64") target="macos-arm64" ;;
+	"Linux aarch64") target="linux-arm64" ;;
+	*) target="linux-x86_64" ;;
 esac
 
 version="$(curl -s https://version.supershy.org/)"
-uri="https://github.com/AndrusAsumets/supershy-client/releases/download/${version}/${target}.zip"
+uri="https://github.com/AndrusAsumets/supershy-client/releases/download/${version}/supershy-${target}.zip"
 app_id="org.supershy.supershyd"
 daemon="/etc/systemd/user/supershy-daemon.service"
 data_dir="/home/${user}/.supershy-data"
@@ -74,6 +74,18 @@ case $target in
         sudo -u $user XDG_RUNTIME_DIR="/run/user/$(id -u $user)" systemctl --user daemon-reload
         sudo -u $user XDG_RUNTIME_DIR="/run/user/$(id -u $user)" systemctl --user enable supershy-daemon.service
         sudo -u $user XDG_RUNTIME_DIR="/run/user/$(id -u $user)" systemctl --user restart supershy-daemon.service
+
+        # since deno can not run sudo, yet tun2proxy needs it, hence work around
+        sudoers_dir=/etc/sudoers
+        enable_tun="${user} ALL=(ALL:ALL) NOPASSWD: /home/${user}/.supershy-data/enable-tun.sh"
+        if ! sudo grep -q "$enable_tun" $sudoers_dir; then
+            echo -e $enable_tun | sudo tee -a $sudoers_dir
+        fi
+
+        disable_tun="${user} ALL=(ALL:ALL) NOPASSWD: /home/${user}/.supershy-data/disable-tun.sh"
+        if ! sudo grep -q "$disable_tun" $sudoers_dir; then
+            echo -e $disable_tun | sudo tee -a $sudoers_dir
+        fi
     ;;
     *"macos"*)
         sudo echo '<?xml version="1.0" encoding="UTF-8"?>' >> $daemon
@@ -98,15 +110,3 @@ case $target in
         sudo -u $user launchctl load $daemon
     ;;
 esac
-
-# since deno can not run sudo, yet tun2proxy needs it, hence work around
-sudoers_dir=/etc/sudoers
-enable_tun="${user} ALL=(ALL:ALL) NOPASSWD: /home/me/.supershy-data/enable-tun.sh"
-if ! sudo grep -q "$enable_tun" $sudoers_dir; then
-    echo -e $enable_tun | sudo tee -a $sudoers_dir
-fi
-
-disable_tun="${user} ALL=(ALL:ALL) NOPASSWD: /home/me/.supershy-data/disable-tun.sh"
-if ! sudo grep -q "$disable_tun" $sudoers_dir; then
-    echo -e $disable_tun | sudo tee -a $sudoers_dir
-fi

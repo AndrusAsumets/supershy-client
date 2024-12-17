@@ -154,7 +154,7 @@ https://docs.deno.com/runtime/getting_started/installation
 
 ```
 # Linux
-sudo apt install expect screen
+sudo apt install expect screen -y
 
 # Mac
 brew install expect
@@ -165,6 +165,17 @@ brew install screen
 # supershy-client
 git clone git@github.com:AndrusAsumets/supershy-client.git
 cd supershy-client
+```
+
+```
+# tun2proxy - optional, if you want to use system-wide proxy. Will also have to be enabled from the UI later on.
+cargo install tun2proxy
+# It will also need sudo workaround for tun2proxy as Deno can not run sudo directly.
+echo "$(whoami) ALL=(ALL:ALL) NOPASSWD: /home/$(whoami)/.supershy-data/enable-tun.sh" | sudo tee -a /etc/sudoers
+echo "$(whoami) ALL=(ALL:ALL) NOPASSWD: /home/$(whoami)/.supershy-data/disable-tun.sh" | sudo tee -a /etc/sudoers
+```
+
+```
 deno task start
 ```
 

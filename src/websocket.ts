@@ -27,6 +27,7 @@ export const start = (io: Server) => {
 
         socket.on('/proxy/disable', () => {
             models.updateConfig({...config(), 'PROXY_ENABLED': false});
+            core.disableSystemWideProxy();
             core.exit('/proxy/disable', true);
         });
 
@@ -39,7 +40,8 @@ export const start = (io: Server) => {
             const isCurrentProxySystemWideDiff = lib.isDiff(prevConfig.PROXY_SYSTEM_WIDE, config().PROXY_SYSTEM_WIDE);
 
             (isInstanceProvidersDiff || isInstanceProvidersDisabledDiff) && models.updateConfig(await core.setInstanceCountries(config()));
-            (isCurrentProxySystemWideDiff && config().PROXY_SYSTEM_WIDE == true) && core.enableSystemWideProxy();
+            (isCurrentProxySystemWideDiff && config().PROXY_SYSTEM_WIDE == true && models.getInitialProxy()) && core.enableSystemWideProxy(models.getInitialProxy());
+            (isCurrentProxySystemWideDiff && config().PROXY_SYSTEM_WIDE == false) && core.disableSystemWideProxy();
 
             io.emit('/config', config());
         });
