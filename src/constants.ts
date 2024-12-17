@@ -32,7 +32,6 @@ const LOG_PATH = `${DATA_PATH}/logs`;
 const SSH_PATH = `${HOME_PATH}/.ssh`;
 const SSH_KNOWN_HOSTS_PATH = `${SSH_PATH}/known_hosts`;
 const DB_FILE_PATH = `${DATA_PATH}/.database.${ENV}.json`;
-const ENVIRONMENT_FILE_PATH = '/etc/environment';
 const SSH_LOG_EXTENSION = '.ssh.log';
 const SSH_USER = 'root';
 const SSH_CONNECTION_TIMEOUT_SEC = 5;
@@ -47,12 +46,13 @@ const INSTANCE_PROVIDERS: InstanceProvider[] = [];
 const INSTANCE_PROVIDERS_DISABLED: InstanceProvider[] = [];
 const GENERATE_SSH_KEY_FILE_NAME = 'generate-ssh-key.exp';
 const CONNECT_SSH_TUNNEL_FILE_NAME = 'connect-ssh-tunnel.exp';
+const ENABLE_TUN_FILE_NAME = 'enable-tun.sh';
+const DISABLE_TUN_FILE_NAME = 'disable-tun.sh';
 const HEARTBEAT_INTERVAL_SEC = 10 * 1000;
 const WEB_SERVER_PORT = 8080;
 const WEB_URL = `http://localhost:${WEB_SERVER_PORT}`;
 const WEB_SOCKET_PORT = 8880;
 const PROXY_ENABLED = false;
-const PROXY_PROTOCOLS = ['http', 'https', 'ftp'];
 const DIGITAL_OCEAN_REGIONS: Record<string, string> = {
     nyc: 'US',
     ams: 'NL',
@@ -83,7 +83,6 @@ export const config: Config = {
     HETZNER_INSTANCE_IMAGE,
     VULTR_INSTANCE_IMAGE,
     PROXY_ENABLED,
-    PROXY_PROTOCOLS,
     AUTO_LAUNCH_WEB,
     APP_ID,
     ENV,
@@ -113,12 +112,13 @@ export const config: Config = {
     SSH_CONNECTION_TIMEOUT_SEC,
     SSH_KNOWN_HOSTS_PATH,
     DB_FILE_PATH,
-    ENVIRONMENT_FILE_PATH,
     LOG_PATH,
     SSH_LOG_EXTENSION,
     SSH_USER,
     PROXY_TYPES,
     DIGITAL_OCEAN_REGIONS,
     INSTANCE_COUNTRIES,
-    INSTANCE_COUNTRIES_DISABLED
+    INSTANCE_COUNTRIES_DISABLED,
+    ENABLE_TUN_FILE_NAME,
+    DISABLE_TUN_FILE_NAME
 };

@@ -33,6 +33,8 @@ const {
     LOG_PATH,
     GENERATE_SSH_KEY_FILE_NAME,
     CONNECT_SSH_TUNNEL_FILE_NAME,
+    ENABLE_TUN_FILE_NAME,
+    DISABLE_TUN_FILE_NAME,
     SSH_USER,
     PROXY_TYPES,
     SSH_PORT_RANGE,
@@ -49,7 +51,9 @@ const {
 import {
     GENERATE_SSH_KEY_FILE,
     CONNECT_SSH_TUNNEL_FILE,
-} from './src/ssh.ts';
+    ENABLE_TUN_FILE,
+    DISABLE_TUN_FILE,
+} from './src/connection.ts';
 
 const io = new Server({ cors: { origin: '*' }});
 const logger = _logger.get(io);
@@ -68,11 +72,17 @@ const connect = async (
 
     integrations.fs.hostKey.save(proxy);
     existsSync(proxy.sshLogPath) && Deno.removeSync(proxy.sshLogPath);
+    core.disableSystemWideProxy();
+    await lib.sleep(1000);
+    core.enableSystemWideProxy(proxy);
+    logger.info(`Enabled tun2proxy.`);
+
 
     let isConnected = false;
     while (!isConnected) {
         await integrations.shell.pkill(`${port}:`);
         await lib.sleep(1000);
+
         integrations.shell.command(proxy.connectionString);
         await lib.sleep(config().SSH_CONNECTION_TIMEOUT_SEC * 1000);
 
@@ -276,21 +286,24 @@ const connectProxy = () => {
     integrations.fs.ensureFolder(LOG_PATH);
 
     !existsSync(SSH_KNOWN_HOSTS_PATH) && Deno.writeTextFileSync(SSH_KNOWN_HOSTS_PATH, '');
-    Deno.writeTextFileSync(`${DATA_PATH}/${GENERATE_SSH_KEY_FILE_NAME}`, GENERATE_SSH_KEY_FILE);
-    Deno.writeTextFileSync(`${DATA_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME}`, CONNECT_SSH_TUNNEL_FILE);
 
-    new Deno.Command('chmod', { args: ['+x', GENERATE_SSH_KEY_FILE_NAME] });
-    new Deno.Command('chmod', { args: ['+x', CONNECT_SSH_TUNNEL_FILE_NAME] });
-
-    Deno.chmodSync(`${DATA_PATH}/${GENERATE_SSH_KEY_FILE_NAME}`, 0o700);
-    Deno.chmodSync(`${DATA_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME}`, 0o700);
+    [
+        [GENERATE_SSH_KEY_FILE_NAME, GENERATE_SSH_KEY_FILE],
+        [CONNECT_SSH_TUNNEL_FILE_NAME, CONNECT_SSH_TUNNEL_FILE],
+        [ENABLE_TUN_FILE_NAME, ENABLE_TUN_FILE],
+        [DISABLE_TUN_FILE_NAME, DISABLE_TUN_FILE],
+    ].forEach((file: string[]) => {
+        Deno.writeTextFileSync(`${DATA_PATH}/${file[0]}`, file[1]);
+        new Deno.Command('chmod', { args: ['+x', file[0]] });
+        Deno.chmodSync(`${DATA_PATH}/${file[0]}`, 0o700);
+    });
 
     loop();
     heartbeat();
     setInterval(() => heartbeat(), HEARTBEAT_INTERVAL_SEC);
 };
 
-core.enableSystemWideProxy();
+
 webserver.start();
 websocket.start(io);
 AUTO_LAUNCH_WEB && open(WEB_URL);

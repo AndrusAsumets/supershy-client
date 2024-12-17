@@ -30,3 +30,9 @@ send -- "$passphrase\r"
 interact
 expect_background
 exit 0`;
+
+export const ENABLE_TUN_FILE = `sudo screen -dm ~/Downloads/tun2proxy-bin --setup --proxy http://0.0.0.0:$1 --dns virtual --bypass $2`;
+
+export const DISABLE_TUN_FILE = `sudo ip link del tun0 || true
+sudo umount -f /etc/resolv.conf || true
+sudo pkill tun2proxy-bin `;

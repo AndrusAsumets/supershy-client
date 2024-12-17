@@ -113,7 +113,6 @@ export interface Config {
 	SSH_PATH: string
 	SSH_KNOWN_HOSTS_PATH: string
 	DB_FILE_PATH: string
-	ENVIRONMENT_FILE_PATH: string
 	SSH_LOG_EXTENSION: string
 	SSH_USER: string
 	SSH_CONNECTION_TIMEOUT_SEC: number
@@ -130,13 +129,14 @@ export interface Config {
 	WEB_SERVER_PORT: number
 	WEB_URL: string
 	WEB_SOCKET_PORT: number
-	PROXY_PROTOCOLS: string[]
 	PROXY_ENABLED: boolean
 	DIGITAL_OCEAN_REGIONS: Record<string, string>
 	INSTANCE_PROVIDERS: InstanceProvider[]
 	INSTANCE_PROVIDERS_DISABLED: InstanceProvider[]
 	INSTANCE_COUNTRIES: string[]
 	INSTANCE_COUNTRIES_DISABLED: string[]
+    ENABLE_TUN_FILE_NAME: string
+    DISABLE_TUN_FILE_NAME: string
 }
 
 export type Proxies = Record<string, Proxy>

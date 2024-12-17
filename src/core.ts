@@ -1,24 +1,23 @@
 import { logger as _logger } from './logger.ts';
 import * as models from './models.ts';
-import { existsSync } from 'https://deno.land/std@0.224.0/fs/mod.ts';
 
 const { config } = models;
 const {
     CLOUDFLARE_BASE_URL,
     DATA_PATH,
     CONNECT_SSH_TUNNEL_FILE_NAME,
-    ENVIRONMENT_FILE_PATH,
     SSH_USER,
     LOG_PATH,
     SSH_LOG_EXTENSION,
     APP_ID,
     ENV,
-    PROXY_PROTOCOLS,
     PROXY_LOCAL_PORT,
     PROXY_REMOTE_PORT,
     CLOUDFLARE_ACCOUNT_ID,
     CLOUDFLARE_KV_NAMESPACE,
     CLOUDFLARE_API_KEY,
+    ENABLE_TUN_FILE_NAME,
+    DISABLE_TUN_FILE_NAME,
 } = config();
 import { Config, Proxy, InstanceProvider } from './types.ts';
 import * as lib from './lib.ts';
@@ -113,26 +112,12 @@ export const getSshLogPath = (
     proxyUuid: string
 ): string =>`${LOG_PATH}/${proxyUuid}${SSH_LOG_EXTENSION}`;
 
-const readProxyFile = (): string => {
-    if (!existsSync(ENVIRONMENT_FILE_PATH)) {
-        return '';
-    }
-
-    const lineSeparator = '\n';
-    return Deno
-        .readTextFileSync(ENVIRONMENT_FILE_PATH)
-        .split(lineSeparator)
-        .filter((line: string) => !new RegExp(PROXY_PROTOCOLS.join('|')).test(line))
-        .join(lineSeparator);
+export const enableSystemWideProxy = (proxy: Proxy) => {
+    integrations.shell.command(`bash ${DATA_PATH}/${ENABLE_TUN_FILE_NAME} ${proxy.proxyLocalPort} ${proxy.instanceIp}`);
 };
 
-export const enableSystemWideProxy = () => {
-    const proxyUrls = PROXY_PROTOCOLS
-        .map((protocol: string) => `${protocol}_proxy="${protocol}://localhost:${PROXY_LOCAL_PORT}/"`)
-        .join('\n');
-    const args = `${readProxyFile()}${proxyUrls}`;
-    const command = `bash recreate-text-file.sh ${ENVIRONMENT_FILE_PATH} ${args}`;
-    integrations.shell.command(command);
+export const disableSystemWideProxy = () => {
+    integrations.shell.command(`bash ${DATA_PATH}/${DISABLE_TUN_FILE_NAME}`);
 };
 
 export const exit = async (

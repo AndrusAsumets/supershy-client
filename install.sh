@@ -26,18 +26,19 @@ version="$(curl -s https://version.supershy.org/)"
 uri="https://github.com/AndrusAsumets/supershy-client/releases/download/${version}/${target}.zip"
 app_id="org.supershy.supershyd"
 daemon="/etc/systemd/user/supershy-daemon.service"
-bin_dir="/usr/bin"
+data_dir="/home/${user}/.supershy-data"
 if [[ $target == *"macos"* ]]; then
     launch_agents_dir="/Users/${user}/Library/LaunchAgents"
     sudo mkdir -p $launch_agents_dir
     sudo chown -R $user $launch_agents_dir
     daemon="${launch_agents_dir}/${app_id}.plist"
-    bin_dir="/Users/${user}"
+    data_dir="/Users/${user}/.supershy-data"
 fi
+sudo mkdir -p $data_dir
 tmp_dir="/tmp"
 zip="$tmp_dir/supershy.zip"
 tmp_exe="$tmp_dir/supershyd"
-exe="$bin_dir/supershyd"
+exe="$data_dir/supershyd"
 
 # remove old installation
 sudo rm -rf $exe
@@ -63,7 +64,7 @@ case $target in
         sudo echo 'Description=supershyd' >> $daemon
 
         sudo echo '[Service]' >> $daemon
-        sudo echo 'ExecStart=supershyd' >> $daemon
+        sudo echo "ExecStart=${exe}" >> $daemon
         sudo echo 'Restart=always' >> $daemon
 
         sudo echo '[Install]' >> $daemon
@@ -93,7 +94,19 @@ case $target in
         sudo echo '</plist>' >> $daemon
 
         # run supershy daemon in background
-        sudo -u $user launchctl unload $daemon || true
+        sudo -u $user launchctl unload $daemon &>/dev/null || true
         sudo -u $user launchctl load $daemon
     ;;
 esac
+
+# since deno can not run sudo, yet tun2proxy needs it, hence work around
+sudoers_dir=/etc/sudoers
+enable_tun="${user} ALL=(ALL:ALL) NOPASSWD: /home/me/.supershy-data/enable-tun.sh"
+if ! sudo grep -q "$enable_tun" $sudoers_dir; then
+    echo -e $enable_tun | sudo tee -a $sudoers_dir
+fi
+
+disable_tun="${user} ALL=(ALL:ALL) NOPASSWD: /home/me/.supershy-data/disable-tun.sh"
+if ! sudo grep -q "$disable_tun" $sudoers_dir; then
+    echo -e $disable_tun | sudo tee -a $sudoers_dir
+fi
