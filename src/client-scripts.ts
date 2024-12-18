@@ -37,10 +37,11 @@ ssh_host=$2
 ssh_port=$3
 
 sudo ufw --force reset
-#sudo ufw default deny incoming
-#sudo ufw default deny outgoing
-sudo ufw allow out from any to $ssh_host
-sudo ufw allow out from any to 10.0.0.1
+sudo ufw default deny incoming
+sudo ufw default deny outgoing
+sudo ufw allow out from any to 10.0.0.0/24
+sudo ufw allow out from any to 198.18.0.0/24
+sudo ufw allow out from any to $ssh_host port $ssh_port
 sudo ufw reload
 sudo ufw enable
 

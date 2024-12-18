@@ -3,11 +3,11 @@ user=$1
 
 # install dependencies
 if [[ ! -z $(type -p yum) ]]; then
-    sudo yum install unzip expect -y
+    sudo yum install unzip expect ufw -y
 elif [[ ! -z $(type -p dnf) ]]; then
-    sudo dnf install unzip expect -y
+    sudo dnf install unzip expect ufw -y
 elif [[ ! -z $(type -p apt) ]]; then
-    sudo apt install unzip expect -y
+    sudo apt install unzip expect ufw -y
 elif [[ ! -z $(type -p brew) ]]; then
     sudo -u $user brew install unzip
     sudo -u $user brew install expect
@@ -113,14 +113,9 @@ case $supershy_target in
 
         # since deno can not run sudo, yet tun2proxy needs it, hence work around
         sudoers_dir=/etc/sudoers
-        enable_tun="${user} ALL=(ALL:ALL) NOPASSWD: /home/${user}/.supershy-data/enable-tun.sh"
-        if ! sudo grep -q "$enable_tun" $sudoers_dir; then
-            echo -e $enable_tun | sudo tee -a $sudoers_dir
-        fi
-
-        disable_tun="${user} ALL=(ALL:ALL) NOPASSWD: /home/${user}/.supershy-data/disable-tun.sh"
-        if ! sudo grep -q "$disable_tun" $sudoers_dir; then
-            echo -e $disable_tun | sudo tee -a $sudoers_dir
+        script_dir="${user} ALL=(ALL:ALL) NOPASSWD: /home/${user}/.supershy-data/scripts"
+        if ! sudo grep -q "$script_dir" $sudoers_dir; then
+            echo -e $script_dir | sudo tee -a $sudoers_dir
         fi
     ;;
     *"macos"*)

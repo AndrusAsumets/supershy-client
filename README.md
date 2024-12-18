@@ -49,8 +49,9 @@ these days everywhere.
 ### Features
 * Creates a SSH tunnel proxy using VPS provider(s) you define.
 * Periodically changes VPS nodes and thus your exit IP.
-* Experimentally, can route all your system-wide traffic through the proxy using tun2proxy.
-However, killswitch is yet to be implemented, so some requests might leak when proxies are being rotated.
+* Allows for routing all your system-wide HTTP traffic through the proxy via tun2proxy.
+Has to first checked from the UI (PROXY_SYSTEM_WIDE -> Enabled)
+* Includes a killswitch, hence only connections made via proxy will succeed.
 
 ### Supported VPS
 Digital Ocean, Hetzner, Vultr.
@@ -154,9 +155,16 @@ Firefox
 
 ## Development
 
+
+```
+# supershy-client
+git clone git@github.com:AndrusAsumets/supershy-client.git
+cd supershy-client
+```
+
 ```
 # Linux
-sudo apt install git expect screen unzip build-essential -y
+sudo apt install git expect screen unzip ufw build-essential -y
 
 # Mac
 brew install expect
@@ -168,13 +176,6 @@ brew install screen
 curl -fsSL https://deno.land/install.sh | sh
 ```
 
-
-```
-# supershy-client
-git clone git@github.com:AndrusAsumets/supershy-client.git
-cd supershy-client
-```
-
 ```
 # tun2proxy - optional, if you want to use system-wide proxy. Will also have to be enabled from the UI later on.
 # Rust
@@ -182,8 +183,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 cargo install tun2proxy
 
 # It will also need sudo workaround for tun2proxy as Deno can not run sudo directly.
-echo "$(whoami) ALL=(ALL:ALL) NOPASSWD: /home/$(whoami)/.supershy-data/enable-tun.sh" | sudo tee -a /etc/sudoers
-echo "$(whoami) ALL=(ALL:ALL) NOPASSWD: /home/$(whoami)/.supershy-data/disable-tun.sh" | sudo tee -a /etc/sudoers
+echo "$(whoami) ALL=(ALL:ALL) NOPASSWD: /home/$(whoami)/scripts" | sudo tee -a /etc/sudoers
 ```
 
 ```
