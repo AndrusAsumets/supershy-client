@@ -160,7 +160,6 @@ Firefox
 
 ## Development
 
-
 ```
 # supershy-client
 git clone git@github.com:AndrusAsumets/supershy-client.git
