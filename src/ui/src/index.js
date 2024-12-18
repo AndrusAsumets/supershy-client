@@ -261,7 +261,7 @@ socket
             });
 
         config.INSTANCE_PROVIDERS
-            .sort()
+            .sort((a, b) => a.localeCompare(b))
             .forEach((key) => {
                 $providersSection.append(
                     constructGenericLine(
@@ -276,7 +276,7 @@ socket
             });
 
         config.INSTANCE_COUNTRIES
-            .sort((a, b) => COUNTRY_CODES[a] > COUNTRY_CODES[b])
+            .sort((a, b) => COUNTRY_CODES[a].localeCompare(COUNTRY_CODES[b]))
             .forEach((key) => {
                 $countriesSection.append(
                     constructGenericLine(
