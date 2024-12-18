@@ -1,4 +1,6 @@
-export const GENERATE_SSH_KEY_FILE = `#!/usr/bin/expect -f
+import { Scripts, ClientScriptFileName } from './types.ts';
+
+const GENERATE_SSH_KEY_FILE = `#!/usr/bin/expect -f
 
 set passphrase [lrange $argv 0 0]
 set key_path [lrange $argv 1 1]
@@ -13,7 +15,7 @@ send -- "$passphrase\r"
 interact
 exit 0`;
 
-export const CONNECT_SSH_TUNNEL_FILE = `#!/usr/bin/expect -f
+const CONNECT_SSH_TUNNEL_FILE = `#!/usr/bin/expect -f
 
 set passphrase [lrange $argv 0 0]
 set server [lrange $argv 1 1]
@@ -30,11 +32,9 @@ send -- "$passphrase\r"
 interact
 exit 0`;
 
-export const ENABLE_TUN_FILE = `#!/bin/bash
-
-proxy_port=$1
-ssh_host=$2
-ssh_port=$3
+const ENABLE_CONNECTION_KILLSWITCH_FILE = `#!/bin/bash
+ssh_host=$1
+ssh_port=$2
 
 sudo ufw --force reset
 sudo ufw default deny incoming
@@ -44,22 +44,36 @@ sudo ufw allow out from any to 198.18.0.0/24
 sudo ufw allow out from any to $ssh_host port $ssh_port
 sudo ufw reload
 sudo ufw enable
-
-sudo pkill tun2proxy-bin
-sudo screen -dm sudo $(which tun2proxy-bin) --setup --proxy http://0.0.0.0:$proxy_port --bypass $ssh_host --dns virtual
-sudo sysctl net.ipv6.conf.all.disable_ipv6=1
-sudo sysctl net.ipv6.conf.default.disable_ipv6=1
-
-#sudo chattr +i "$(realpath /etc/resolv.conf)"
 `;
 
-export const DISABLE_TUN_FILE = `#!/bin/bash
+const DISABLE_CONNECTION_KILLSWITCH_FILE = `#!/bin/bash
 
 sudo ufw --force reset
 sudo ufw disable
+`;
+
+const ENABLE_TUN_FILE = `#!/bin/bash
+
+proxy_port=$1
+ssh_host=$2
+
+sudo pkill tun2proxy-bin
+sudo screen -dm sudo $(which tun2proxy-bin) --setup --proxy http://0.0.0.0:$proxy_port --bypass $ssh_host --dns virtual
+sudo chattr +i "$(realpath /etc/resolv.conf)"
+`;
+
+const DISABLE_TUN_FILE = `#!/bin/bash
+
 sudo ip link del tun0 || true
 sudo umount -f /etc/resolv.conf || true
 sudo pkill tun2proxy-bin
-sudo sysctl net.ipv6.conf.all.disable_ipv6=0
-sudo sysctl net.ipv6.conf.default.disable_ipv6=0
 `;
+
+export const clientScripts: Scripts = {
+    [ClientScriptFileName.GENERATE_SSH_KEY_FILE_NAME]: GENERATE_SSH_KEY_FILE,
+    [ClientScriptFileName.CONNECT_SSH_TUNNEL_FILE_NAME]: CONNECT_SSH_TUNNEL_FILE,
+    [ClientScriptFileName.ENABLE_CONNECTION_KILLSWITCH_FILE_NAME]: ENABLE_CONNECTION_KILLSWITCH_FILE,
+    [ClientScriptFileName.DISABLE_CONNECTION_KILLSWITCH_FILE_NAME]: DISABLE_CONNECTION_KILLSWITCH_FILE,
+    [ClientScriptFileName.ENABLE_TUN_FILE_NAME]: ENABLE_TUN_FILE,
+    [ClientScriptFileName.DISABLE_TUN_FILE_NAME]: DISABLE_TUN_FILE,
+}

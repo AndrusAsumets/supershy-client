@@ -17,6 +17,7 @@ import {
     CreateDigitalOceanInstance,
     CreateHetznerInstance,
     CreateVultrInstance,
+    ClientScriptFileName
 } from './types.ts';
 
 export const shell = {
@@ -26,7 +27,7 @@ export const shell = {
             passphrase: string,
         ) => {
             const cmd =
-                `${config().SCRIPT_PATH}/${config().GENERATE_SSH_KEY_FILE_NAME} ${passphrase} ${keyPath} ${config().SSH_KEY_ALGORITHM} ${config().SSH_KEY_LENGTH}`;
+                `${config().SCRIPT_PATH}/${ClientScriptFileName.GENERATE_SSH_KEY_FILE_NAME} ${passphrase} ${keyPath} ${config().SSH_KEY_ALGORITHM} ${config().SSH_KEY_LENGTH}`;
             const publicKeyPath = `${keyPath}.pub`;
             integrations.shell.command(cmd);
 

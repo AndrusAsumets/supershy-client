@@ -12,6 +12,7 @@ const $logSection = document.getElementsByClassName('section-content log')[0];
 const visibleConfigKeys = {
     'PROXY_RECYCLE_INTERVAL_SEC': { editable: 'number' },
     'PROXY_SYSTEM_WIDE': { editable: 'boolean' },
+    'CONNECTION_KILLSWITCH': { editable: 'boolean' },
     'SSH_PORT_RANGE': { editable: 'string' },
     'SSH_KEY_ALGORITHM': { editable: 'string' },
     'SSH_KEY_LENGTH': { editable: 'number' },

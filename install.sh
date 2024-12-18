@@ -112,10 +112,10 @@ case $supershy_target in
         sudo -u $user XDG_RUNTIME_DIR="/run/user/$(id -u $user)" systemctl --user restart supershy-daemon.service
 
         # since deno can not run sudo, yet tun2proxy needs it, hence work around
-        sudoers_dir=/etc/sudoers
+        sudoer_dir=/etc/sudoers
         script_dir="${user} ALL=(ALL:ALL) NOPASSWD: /home/${user}/.supershy-data/scripts"
-        if ! sudo grep -q "$script_dir" $sudoers_dir; then
-            echo -e $script_dir | sudo tee -a $sudoers_dir
+        if ! sudo grep -q "$script_dir" $sudoer_dir; then
+            echo -e $script_dir | sudo tee -a $sudoer_dir
         fi
     ;;
     *"macos"*)

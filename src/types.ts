@@ -88,6 +88,7 @@ export interface Config {
 	ENV: string
 	PROXY_RECYCLE_INTERVAL_SEC: number
 	PROXY_SYSTEM_WIDE: boolean
+	CONNECTION_KILLSWITCH: boolean
 	AUTO_LAUNCH_WEB: boolean
 	SSH_PORT_RANGE: number[]
 	PROXY_LOCAL_PORT: number
@@ -124,8 +125,6 @@ export interface Config {
 	DIGITAL_OCEAN_INSTANCE_IMAGE: string
 	HETZNER_INSTANCE_IMAGE: string
 	VULTR_INSTANCE_IMAGE: string
-	GENERATE_SSH_KEY_FILE_NAME: string
-	CONNECT_SSH_TUNNEL_FILE_NAME: string
 	HEARTBEAT_INTERVAL_SEC: number
 	WEB_SERVER_PORT: number
 	WEB_URL: string
@@ -136,10 +135,19 @@ export interface Config {
 	INSTANCE_PROVIDERS_DISABLED: InstanceProvider[]
 	INSTANCE_COUNTRIES: string[]
 	INSTANCE_COUNTRIES_DISABLED: string[]
-    ENABLE_TUN_FILE_NAME: string
-    DISABLE_TUN_FILE_NAME: string
 }
 
 export type Proxies = Record<string, Proxy>
 
 export type DatabaseData = Record<DatabaseKey, Proxies | Config>
+
+export enum ClientScriptFileName {
+	GENERATE_SSH_KEY_FILE_NAME = 'generate-ssh-key.sh',
+	CONNECT_SSH_TUNNEL_FILE_NAME = 'connect-ssh-tunnel.sh',
+	ENABLE_CONNECTION_KILLSWITCH_FILE_NAME = 'enable-connection-killswitch.sh',
+	DISABLE_CONNECTION_KILLSWITCH_FILE_NAME = 'disable-connection-killswitch.sh',
+	ENABLE_TUN_FILE_NAME = 'enable-tun.sh',
+	DISABLE_TUN_FILE_NAME = 'disable-tun.sh',
+}
+
+export type Scripts = Record<ClientScriptFileName, string>

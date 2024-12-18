@@ -49,9 +49,11 @@ these days everywhere.
 ### Features
 * Creates a SSH tunnel proxy using VPS provider(s) you define.
 * Periodically changes VPS nodes and thus your exit IP.
-* Allows for routing all your system-wide HTTP traffic through the proxy via tun2proxy.
-Has to first checked from the UI (PROXY_SYSTEM_WIDE -> Enabled)
-* Includes a killswitch, hence only connections made via proxy will succeed.
+* Allows for routing all your system-wide TCP traffic via proxy using tun2proxy.
+Has to be first checked from the UI (Config -> PROXY_SYSTEM_WIDE -> Enabled).
+* Includes a killswitch toggle, hence only connections made via proxy will succeed.
+(Config -> CONNECTION_KILLSWITCH -> Enabled)
+* Runs as a daemon process in background, keeps Supershy running even after reboot.
 
 ### Supported VPS
 Digital Ocean, Hetzner, Vultr.

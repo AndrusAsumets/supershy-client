@@ -6,7 +6,6 @@ import * as models from './models.ts';
 const { config } = models;
 const {
     SCRIPT_PATH,
-    CONNECT_SSH_TUNNEL_FILE_NAME,
     SSH_USER,
     LOG_PATH,
     SSH_LOG_EXTENSION,
@@ -14,10 +13,8 @@ const {
     ENV,
     PROXY_LOCAL_PORT,
     PROXY_REMOTE_PORT,
-    ENABLE_TUN_FILE_NAME,
-    DISABLE_TUN_FILE_NAME,
 } = config();
-import { Config, Proxy, InstanceProvider } from './types.ts';
+import { Config, Proxy, InstanceProvider, ClientScriptFileName } from './types.ts';
 import * as lib from './lib.ts';
 import * as integrations from './integrations.ts';
 
@@ -83,19 +80,27 @@ export const getConnectionString = (
         sshKeyPath,
         sshLogPath
     } = proxy;
-    return `${SCRIPT_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${instanceIp} ${SSH_USER} ${sshPort} ${PROXY_LOCAL_PORT} ${PROXY_REMOTE_PORT} ${sshKeyPath} ${sshLogPath}`;
+    return `${SCRIPT_PATH}/${ClientScriptFileName.CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${instanceIp} ${SSH_USER} ${sshPort} ${PROXY_LOCAL_PORT} ${PROXY_REMOTE_PORT} ${sshKeyPath} ${sshLogPath}`;
 };
 
 export const getSshLogPath = (
     proxyUuid: string
 ): string =>`${LOG_PATH}/${proxyUuid}${SSH_LOG_EXTENSION}`;
 
+export const enableConnectionKillSwitch = (proxy: Proxy) => {
+    integrations.shell.command(`bash ${SCRIPT_PATH}/${ClientScriptFileName.ENABLE_CONNECTION_KILLSWITCH_FILE_NAME} ${proxy.instanceIp} ${proxy.sshPort}`);
+};
+
+export const disableConnectionKillSwitch = () => {
+    integrations.shell.command(`bash ${SCRIPT_PATH}/${ClientScriptFileName.DISABLE_CONNECTION_KILLSWITCH_FILE_NAME}`);
+};
+
 export const enableSystemWideProxy = (proxy: Proxy) => {
-    integrations.shell.command(`bash ${SCRIPT_PATH}/${ENABLE_TUN_FILE_NAME} ${proxy.proxyLocalPort} ${proxy.instanceIp} ${proxy.sshPort}`);
+    integrations.shell.command(`bash ${SCRIPT_PATH}/${ClientScriptFileName.ENABLE_TUN_FILE_NAME} ${proxy.proxyLocalPort} ${proxy.instanceIp}`);
 };
 
 export const disableSystemWideProxy = () => {
-    integrations.shell.command(`bash ${SCRIPT_PATH}/${DISABLE_TUN_FILE_NAME}`);
+    integrations.shell.command(`bash ${SCRIPT_PATH}/${ClientScriptFileName.DISABLE_TUN_FILE_NAME}`);
 };
 
 export const exit = async (

@@ -13,6 +13,7 @@ import {
     CreateDigitalOceanInstance,
     CreateHetznerInstance,
     CreateVultrInstance,
+    ClientScriptFileName,
 } from './src/types.ts';
 import * as core from './src/core.ts';
 import * as models from './src/models.ts';
@@ -32,10 +33,6 @@ const {
     SCRIPT_PATH,
     SSH_KEY_PATH,
     LOG_PATH,
-    GENERATE_SSH_KEY_FILE_NAME,
-    CONNECT_SSH_TUNNEL_FILE_NAME,
-    ENABLE_TUN_FILE_NAME,
-    DISABLE_TUN_FILE_NAME,
     SSH_USER,
     PROXY_TYPES,
     SSH_PORT_RANGE,
@@ -49,12 +46,7 @@ const {
     HEARTBEAT_INTERVAL_SEC,
     PROXY_ENABLED,
 } = config();
-import {
-    GENERATE_SSH_KEY_FILE,
-    CONNECT_SSH_TUNNEL_FILE,
-    ENABLE_TUN_FILE,
-    DISABLE_TUN_FILE,
-} from './src/client-scripts.ts';
+import { clientScripts } from './src/client-scripts.ts';
 import * as serverScripts from './src/server-scripts.ts';
 
 const io = new Server({ cors: { origin: '*' }});
@@ -74,6 +66,11 @@ const connect = async (
 
     integrations.fs.hostKey.save(proxy);
     existsSync(proxy.sshLogPath) && Deno.removeSync(proxy.sshLogPath);
+
+    if (config().CONNECTION_KILLSWITCH) {
+        core.enableConnectionKillSwitch(proxy);
+        logger.info(`Enabled connection killswitch.`);
+    }
 
     if (config().PROXY_SYSTEM_WIDE) {
         core.enableSystemWideProxy(proxy);
@@ -281,7 +278,7 @@ const heartbeat = async () => {
     }
 };
 
-const connectProxy = () => {
+const init = () => {
     integrations.fs.ensureFolder(DATA_PATH);
     integrations.fs.ensureFolder(SCRIPT_PATH);
     integrations.fs.ensureFolder(SSH_PATH);
@@ -290,15 +287,11 @@ const connectProxy = () => {
 
     !existsSync(SSH_KNOWN_HOSTS_PATH) && Deno.writeTextFileSync(SSH_KNOWN_HOSTS_PATH, '');
 
-    [
-        [GENERATE_SSH_KEY_FILE_NAME, GENERATE_SSH_KEY_FILE],
-        [CONNECT_SSH_TUNNEL_FILE_NAME, CONNECT_SSH_TUNNEL_FILE],
-        [ENABLE_TUN_FILE_NAME, ENABLE_TUN_FILE],
-        [DISABLE_TUN_FILE_NAME, DISABLE_TUN_FILE],
-    ].forEach((file: string[]) => {
-        Deno.writeTextFileSync(`${SCRIPT_PATH}/${file[0]}`, file[1]);
-        new Deno.Command('chmod', { args: ['+x', file[0]] });
-        Deno.chmodSync(`${SCRIPT_PATH}/${file[0]}`, 0o700);
+    Object.keys(clientScripts).forEach((fileName: string) => {
+        const file = clientScripts[fileName as ClientScriptFileName];
+        Deno.writeTextFileSync(`${SCRIPT_PATH}/${fileName}`, file);
+        new Deno.Command('chmod', { args: ['+x', fileName] });
+        Deno.chmodSync(`${SCRIPT_PATH}/${fileName}`, 0o700);
     });
 
     loop();
@@ -311,4 +304,4 @@ webserver.start();
 websocket.start(io);
 AUTO_LAUNCH_WEB && open(WEB_URL);
 AUTO_LAUNCH_WEB && models.updateConfig({...config(), AUTO_LAUNCH_WEB: false});
-PROXY_ENABLED && connectProxy();
+PROXY_ENABLED && init();

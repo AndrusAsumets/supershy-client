@@ -6,6 +6,7 @@ const APP_ID = 'supershy-client';
 const ENV = 'dev';
 const PROXY_RECYCLE_INTERVAL_SEC = 1800;
 const PROXY_SYSTEM_WIDE = false;
+const CONNECTION_KILLSWITCH = false;
 const AUTO_LAUNCH_WEB = true;
 const SSH_PORT_RANGE: number[] = [10000, 65535];
 const PROXY_LOCAL_PORT = 8888;
@@ -45,10 +46,6 @@ const HETZNER_INSTANCE_IMAGE = 'debian-12';
 const VULTR_INSTANCE_IMAGE = 'Debian 12 x64 (bookworm)';
 const INSTANCE_PROVIDERS: InstanceProvider[] = [];
 const INSTANCE_PROVIDERS_DISABLED: InstanceProvider[] = [];
-const GENERATE_SSH_KEY_FILE_NAME = 'generate-ssh-key.exp';
-const CONNECT_SSH_TUNNEL_FILE_NAME = 'connect-ssh-tunnel.exp';
-const ENABLE_TUN_FILE_NAME = 'enable-tun.sh';
-const DISABLE_TUN_FILE_NAME = 'disable-tun.sh';
 const HEARTBEAT_INTERVAL_SEC = 10 * 1000;
 const WEB_SERVER_PORT = 8080;
 const WEB_URL = `http://localhost:${WEB_SERVER_PORT}`;
@@ -70,6 +67,7 @@ const INSTANCE_COUNTRIES_DISABLED: string[] = [];
 
 export const config: Config = {
     PROXY_SYSTEM_WIDE,
+    CONNECTION_KILLSWITCH,
     PROXY_RECYCLE_INTERVAL_SEC,
     DIGITAL_OCEAN_API_KEY,
     HETZNER_API_KEY,
@@ -99,8 +97,6 @@ export const config: Config = {
     CLOUDFLARE_BASE_URL,
     INSTANCE_PROVIDERS,
     INSTANCE_PROVIDERS_DISABLED,
-    GENERATE_SSH_KEY_FILE_NAME,
-    CONNECT_SSH_TUNNEL_FILE_NAME,
     HEARTBEAT_INTERVAL_SEC,
     HOME_PATH,
     DATA_PATH,
@@ -121,6 +117,4 @@ export const config: Config = {
     DIGITAL_OCEAN_REGIONS,
     INSTANCE_COUNTRIES,
     INSTANCE_COUNTRIES_DISABLED,
-    ENABLE_TUN_FILE_NAME,
-    DISABLE_TUN_FILE_NAME
 };
