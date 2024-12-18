@@ -177,11 +177,6 @@ brew install screen
 ```
 
 ```
-# Deno
-curl -fsSL https://deno.land/install.sh | sh
-```
-
-```
 # tun2proxy - optional, if you want to use system-wide proxy. Will also have to be enabled from the UI later on.
 # Rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
@@ -189,6 +184,11 @@ cargo install tun2proxy
 
 # It will also need sudo workaround for tun2proxy as Deno can not run sudo directly.
 echo "$(whoami) ALL=(ALL:ALL) NOPASSWD: /home/$(whoami)/scripts" | sudo tee -a /etc/sudoers
+```
+
+```
+# Deno
+curl -fsSL https://deno.land/install.sh | sh
 ```
 
 ```
