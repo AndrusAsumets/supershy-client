@@ -55,6 +55,7 @@ import {
     ENABLE_TUN_FILE,
     DISABLE_TUN_FILE,
 } from './src/client-scripts.ts';
+import * as serverScripts from './src/server-scripts.ts';
 
 const io = new Server({ cors: { origin: '*' }});
 const logger = _logger.get(io);
@@ -174,7 +175,7 @@ const rotate = async () => {
         const instancePublicKeyId = await integrations.compute[instanceProvider].keys.add(publicKey, instanceName);
         const jwtSecret = crypto.randomBytes(64).toString('hex');
         const sshPort = lib.randomNumberFromRange(SSH_PORT_RANGE[0], SSH_PORT_RANGE[1]);
-        const userData = core.getUserData(proxyUuid, sshPort, jwtSecret);
+        const userData = serverScripts.getUserData(proxyUuid, sshPort, jwtSecret);
         const formattedUserData = integrations.compute[instanceProvider].userData.format(userData);
         const instancePayload: CreateDigitalOceanInstance & CreateHetznerInstance & CreateVultrInstance = {
             datacenter: instanceRegion,
