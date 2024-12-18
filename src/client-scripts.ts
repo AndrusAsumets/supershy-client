@@ -58,6 +58,7 @@ proxy_port=$1
 ssh_host=$2
 
 sudo pkill tun2proxy-bin
+sleep 1
 sudo screen -dm sudo $(which tun2proxy-bin) --setup --proxy http://0.0.0.0:$proxy_port --bypass $ssh_host --dns virtual
 sudo chattr +i "$(realpath /etc/resolv.conf)"
 `;
