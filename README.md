@@ -46,6 +46,12 @@ might happen, I should able live to fight yet another day. It is also good to
 give something back to the humanity as kindness seems to be in short supply
 these days everywhere.
 
+### Features
+* Creates a SSH tunnel proxy using VPS provider(s) you define.
+* Periodically changes VPS nodes and thus your exit IP.
+* Experimentally, can route all your system-wide traffic through the proxy using tun2proxy.
+However, killswitch is yet to be implemented, so some requests might leak when proxies are being rotated.
+
 ### Supported VPS
 Digital Ocean, Hetzner, Vultr.
 
@@ -174,6 +180,7 @@ cd supershy-client
 # Rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 cargo install tun2proxy
+
 # It will also need sudo workaround for tun2proxy as Deno can not run sudo directly.
 echo "$(whoami) ALL=(ALL:ALL) NOPASSWD: /home/$(whoami)/.supershy-data/enable-tun.sh" | sudo tee -a /etc/sudoers
 echo "$(whoami) ALL=(ALL:ALL) NOPASSWD: /home/$(whoami)/.supershy-data/disable-tun.sh" | sudo tee -a /etc/sudoers
