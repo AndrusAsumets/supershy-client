@@ -3,6 +3,7 @@ const socket = io('ws://localhost:8880', {
 });
 
 const $enablementToggle = document.getElementsByClassName('enablement-toggle')[0];
+const $restartToggle = document.getElementsByClassName('restart-toggle')[0];
 const $statusSection = document.getElementsByClassName('section-content status')[0];
 const $providersSection = document.getElementsByClassName('section-content providers')[0];
 const $countriesSection = document.getElementsByClassName('section-content countries')[0];
@@ -163,19 +164,23 @@ const constructGenericLine = (
     return $configLine;
 };
 
+const start = () => {
+    isProxyEnabled = true;
+    updateEnablementToggle('Enabling ...');
+    socket.emit('/proxy/enable');
+};
+
+const stop = () => {
+    isProxyEnabled = false
+    updateEnablementToggle('Disabling ...');
+    socket.emit('/proxy/disable');
+};
+
 const interact = () => {
     socket.emit('/config/save', config);
-
-    if (!isProxyEnabled) {
-        isProxyEnabled = true;
-        updateEnablementToggle('Enabling ...');
-        socket.emit('/proxy/enable');
-    }
-    else {
-        isProxyEnabled = false
-        updateEnablementToggle('Disabling ...');
-        socket.emit('/proxy/disable');
-    }
+    !isProxyEnabled
+        ? start()
+        : stop();
 };
 
 const appendLogMessage = (message, key) => {
@@ -325,3 +330,6 @@ socket
 
 $enablementToggle
     .addEventListener('click', () => interact());
+
+$restartToggle
+    .addEventListener('click', () => start());
