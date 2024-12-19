@@ -85,8 +85,6 @@ const connect = async (
         .getConnectionString(proxy)
         .replace('\n', '');
 
-    logger.info(`Starting SSH tunnel proxy to ${proxy.instanceIp}:${port}.`);
-
     integrations.fs.hostKey.save(proxy);
     existsSync(proxy.sshLogPath) && Deno.removeSync(proxy.sshLogPath);
 
@@ -96,6 +94,13 @@ const connect = async (
         logger.info(`Enabled connection killswitch.`);
     }
 
+    if (config().PROXY_SYSTEM_WIDE) {
+        logger.info(`Enabling system-wide proxy via tun2proxy.`);
+        core.enableSystemWideProxy();
+        logger.info(`Enabled system-wide proxy via tun2proxy.`);
+    }
+
+    logger.info(`Starting SSH tunnel proxy to ${proxy.instanceIp}:${port}.`);
     let isConnected = false;
     while (!isConnected) {
         await integrations.shell.pkill(`${port}:`);
@@ -117,12 +122,6 @@ const connect = async (
             logger.warn(err);
             logger.warn(`Restarting SSH tunnel to ${proxy.instanceIp}:${port}.`);
         }
-    }
-
-    if (config().PROXY_SYSTEM_WIDE) {
-        logger.info(`Enabling system-wide proxy via tun2proxy.`);
-        core.enableSystemWideProxy();
-        logger.info(`Enabled system-wide proxy via tun2proxy.`);
     }
 };
 
