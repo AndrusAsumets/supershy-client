@@ -56,18 +56,17 @@ const ENABLE_TUN_FILE = `#!/bin/bash
 
 proxy_port=$1
 ssh_host=$2
-
-sudo pkill tun2proxy-bin
+sudo pkill -f tun2proxy-bin || true
 sleep 1
-sudo screen -dm sudo $(which tun2proxy-bin) --setup --proxy http://0.0.0.0:$proxy_port --bypass $ssh_host --dns virtual
-sudo chattr +i "$(realpath /etc/resolv.conf)"
+sudo screen -dm sudo $(which tun2proxy-bin) --setup --proxy http://0.0.0.0:$proxy_port --bypass $ssh_host --dns virtual || true
+sudo chattr +i "$(realpath /etc/resolv.conf)" &>/dev/null || true
 `;
 
 const DISABLE_TUN_FILE = `#!/bin/bash
 
-sudo ip link del tun0 || true
+sudo ip link del tun0 &>/dev/null || true
 sudo umount -f /etc/resolv.conf || true
-sudo pkill tun2proxy-bin
+sudo pkill -f tun2proxy-bin || true
 `;
 
 export const clientScripts: Scripts = {

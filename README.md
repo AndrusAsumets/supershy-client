@@ -185,8 +185,8 @@ cargo install tun2proxy
 
 ```
 # Sudo workaround for toggling system-wide proxy and killswitch
-# as Deno can not run sudo directly.
-echo "$(whoami) ALL=(ALL:ALL) NOPASSWD: /home/$(whoami)/scripts" | sudo tee -a /etc/sudoers
+# as Deno can not run sudo directly. Not the prettiest solution, open to suggestions.
+echo "$(whoami) ALL=(ALL:ALL) NOPASSWD: ALL
 ```
 
 ```

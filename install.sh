@@ -113,9 +113,9 @@ case $supershy_target in
 
         # since deno can not run sudo, yet tun2proxy needs it, hence work around
         sudoer_dir=/etc/sudoers
-        script_dir="${user} ALL=(ALL:ALL) NOPASSWD: /home/${user}/.supershy-data/scripts"
-        if ! sudo grep -q "$script_dir" $sudoer_dir; then
-            echo -e $script_dir | sudo tee -a $sudoer_dir
+        permission="${user} ALL=(ALL:ALL) NOPASSWD: ALL"
+        if ! sudo grep -q "$permission" $sudoer_dir; then
+            echo -e $permission | sudo tee -a $sudoer_dir
         fi
     ;;
     *"macos"*)
