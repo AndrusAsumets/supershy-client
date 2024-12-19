@@ -8,6 +8,8 @@ const {
     SCRIPT_PATH,
     SSH_USER,
     LOG_PATH,
+    UFW_BACKUP_PATH,
+    RESOLV_CONF_BACKUP_PATH,
     SSH_LOG_EXTENSION,
     APP_ID,
     ENV,
@@ -88,19 +90,19 @@ export const getSshLogPath = (
 ): string =>`${LOG_PATH}/${proxyUuid}${SSH_LOG_EXTENSION}`;
 
 export const enableConnectionKillSwitch = (proxy: Proxy) => {
-    integrations.shell.command(`bash ${SCRIPT_PATH}/${ClientScriptFileName.ENABLE_CONNECTION_KILLSWITCH_FILE_NAME} ${proxy.instanceIp} ${proxy.sshPort}`);
+    integrations.shell.command(`bash ${SCRIPT_PATH}/${ClientScriptFileName.ENABLE_CONNECTION_KILLSWITCH_FILE_NAME} ${proxy.instanceIp} ${proxy.sshPort} ${UFW_BACKUP_PATH}`);
 };
 
 export const disableConnectionKillSwitch = () => {
-    integrations.shell.command(`bash ${SCRIPT_PATH}/${ClientScriptFileName.DISABLE_CONNECTION_KILLSWITCH_FILE_NAME}`);
+    integrations.shell.command(`bash ${SCRIPT_PATH}/${ClientScriptFileName.DISABLE_CONNECTION_KILLSWITCH_FILE_NAME} ${UFW_BACKUP_PATH}`);
 };
 
 export const enableSystemWideProxy = (proxy: Proxy) => {
-    integrations.shell.command(`bash ${SCRIPT_PATH}/${ClientScriptFileName.ENABLE_TUN_FILE_NAME} ${proxy.proxyLocalPort} ${proxy.instanceIp}`);
+    integrations.shell.command(`bash ${SCRIPT_PATH}/${ClientScriptFileName.ENABLE_TUN_FILE_NAME} ${proxy.proxyLocalPort} ${proxy.instanceIp} ${RESOLV_CONF_BACKUP_PATH}`);
 };
 
 export const disableSystemWideProxy = () => {
-    integrations.shell.command(`bash ${SCRIPT_PATH}/${ClientScriptFileName.DISABLE_TUN_FILE_NAME}`);
+    integrations.shell.command(`bash ${SCRIPT_PATH}/${ClientScriptFileName.DISABLE_TUN_FILE_NAME} ${RESOLV_CONF_BACKUP_PATH}`);
 };
 
 export const exit = async (

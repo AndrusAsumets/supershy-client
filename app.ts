@@ -30,6 +30,7 @@ const {
     PROXY_LOCAL_PORT,
     PROXY_REMOTE_PORT,
     DATA_PATH,
+    BACKUP_PATH,
     SCRIPT_PATH,
     SSH_KEY_PATH,
     LOG_PATH,
@@ -280,6 +281,7 @@ const heartbeat = async () => {
 
 const init = () => {
     integrations.fs.ensureFolder(DATA_PATH);
+    integrations.fs.ensureFolder(BACKUP_PATH);
     integrations.fs.ensureFolder(SCRIPT_PATH);
     integrations.fs.ensureFolder(SSH_PATH);
     integrations.fs.ensureFolder(SSH_KEY_PATH);

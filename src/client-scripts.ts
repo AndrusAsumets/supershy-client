@@ -33,9 +33,12 @@ interact
 exit 0`;
 
 const ENABLE_CONNECTION_KILLSWITCH_FILE = `#!/bin/bash
+
 ssh_host=$1
 ssh_port=$2
+ufw_backup_path=$3
 
+sudo tar -cvzf $ufw_backup_path /etc/ufw
 sudo ufw --force reset
 sudo ufw default deny incoming
 sudo ufw default deny outgoing
@@ -47,15 +50,21 @@ sudo ufw enable
 `;
 
 const DISABLE_CONNECTION_KILLSWITCH_FILE = `#!/bin/bash
+ufw_backup_path=$1
 
-sudo ufw --force reset
 sudo ufw disable
+sudo ufw --force reset
+sudo tar -xvzf $ufw_backup_path -C /
+sudo rm $ufw_backup_path
 `;
 
 const ENABLE_TUN_FILE = `#!/bin/bash
 
 proxy_port=$1
 ssh_host=$2
+resolv_conf_path=$3
+
+sudo mv "$(realpath /etc/resolv.conf)" $resolv_conf_path || true
 sudo pkill -f tun2proxy-bin || true
 sleep 1
 sudo screen -dm sudo $(which tun2proxy-bin) --setup --proxy http://0.0.0.0:$proxy_port --bypass $ssh_host --dns virtual || true
@@ -64,9 +73,14 @@ sudo chattr +i "$(realpath /etc/resolv.conf)" &>/dev/null || true
 
 const DISABLE_TUN_FILE = `#!/bin/bash
 
+resolv_conf_path=$1
+
+sudo chattr -i "$(realpath /etc/resolv.conf)" &>/dev/null || true
+sudo mv $resolv_conf_path "$(realpath /etc/resolv.conf)" || true
 sudo ip link del tun0 &>/dev/null || true
 sudo umount -f /etc/resolv.conf || true
 sudo pkill -f tun2proxy-bin || true
+sudo rm $resolv_conf_path || true
 `;
 
 export const clientScripts: Scripts = {

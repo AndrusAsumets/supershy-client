@@ -3,10 +3,9 @@ systemctl --user stop supershy-daemon.service || true
 systemctl --user disable supershy-daemon.service || true
 sudo rm /etc/systemd/user/supershy-daemon.service || true
 
-$user=$(whoami)
-launch_agents_dir="/Users/${user}/Library/LaunchAgents"
+launch_agents_dir="/Users/${whoami}/Library/LaunchAgents"
 daemon="${launch_agents_dir}/org.supershy.supershyd.plist"
-sudo -u $user launchctl unload $daemon &>/dev/null || true
+sudo -u $(whoami) launchctl unload $daemon &>/dev/null || true
 
 # stop application
 sudo pkill -f supershyd || true
