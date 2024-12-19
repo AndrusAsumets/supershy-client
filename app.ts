@@ -88,13 +88,13 @@ const connect = async (
     integrations.fs.hostKey.save(proxy);
     existsSync(proxy.sshLogPath) && Deno.removeSync(proxy.sshLogPath);
 
-    if (config().CONNECTION_KILLSWITCH) {
+    if (config().CONNECTION_KILLSWITCH && models.getInitialProxy()) {
         logger.info(`Enabling connection killswitch.`);
         core.enableConnectionKillSwitch();
         logger.info(`Enabled connection killswitch.`);
     }
 
-    if (config().PROXY_SYSTEM_WIDE) {
+    if (config().PROXY_SYSTEM_WIDE && models.getInitialProxy()) {
         logger.info(`Enabling system-wide proxy via tun2proxy.`);
         core.enableSystemWideProxy();
         logger.info(`Enabled system-wide proxy via tun2proxy.`);
