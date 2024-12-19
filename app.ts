@@ -81,9 +81,7 @@ const connect = async (
     proxy: Proxy,
 ) => {
     const port = PROXY_LOCAL_PORT;
-    proxy.connectionString = core
-        .getConnectionString(proxy)
-        .replace('\n', '');
+    proxy.connectionString = core.getConnectionString(proxy)
 
     integrations.fs.hostKey.save(proxy);
     existsSync(proxy.sshLogPath) && Deno.removeSync(proxy.sshLogPath);
@@ -100,7 +98,7 @@ const connect = async (
         logger.info(`Enabled system-wide proxy via tun2proxy.`);
     }
 
-    logger.info(`Starting SSH tunnel proxy to ${proxy.instanceIp}:${port}.`);
+    logger.info(`Starting SSH tunnel proxy to ${proxy.instanceIp}:${proxy.sshPort}.`);
     let isConnected = false;
     while (!isConnected) {
         await integrations.shell.pkill(`${port}:`);

@@ -49,10 +49,11 @@ these days everywhere.
 ### Features
 * Creates a SSH tunnel proxy using VPS provider(s) you define.
 * Periodically changes VPS nodes and thus your exit IP.
+* Includes a killswitch toggle, hence only connections made towards proxy will succeed 
+(Config -> CONNECTION_KILLSWITCH -> Enabled).
 * Allows for routing all your system-wide TCP traffic towards proxy using tun2proxy.
 Has to be first checked from the UI (Config -> PROXY_SYSTEM_WIDE -> Enabled).
-* Includes a killswitch toggle, hence only connections made towards proxy will succeed.
-(Config -> CONNECTION_KILLSWITCH -> Enabled)
+It appears to be leaking IPv6 requests, so use it together with the killswitch.
 * Runs as a daemon process in background, keeps Supershy running even after reboot.
 * All application's own requests (i.e, towards VPS providers and CloudFlare) will be
 redirected through SSH tunnels made by the application itself.
