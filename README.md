@@ -53,7 +53,7 @@ these days everywhere.
 (Config -> CONNECTION_KILLSWITCH -> Enabled).
 * Allows for routing all your system-wide TCP traffic towards proxy using tun2proxy.
 Has to be first checked from the UI (Config -> PROXY_SYSTEM_WIDE -> Enabled).
-It appears to be leaking IPv6 requests, so use it together with the killswitch.
+It appears to be leaking DNS requests, so use it together with the killswitch.
 * Runs as a daemon process in background, keeps Supershy running even after reboot.
 * All application's own requests (i.e, towards VPS providers and CloudFlare) will be
 redirected through SSH tunnels made by the application itself.
