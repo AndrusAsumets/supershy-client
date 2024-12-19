@@ -34,53 +34,104 @@ exit 0`;
 
 const ENABLE_CONNECTION_KILLSWITCH_FILE = `#!/bin/bash
 
-ssh_host=$1
-ssh_port=$2
-ufw_backup_path=$3
+ufw_backup_path=$1
+proxy_host_1=$2
+proxy_port_1=$3
+proxy_host_2=$4
+proxy_port_2=$5
+target=$(uname -sm)
 
-sudo tar -cvzf $ufw_backup_path /etc/ufw
-sudo ufw --force reset
-sudo ufw default deny incoming
-sudo ufw default deny outgoing
-sudo ufw allow out from any to 10.0.0.0/24
-sudo ufw allow out from any to 198.18.0.0/24
-sudo ufw allow out from any to $ssh_host port $ssh_port
-sudo ufw reload
-sudo ufw enable
+case $target in
+    *"Linux"*)
+        sudo tar -cvzf $ufw_backup_path /etc/ufw
+        sudo ufw --force reset
+        sudo ufw default deny incoming
+        sudo ufw default deny outgoing
+        sudo ufw allow out from any to 10.0.0.0/24
+        sudo ufw allow out from any to 198.18.0.0/24
+        sudo ufw allow out from any to $proxy_host_1 port $proxy_port_1 || true
+        sudo ufw allow out from any to $proxy_host_2 port $proxy_port_2 || true
+        sudo ufw reload
+        sudo ufw enable
+    ;;
+    *"Darwin"*)
+        anchor_dir=/etc/pf.anchors/supershy.org
+
+        sudo rm -rf $anchor_dir
+
+        echo "set skip on lo0" | sudo tee -a $anchor_dir
+        echo "block in all" | sudo tee -a $anchor_dir
+        echo "block out all" | sudo tee -a $anchor_dir
+        echo "pass out to 10.0.0.0/24" | sudo tee -a $anchor_dir
+        echo "pass out to 198.18.0.0/24" | sudo tee -a $anchor_dir
+        echo "pass out proto tcp to $\{proxy_host_1} port $\{proxy_port_1}" | sudo tee -a $anchor_dir || true
+        echo "pass out proto tcp to $\{proxy_host_2} port $\{proxy_port_2}" | sudo tee -a $anchor_dir || true
+
+        sudo pfctl -E -f $anchor_dir
+    ;;
+esac
 `;
 
 const DISABLE_CONNECTION_KILLSWITCH_FILE = `#!/bin/bash
 ufw_backup_path=$1
+target=$(uname -sm)
 
-sudo ufw disable
-sudo ufw --force reset
-sudo tar -xvzf $ufw_backup_path -C /
-sudo rm $ufw_backup_path
+case $target in
+    *"Linux"*)
+        sudo ufw disable
+        sudo ufw --force reset
+        sudo tar -xvzf $ufw_backup_path -C /
+        sudo rm $ufw_backup_path
+    ;;
+    *"Darwin"*)
+        anchor_dir=/etc/pf.anchors/supershy.org
+
+        sudo rm -rf $anchor_dir
+        sudo pfctl -d
+    ;;
+esac
 `;
 
 const ENABLE_TUN_FILE = `#!/bin/bash
 
 proxy_port=$1
-ssh_host=$2
-resolv_conf_path=$3
+backup_resolv_conf_path=$2
+system_resolv_conf_path="$(realpath /etc/resolv.conf)"
 
-sudo mv "$(realpath /etc/resolv.conf)" $resolv_conf_path || true
+if [ -f $system_resolv_conf_path ]; then
+    sudo cp $system_resolv_conf_path $backup_resolv_conf_path || true
+fi
+
+if [ "$3" ]; then
+    bypass1="--bypass $3"
+fi
+
+if [ "$4" ]; then
+    bypass2="--bypass $4"
+fi
+
 sudo pkill -f tun2proxy-bin || true
 sleep 1
-sudo screen -dm sudo $(which tun2proxy-bin) --setup --proxy http://0.0.0.0:$proxy_port --bypass $ssh_host --dns virtual || true
-sudo chattr +i "$(realpath /etc/resolv.conf)" &>/dev/null || true
+sudo screen -dm sudo $(which tun2proxy-bin) --setup --proxy http://0.0.0.0:$proxy_port --dns virtual $bypass1 $bypass2 || true
+sudo chattr +i $system_resolv_conf_path &>/dev/null || true
 `;
 
 const DISABLE_TUN_FILE = `#!/bin/bash
 
-resolv_conf_path=$1
+backup_resolv_conf_path=$1
+system_resolv_conf_path="$(realpath /etc/resolv.conf)"
 
-sudo chattr -i "$(realpath /etc/resolv.conf)" &>/dev/null || true
-sudo mv $resolv_conf_path "$(realpath /etc/resolv.conf)" || true
+sudo chattr -i $system_resolv_conf_path &>/dev/null || true
+sudo mv $backup_resolv_conf_path $system_resolv_conf_path || true
+
+if [ -f $backup_resolv_conf_path ]; then
+    sudo mv $backup_resolv_conf_path $system_resolv_conf_path || true
+fi
+
 sudo ip link del tun0 &>/dev/null || true
 sudo umount -f /etc/resolv.conf || true
 sudo pkill -f tun2proxy-bin || true
-sudo rm $resolv_conf_path || true
+sudo rm $backup_resolv_conf_path || true
 `;
 
 export const clientScripts: Scripts = {

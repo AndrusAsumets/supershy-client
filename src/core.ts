@@ -89,20 +89,68 @@ export const getSshLogPath = (
     proxyUuid: string
 ): string =>`${LOG_PATH}/${proxyUuid}${SSH_LOG_EXTENSION}`;
 
-export const enableConnectionKillSwitch = (proxy: Proxy) => {
-    integrations.shell.command(`bash ${SCRIPT_PATH}/${ClientScriptFileName.ENABLE_CONNECTION_KILLSWITCH_FILE_NAME} ${proxy.instanceIp} ${proxy.sshPort} ${UFW_BACKUP_PATH}`);
+export const enableConnectionKillSwitch = () => {
+    const proxies = models.proxies();
+    const args = Object
+        .keys(proxies)
+        .map((key: string) => [proxies[key].instanceIp, proxies[key].sshPort])
+        .flat()
+        .join(' ');
+    integrations.shell.command(`bash ${SCRIPT_PATH}/${ClientScriptFileName.ENABLE_CONNECTION_KILLSWITCH_FILE_NAME} ${UFW_BACKUP_PATH} ${args}`);
 };
 
 export const disableConnectionKillSwitch = () => {
     integrations.shell.command(`bash ${SCRIPT_PATH}/${ClientScriptFileName.DISABLE_CONNECTION_KILLSWITCH_FILE_NAME} ${UFW_BACKUP_PATH}`);
 };
 
-export const enableSystemWideProxy = (proxy: Proxy) => {
-    integrations.shell.command(`bash ${SCRIPT_PATH}/${ClientScriptFileName.ENABLE_TUN_FILE_NAME} ${proxy.proxyLocalPort} ${proxy.instanceIp} ${RESOLV_CONF_BACKUP_PATH}`);
+export const enableSystemWideProxy = () => {
+    const proxies = models.proxies();
+    const bypasses = Object
+        .keys(proxies)
+        .map((key: string) => proxies[key].instanceIp)
+        .join(' ');
+    integrations.shell.command(`bash ${SCRIPT_PATH}/${ClientScriptFileName.ENABLE_TUN_FILE_NAME} ${PROXY_LOCAL_PORT} ${RESOLV_CONF_BACKUP_PATH} ${bypasses}`);
 };
 
 export const disableSystemWideProxy = () => {
     integrations.shell.command(`bash ${SCRIPT_PATH}/${ClientScriptFileName.DISABLE_TUN_FILE_NAME} ${RESOLV_CONF_BACKUP_PATH}`);
+};
+
+export const cleanup = async (
+    instanceIdsToKeep: string[]
+) => {
+    const instanceProviders = Object.values(InstanceProvider);
+
+    let index = 0;
+    while (index < instanceProviders.length) {
+        const instanceProvider = instanceProviders[index];
+
+        const deletableKeyIds = await integrations.compute[instanceProvider].keys.list();
+        if (deletableKeyIds) {
+            await integrations.compute[instanceProvider].keys.delete(
+                deletableKeyIds
+                    .filter((key: any) => key.name.includes(`${APP_ID}-${ENV}`))
+                    .map((key: any) => key.id)
+            );
+        }
+
+        const deletableInstanceIds = await integrations.compute[instanceProvider].instances.list();
+        if (deletableInstanceIds) {
+            await integrations.compute[instanceProvider].instances.delete(
+                deletableInstanceIds
+                    .filter((instance: any) => {
+                        if ('name' in instance && instance.name.includes(`${APP_ID}-${ENV}`)) return true;
+                        if ('label' in instance && instance.label.includes(`${APP_ID}-${ENV}`)) return true;
+                    })
+                    .map((instance: any) => instance.id)
+                    .filter((id: string) => !instanceIdsToKeep.includes(id))
+            );
+        }
+
+        index = index + 1;
+    }
+
+    models.removeUsedProxies(instanceIdsToKeep);
 };
 
 export const exit = async (

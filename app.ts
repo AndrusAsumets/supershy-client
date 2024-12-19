@@ -55,6 +55,28 @@ const logger = _logger.get(io);
 
 let loopStatus: LoopStatus = LoopStatus.INACTIVE;
 
+const init = () => {
+    integrations.fs.ensureFolder(DATA_PATH);
+    integrations.fs.ensureFolder(BACKUP_PATH);
+    integrations.fs.ensureFolder(SCRIPT_PATH);
+    integrations.fs.ensureFolder(SSH_PATH);
+    integrations.fs.ensureFolder(SSH_KEY_PATH);
+    integrations.fs.ensureFolder(LOG_PATH);
+
+    !existsSync(SSH_KNOWN_HOSTS_PATH) && Deno.writeTextFileSync(SSH_KNOWN_HOSTS_PATH, '');
+
+    Object.keys(clientScripts).forEach((fileName: string) => {
+        const file = clientScripts[fileName as ClientScriptFileName];
+        Deno.writeTextFileSync(`${SCRIPT_PATH}/${fileName}`, file);
+        new Deno.Command('chmod', { args: ['+x', fileName] });
+        Deno.chmodSync(`${SCRIPT_PATH}/${fileName}`, 0o700);
+    });
+
+    loop();
+    heartbeat();
+    setInterval(() => heartbeat(), HEARTBEAT_INTERVAL_SEC);
+};
+
 const connect = async (
     proxy: Proxy,
 ) => {
@@ -69,13 +91,9 @@ const connect = async (
     existsSync(proxy.sshLogPath) && Deno.removeSync(proxy.sshLogPath);
 
     if (config().CONNECTION_KILLSWITCH) {
-        core.enableConnectionKillSwitch(proxy);
+        logger.info(`Enabling connection killswitch.`);
+        core.enableConnectionKillSwitch();
         logger.info(`Enabled connection killswitch.`);
-    }
-
-    if (config().PROXY_SYSTEM_WIDE) {
-        core.enableSystemWideProxy(proxy);
-        logger.info(`Enabled system-wide proxy via tun2proxy.`);
     }
 
     let isConnected = false;
@@ -93,52 +111,19 @@ const connect = async (
             if (isConnected) {
                 logger.info(`Connected SSH tunnel to ${proxy.instanceIp}:${port}.`);
                 models.updateProxy(proxy);
-                return;
             }
         }
         catch(err) {
             logger.warn(err);
             logger.warn(`Restarting SSH tunnel to ${proxy.instanceIp}:${port}.`);
         }
-        await lib.sleep(1000);
-    }
-};
-
-const cleanup = async (
-    instanceIdsToKeep: string[]
-) => {
-    const instanceProviders = Object.values(InstanceProvider);
-
-    let index = 0;
-    while (index < instanceProviders.length) {
-        const instanceProvider = instanceProviders[index];
-
-        const deletableKeyIds = await integrations.compute[instanceProvider].keys.list();
-        if (deletableKeyIds) {
-            await integrations.compute[instanceProvider].keys.delete(
-                deletableKeyIds
-                    .filter((key: any) => key.name.includes(`${APP_ID}-${ENV}`))
-                    .map((key: any) => key.id)
-            );
-        }
-
-        const deletableInstanceIds = await integrations.compute[instanceProvider].instances.list();
-        if (deletableInstanceIds) {
-            await integrations.compute[instanceProvider].instances.delete(
-                deletableInstanceIds
-                    .filter((instance: any) => {
-                        if ('name' in instance && instance.name.includes(`${APP_ID}-${ENV}`)) return true;
-                        if ('label' in instance && instance.label.includes(`${APP_ID}-${ENV}`)) return true;
-                    })
-                    .map((instance: any) => instance.id)
-                    .filter((id: string) => !instanceIdsToKeep.includes(id))
-            );
-        }
-
-        index = index + 1;
     }
 
-    models.removeUsedProxies(instanceIdsToKeep);
+    if (config().PROXY_SYSTEM_WIDE) {
+        logger.info(`Enabling system-wide proxy via tun2proxy.`);
+        core.enableSystemWideProxy();
+        logger.info(`Enabled system-wide proxy via tun2proxy.`);
+    }
 };
 
 const rotate = async () => {
@@ -232,14 +217,9 @@ const rotate = async () => {
 
     !initialProxy && await connect(activeProxies[0]);
 
-    await cleanup(
+    await core.cleanup(
         activeProxies.map(proxy => proxy.instanceId)
     );
-};
-
-const updateStatus = (status: LoopStatus) => {
-    loopStatus = status;
-    io.emit('event', status);
 };
 
 const loop = async () => {
@@ -268,39 +248,18 @@ const loop = async () => {
     }
 };
 
+const updateStatus = (status: LoopStatus) => {
+    loopStatus = status;
+    io.emit('event', status);
+};
+
 const heartbeat = async () => {
     const hasHeartbeat = await integrations.kv.cloudflare.heartbeat();
     if (!hasHeartbeat) {
         const isLooped = loopStatus == LoopStatus.FINISHED;
-
-        if (isLooped) {
-            await core.exit('Heartbeat failure');
-        }
+        isLooped && await core.exit('Heartbeat failure');
     }
 };
-
-const init = () => {
-    integrations.fs.ensureFolder(DATA_PATH);
-    integrations.fs.ensureFolder(BACKUP_PATH);
-    integrations.fs.ensureFolder(SCRIPT_PATH);
-    integrations.fs.ensureFolder(SSH_PATH);
-    integrations.fs.ensureFolder(SSH_KEY_PATH);
-    integrations.fs.ensureFolder(LOG_PATH);
-
-    !existsSync(SSH_KNOWN_HOSTS_PATH) && Deno.writeTextFileSync(SSH_KNOWN_HOSTS_PATH, '');
-
-    Object.keys(clientScripts).forEach((fileName: string) => {
-        const file = clientScripts[fileName as ClientScriptFileName];
-        Deno.writeTextFileSync(`${SCRIPT_PATH}/${fileName}`, file);
-        new Deno.Command('chmod', { args: ['+x', fileName] });
-        Deno.chmodSync(`${SCRIPT_PATH}/${fileName}`, 0o700);
-    });
-
-    loop();
-    heartbeat();
-    setInterval(() => heartbeat(), HEARTBEAT_INTERVAL_SEC);
-};
-
 
 webserver.start();
 websocket.start(io);
