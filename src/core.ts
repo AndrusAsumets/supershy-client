@@ -4,18 +4,6 @@ import { logger as _logger } from './logger.ts';
 import * as models from './models.ts';
 
 const { config } = models;
-const {
-    SCRIPT_PATH,
-    SSH_USER,
-    LOG_PATH,
-    UFW_BACKUP_PATH,
-    RESOLV_CONF_BACKUP_PATH,
-    SSH_LOG_EXTENSION,
-    APP_ID,
-    ENV,
-    PROXY_LOCAL_PORT,
-    PROXY_REMOTE_PORT,
-} = config();
 import { Config, Proxy, InstanceProvider, ClientScriptFileName } from './types.ts';
 import * as lib from './lib.ts';
 import * as integrations from './integrations.ts';
@@ -67,8 +55,6 @@ export const setInstanceCountries = async (
         index = index + 1;
     }
 
-    config.INSTANCE_COUNTRIES = lib.shuffle(config.INSTANCE_COUNTRIES);
-
     return config;
 };
 
@@ -82,13 +68,13 @@ export const getConnectionString = (
         sshKeyPath,
         sshLogPath
     } = proxy;
-    return `${SCRIPT_PATH}/${ClientScriptFileName.CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${instanceIp} ${SSH_USER} ${sshPort} ${PROXY_LOCAL_PORT} ${PROXY_REMOTE_PORT} ${sshKeyPath} ${sshLogPath}`
+    return `${config().SCRIPT_PATH}/${ClientScriptFileName.CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${instanceIp} ${config().SSH_USER} ${sshPort} ${config().PROXY_LOCAL_PORT} ${config().PROXY_REMOTE_PORT} ${sshKeyPath} ${sshLogPath}`
         .replace('\n', '');
 };
 
 export const getSshLogPath = (
     proxyUuid: string
-): string =>`${LOG_PATH}/${proxyUuid}${SSH_LOG_EXTENSION}`;
+): string =>`${config().LOG_PATH}/${proxyUuid}${config().SSH_LOG_EXTENSION}`;
 
 export const enableConnectionKillSwitch = () => {
     const proxies = models.proxies();
@@ -97,11 +83,11 @@ export const enableConnectionKillSwitch = () => {
         .map((key: string) => [proxies[key].instanceIp, proxies[key].sshPort])
         .flat()
         .join(' ');
-    integrations.shell.command(`bash ${SCRIPT_PATH}/${ClientScriptFileName.ENABLE_CONNECTION_KILLSWITCH_FILE_NAME} ${UFW_BACKUP_PATH} ${args}`);
+    integrations.shell.command(`bash ${config().SCRIPT_PATH}/${ClientScriptFileName.ENABLE_CONNECTION_KILLSWITCH_FILE_NAME} ${config().UFW_BACKUP_PATH} ${args}`);
 };
 
 export const disableConnectionKillSwitch = () => {
-    integrations.shell.command(`bash ${SCRIPT_PATH}/${ClientScriptFileName.DISABLE_CONNECTION_KILLSWITCH_FILE_NAME} ${UFW_BACKUP_PATH}`);
+    integrations.shell.command(`bash ${config().SCRIPT_PATH}/${ClientScriptFileName.DISABLE_CONNECTION_KILLSWITCH_FILE_NAME} ${config().UFW_BACKUP_PATH}`);
 };
 
 export const enableSystemWideProxy = () => {
@@ -110,11 +96,11 @@ export const enableSystemWideProxy = () => {
         .keys(proxies)
         .map((key: string) => proxies[key].instanceIp)
         .join(' ');
-    integrations.shell.command(`bash ${SCRIPT_PATH}/${ClientScriptFileName.ENABLE_TUN_FILE_NAME} ${PROXY_LOCAL_PORT} ${RESOLV_CONF_BACKUP_PATH} ${bypasses}`);
+    integrations.shell.command(`bash ${config().SCRIPT_PATH}/${ClientScriptFileName.ENABLE_TUN_FILE_NAME} ${config().PROXY_LOCAL_PORT} ${config().RESOLV_CONF_BACKUP_PATH} ${bypasses}`);
 };
 
 export const disableSystemWideProxy = () => {
-    integrations.shell.command(`bash ${SCRIPT_PATH}/${ClientScriptFileName.DISABLE_TUN_FILE_NAME} ${RESOLV_CONF_BACKUP_PATH}`);
+    integrations.shell.command(`bash ${config().SCRIPT_PATH}/${ClientScriptFileName.DISABLE_TUN_FILE_NAME} ${config().RESOLV_CONF_BACKUP_PATH}`);
 };
 
 export const cleanup = async (
@@ -130,7 +116,7 @@ export const cleanup = async (
         if (deletableKeyIds) {
             await integrations.compute[instanceProvider].keys.delete(
                 deletableKeyIds
-                    .filter((key: any) => key.name.includes(`${APP_ID}-${ENV}`))
+                    .filter((key: any) => key.name.includes(`${config().APP_ID}-${config().ENV}`))
                     .map((key: any) => key.id)
             );
         }
@@ -140,8 +126,8 @@ export const cleanup = async (
             await integrations.compute[instanceProvider].instances.delete(
                 deletableInstanceIds
                     .filter((instance: any) => {
-                        if ('name' in instance && instance.name.includes(`${APP_ID}-${ENV}`)) return true;
-                        if ('label' in instance && instance.label.includes(`${APP_ID}-${ENV}`)) return true;
+                        if ('name' in instance && instance.name.includes(`${config().APP_ID}-${config().ENV}`)) return true;
+                        if ('label' in instance && instance.label.includes(`${config().APP_ID}-${config().ENV}`)) return true;
                     })
                     .map((instance: any) => instance.id)
                     .filter((id: string) => !instanceIdsToKeep.includes(id))
@@ -158,9 +144,12 @@ export const exit = async (
     message: string,
     onPurpose = false
 ) => {
+    const proxies = models.proxies();
     !onPurpose && logger.error(message);
-    const hasProxies = Object.keys(models.proxies()).length > 0;
-    onPurpose && hasProxies && await integrations.shell.pkill(`${APP_ID}-${ENV}`);
-    await lib.sleep(1000);
+    const hasProxies = Object.keys(proxies).length > 0;
+    onPurpose && hasProxies && await integrations.shell.pkill(`${config().APP_ID}-${config().ENV}`);
+    onPurpose && Object.keys(proxies).forEach(async (proxyUuid: string) => await integrations.shell.pkill(proxyUuid));
+    // Give a little time to kill the process
+    onPurpose && await lib.sleep(1000);
     throw new Error();
 };

@@ -118,10 +118,10 @@ case $target in
     *"Linux"*)
         ufw_backup_path=$1
 
-        sudo ufw disable
-        sudo ufw --force reset
-        sudo tar -xvzf $ufw_backup_path -C /
-        sudo rm $ufw_backup_path
+        sudo ufw disable || true
+        sudo ufw --force reset || true
+        sudo tar -xvzf $ufw_backup_path -C / || true
+        sudo rm -rf $ufw_backup_path || true
     ;;
     *"Darwin"*)
         daemon_dir=/Library/LaunchDaemons/org.supershy.firewall.plist
@@ -161,7 +161,7 @@ sudo chattr +i $system_resolv_conf_path &>/dev/null || true
 const DISABLE_TUN_FILE = `#!/bin/bash
 
 backup_resolv_conf_path=$1
-system_resolv_conf_path="$(realpath /etc/resolv.conf)"
+system_resolv_conf_path="$(realpath /etc/resolv.conf)" || true
 
 sudo chattr -i $system_resolv_conf_path &>/dev/null || true
 sudo mv $backup_resolv_conf_path $system_resolv_conf_path || true

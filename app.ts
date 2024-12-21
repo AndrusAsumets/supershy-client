@@ -24,29 +24,6 @@ import * as lib from './src/lib.ts';
 import * as integrations from './src/integrations.ts';
 const { config } = models;
 
-const {
-    ENV,
-    APP_ID,
-    PROXY_LOCAL_PORT,
-    PROXY_REMOTE_PORT,
-    DATA_PATH,
-    BACKUP_PATH,
-    SCRIPT_PATH,
-    SSH_KEY_PATH,
-    LOG_PATH,
-    SSH_USER,
-    PROXY_TYPES,
-    SSH_PORT_RANGE,
-    PROXY_RECYCLE_INTERVAL_SEC,
-    AUTO_LAUNCH_WEB,
-    WEB_URL,
-    SSH_KEY_ALGORITHM,
-    SSH_KEY_LENGTH,
-    SSH_PATH,
-    SSH_KNOWN_HOSTS_PATH,
-    HEARTBEAT_INTERVAL_SEC,
-    PROXY_ENABLED,
-} = config();
 import { clientScripts } from './src/client-scripts.ts';
 import * as serverScripts from './src/server-scripts.ts';
 
@@ -56,31 +33,31 @@ const logger = _logger.get(io);
 let loopStatus: LoopStatus = LoopStatus.INACTIVE;
 
 const init = () => {
-    integrations.fs.ensureFolder(DATA_PATH);
-    integrations.fs.ensureFolder(BACKUP_PATH);
-    integrations.fs.ensureFolder(SCRIPT_PATH);
-    integrations.fs.ensureFolder(SSH_PATH);
-    integrations.fs.ensureFolder(SSH_KEY_PATH);
-    integrations.fs.ensureFolder(LOG_PATH);
+    integrations.fs.ensureFolder(config().DATA_PATH);
+    integrations.fs.ensureFolder(config().BACKUP_PATH);
+    integrations.fs.ensureFolder(config().SCRIPT_PATH);
+    integrations.fs.ensureFolder(config().SSH_PATH);
+    integrations.fs.ensureFolder(config().SSH_KEY_PATH);
+    integrations.fs.ensureFolder(config().LOG_PATH);
 
-    !existsSync(SSH_KNOWN_HOSTS_PATH) && Deno.writeTextFileSync(SSH_KNOWN_HOSTS_PATH, '');
+    !existsSync(config().SSH_KNOWN_HOSTS_PATH) && Deno.writeTextFileSync(config().SSH_KNOWN_HOSTS_PATH, '');
 
     Object.keys(clientScripts).forEach((fileName: string) => {
         const file = clientScripts[fileName as ClientScriptFileName];
-        Deno.writeTextFileSync(`${SCRIPT_PATH}/${fileName}`, file);
+        Deno.writeTextFileSync(`${config().SCRIPT_PATH}/${fileName}`, file);
         new Deno.Command('chmod', { args: ['+x', fileName] });
-        Deno.chmodSync(`${SCRIPT_PATH}/${fileName}`, 0o700);
+        Deno.chmodSync(`${config().SCRIPT_PATH}/${fileName}`, 0o700);
     });
 
     loop();
     heartbeat();
-    setInterval(() => heartbeat(), HEARTBEAT_INTERVAL_SEC);
+    setInterval(() => heartbeat(), config().HEARTBEAT_INTERVAL_SEC);
 };
 
 const connect = async (
     proxy: Proxy,
 ) => {
-    const port = PROXY_LOCAL_PORT;
+    const port = config().PROXY_LOCAL_PORT;
     proxy.connectionString = core.getConnectionString(proxy)
 
     integrations.fs.hostKey.save(proxy);
@@ -139,7 +116,7 @@ const rotate = async () => {
     }
     const proxyTypes: ProxyType[] = initialProxy
         ? [ProxyType.A]
-        : PROXY_TYPES;
+        : config().PROXY_TYPES;
 
     let proxyIndex = 0;
     while (proxyIndex < proxyTypes.length) {
@@ -147,14 +124,14 @@ const rotate = async () => {
         const proxyType = proxyTypes[proxyIndex];
         const instanceLocationsList = await integrations.compute[instanceProvider].regions.parse();
         const [instanceRegion, instanceCountry]: string[] = lib.shuffle(instanceLocationsList)[0];
-        const instanceName = `${APP_ID}-${ENV}-${proxyType}-${proxyUuid}`;
+        const instanceName = `${config().APP_ID}-${config().ENV}-${proxyType}-${proxyUuid}`;
         const { instanceSize, instanceImage } = integrations.compute[instanceProvider];
-        const sshKeyPath = `${SSH_KEY_PATH}/${instanceName}`;
+        const sshKeyPath = `${config().SSH_KEY_PATH}/${instanceName}`;
         const passphrase = crypto.randomBytes(64).toString('hex');
         const publicKey = await integrations.shell.privateKey.create(sshKeyPath, passphrase);
         const instancePublicKeyId = await integrations.compute[instanceProvider].keys.add(publicKey, instanceName);
         const jwtSecret = crypto.randomBytes(64).toString('hex');
-        const sshPort = lib.randomNumberFromRange(SSH_PORT_RANGE[0], SSH_PORT_RANGE[1]);
+        const sshPort = lib.randomNumberFromRange(config().SSH_PORT_RANGE[0], config().SSH_PORT_RANGE[1]);
         const userData = serverScripts.getUserData(proxyUuid, sshPort, jwtSecret);
         const formattedUserData = integrations.compute[instanceProvider].userData.format(userData);
         const instancePayload: CreateDigitalOceanInstance & CreateHetznerInstance & CreateVultrInstance = {
@@ -179,7 +156,7 @@ const rotate = async () => {
 
         let proxy: Proxy = {
             proxyUuid,
-            appId: APP_ID,
+            appId: config().APP_ID,
             instanceProvider,
             instanceName,
             instanceId,
@@ -190,13 +167,13 @@ const rotate = async () => {
             instanceImage,
             instancePublicKeyId,
             proxyType,
-            sshUser: SSH_USER,
+            sshUser: config().SSH_USER,
             passphrase,
-            proxyLocalPort: PROXY_LOCAL_PORT,
-            proxyRemotePort: PROXY_REMOTE_PORT,
+            proxyLocalPort: config().PROXY_LOCAL_PORT,
+            proxyRemotePort: config().PROXY_REMOTE_PORT,
             sshHostKey: '',
-            sshKeyAlgorithm: SSH_KEY_ALGORITHM,
-            sshKeyLength: SSH_KEY_LENGTH,
+            sshKeyAlgorithm: config().SSH_KEY_ALGORITHM,
+            sshKeyLength: config().SSH_KEY_LENGTH,
             sshKeyPath,
             sshPort,
             sshLogPath: core.getSshLogPath(proxyUuid),
@@ -223,9 +200,9 @@ const loop = async () => {
     setTimeout(async () => {
         const isStillWorking = loopStatus == LoopStatus.ACTIVE;
         isStillWorking
-            ? await core.exit(`Timeout after passing ${PROXY_RECYCLE_INTERVAL_SEC} seconds.`)
+            ? await core.exit(`Timeout after passing ${config().PROXY_RECYCLE_INTERVAL_SEC} seconds.`)
             : await loop();
-    }, PROXY_RECYCLE_INTERVAL_SEC * 1000);
+    }, config().PROXY_RECYCLE_INTERVAL_SEC * 1000);
 
     try {
         updateStatus(LoopStatus.ACTIVE);
@@ -260,6 +237,6 @@ const heartbeat = async () => {
 
 webserver.start();
 websocket.start(io);
-AUTO_LAUNCH_WEB && open(WEB_URL);
-AUTO_LAUNCH_WEB && models.updateConfig({...config(), AUTO_LAUNCH_WEB: false});
-PROXY_ENABLED && init();
+config().AUTO_LAUNCH_WEB && open(config().WEB_URL);
+config().AUTO_LAUNCH_WEB && models.updateConfig({...config(), AUTO_LAUNCH_WEB: false});
+config().PROXY_ENABLED && init();
