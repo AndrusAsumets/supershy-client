@@ -258,6 +258,7 @@ const updateStatus = () => {
             )
         );
     });
+
     changeFavicon(faviconStatus[config.CONNECTION_STATUS]);
 };
 
