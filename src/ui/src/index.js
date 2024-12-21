@@ -5,15 +5,17 @@ const socket = io('ws://localhost:8880', {
 const $enablementToggle = document.getElementsByClassName('enablement-toggle')[0];
 const $restartToggle = document.getElementsByClassName('restart-toggle')[0];
 const $statusSection = document.getElementsByClassName('section-content status')[0];
+const $actionsSection = document.getElementsByClassName('section-content actions')[0];
 const $providersSection = document.getElementsByClassName('section-content providers')[0];
 const $countriesSection = document.getElementsByClassName('section-content countries')[0];
 const $configSection = document.getElementsByClassName('section-content config')[0];
 const $logSection = document.getElementsByClassName('section-content log')[0];
-
+const visibleActionKeys = {
+    'CONNECTION_KILLSWITCH': { editable: 'boolean' },
+    'PROXY_SYSTEM_WIDE': { editable: 'boolean' },
+};
 const visibleConfigKeys = {
     'PROXY_RECYCLE_INTERVAL_SEC': { editable: 'number' },
-    'PROXY_SYSTEM_WIDE': { editable: 'boolean' },
-    'CONNECTION_KILLSWITCH': { editable: 'boolean' },
     'SSH_PORT_RANGE': { editable: 'string' },
     'SSH_KEY_ALGORITHM': { editable: 'string' },
     'SSH_KEY_LENGTH': { editable: 'number' },
@@ -57,16 +59,17 @@ const setClickListener = (div, listener) => {
 };
 
 const constructConfigLine = (
+    keys,
     key,
     value,
     emitPath,
     isEditable = false,
     hasApiKey = false,
 ) => {
-    const isEditableBoolean = visibleConfigKeys[key].editable === 'boolean';
-    const isEditablePassword = visibleConfigKeys[key].editable === 'password';
-    const isEditableString = visibleConfigKeys[key].editable == 'string';
-    const isEditableNumber = visibleConfigKeys[key].editable == 'number';
+    const isEditableBoolean = keys[key].editable === 'boolean';
+    const isEditablePassword = keys[key].editable === 'password';
+    const isEditableString = keys[key].editable == 'string';
+    const isEditableNumber = keys[key].editable == 'number';
     const $key = document.createElement('div');
     $key.className = 'line-key';
     $key.innerText = key;
@@ -262,6 +265,23 @@ const updateStatus = () => {
     changeFavicon(faviconStatus[config.CONNECTION_STATUS]);
 };
 
+const updateActions = () => {
+    $actionsSection.innerText = '';
+
+    Object.keys(config)
+        .forEach((key) => {
+            visibleActionKeys[key] && $actionsSection.append(
+                constructConfigLine(
+                    visibleActionKeys,
+                    key,
+                    config[key],
+                    '/config/save',
+                    visibleActionKeys[key].editable,
+                )
+            );
+        });
+};
+
 const updateConfig = () => {
     $providersSection.innerText = '';
     $countriesSection.innerText = '';
@@ -275,6 +295,7 @@ const updateConfig = () => {
         .forEach((key) => {
             visibleConfigKeys[key] && $configSection.append(
                 constructConfigLine(
+                    visibleConfigKeys,
                     key,
                     config[key],
                     '/config/save',
@@ -327,6 +348,7 @@ socket
     .on('/config', (_config) => {
         config = _config;
         updateStatus();
+        updateActions();
         updateConfig();
     })
     .on('/proxy', (_proxy) => {
