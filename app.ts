@@ -76,6 +76,9 @@ const connect = async (
     }
 
     logger.info(`Starting SSH tunnel proxy to ${proxy.instanceIp}:${proxy.sshPort}.`);
+    models.updateConfig({...config(), CONNECTED: false});
+    io.emit('/config', config());
+
     while (!config().CONNECTED) {
         await integrations.shell.pkill(`${port}:`);
         await lib.sleep(1000);

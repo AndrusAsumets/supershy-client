@@ -29,6 +29,8 @@ const visibleConfigKeys = {
     'DB_FILE_PATH': { editable: false },
 };
 const apiKeys = ['DIGITAL_OCEAN_API_KEY', 'HETZNER_API_KEY', 'VULTR_API_KEY'];
+const enabledFavicon = ['❊', 'white'];
+const disabledFavicon = ['❊', 'red'];
 let isProxyEnabled = false;
 let config = {};
 let proxy = {};
@@ -253,6 +255,12 @@ const updateStatus = () => {
             )
         );
     });
+
+    changeFavicon(
+        config.CONNECTED
+            ? enabledFavicon
+            : disabledFavicon
+    );
 };
 
 const updateConfig = () => {
@@ -315,11 +323,6 @@ socket
             isProxyEnabled
                 ? 'Disable Proxy'
                 : 'Enable Proxy'
-        );
-        changeFavicon(
-            isProxyEnabled
-                ? ['❊', 'white']
-                : ['❊', 'red']
         );
     })
     .on('/config', (_config) => {
