@@ -39,6 +39,8 @@ proxy_host_1=$2
 proxy_port_1=$3
 proxy_host_2=$4
 proxy_port_2=$5
+proxy_host_3=$6
+proxy_port_3=$7
 target=$(uname -sm)
 
 case $target in
@@ -51,6 +53,8 @@ case $target in
         sudo ufw allow out from any to 198.18.0.0/24
         sudo ufw allow out from any to $proxy_host_1 port $proxy_port_1 || true
         sudo ufw allow out from any to $proxy_host_2 port $proxy_port_2 || true
+        sudo ufw allow out from any to $proxy_host_3 port $proxy_port_3 || true
+
         sudo ufw reload
         sudo ufw enable
     ;;
@@ -98,6 +102,7 @@ case $target in
         echo "pass out to 198.18.0.0/24" | sudo tee -a $rules_dir
         echo "pass out proto tcp to $\{proxy_host_1} port $\{proxy_port_1}" | sudo tee -a $rules_dir || true
         echo "pass out proto tcp to $\{proxy_host_2} port $\{proxy_port_2}" | sudo tee -a $rules_dir || true
+        echo "pass out proto tcp to $\{proxy_host_3} port $\{proxy_port_3}" | sudo tee -a $rules_dir || true
 
         # permissions
         sudo chmod +x $firewall_dir
@@ -152,9 +157,13 @@ if [ "$4" ]; then
     bypass2="--bypass $4"
 fi
 
+if [ "$5" ]; then
+    bypass3="--bypass $5"
+fi
+
 sudo pkill -f tun2proxy-bin || true
 sleep 1
-sudo screen -dm sudo $(which tun2proxy-bin) --setup --proxy http://0.0.0.0:$proxy_port --dns virtual $bypass1 $bypass2 || true
+sudo screen -dm sudo $(which tun2proxy-bin) --setup --proxy http://0.0.0.0:$proxy_port --dns virtual $bypass1 $bypass2 $bypass3 || true
 sudo chattr +i $system_resolv_conf_path &>/dev/null || true
 `;
 
