@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.150.0/http/server.ts';
 import { Server } from 'https://deno.land/x/socket_io@0.2.0/mod.ts';
-import { Config } from './types.ts';
+import { Config, ConnectionStatus } from './types.ts';
 import * as core from './core.ts';
 import * as models from './models.ts';
 
@@ -13,14 +13,16 @@ export const start = (io: Server) => {
         io.emit('/proxy', proxies()[Object.keys(proxies())[0]]);
 
         socket.on('/proxy/enable', () => {
-            models.updateConfig({...config(), 'PROXY_ENABLED': true});
+            models.updateConfig({...config(), 'PROXY_ENABLED': true, CONNECTION_STATUS: ConnectionStatus.DISCONNECTED});
+            io.emit('/config', config());
             core.exit('/proxy/enable', true);
         });
 
         socket.on('/proxy/disable', () => {
-            models.updateConfig({...config(), 'PROXY_ENABLED': false});
+            models.updateConfig({...config(), 'PROXY_ENABLED': false, CONNECTION_STATUS: ConnectionStatus.DISCONNECTED});
             core.disableConnectionKillSwitch();
             core.disableSystemWideProxy();
+            io.emit('/config', config());
             core.exit('/proxy/disable', true);
         });
 
