@@ -1,4 +1,4 @@
-# current user
+# Set current user
 user=$1
 
 # install dependencies
@@ -15,7 +15,7 @@ else
     echo "Warning: Can't install packages as no package manager was found."
 fi
 
-# set platform target
+# Set platform target
 case $(uname -sm) in
 	"Darwin x86_64")
         supershy_target="macos-x86_64"
@@ -54,7 +54,7 @@ fi
 sudo mkdir -p $data_dir
 tmp_dir="/tmp"
 
-# file paths
+# File paths
 supershy_zip="$tmp_dir/supershy.zip"
 tun2proxy_zip="$tmp_dir/tun2proxy.zip"
 
@@ -64,23 +64,23 @@ tun2proxy_tmp_exe="$tmp_dir/tun2proxy-bin"
 supershy_exe="$data_dir/supershyd"
 tun2proxy_exe="$data_dir/tun2proxy-bin"
 
-# download
+# Download
 curl --fail --location --progress-bar --output "$supershy_zip" "$supershy_uri"
 curl --fail --location --progress-bar --output "$tun2proxy_zip" "$tun2proxy_uri"
 
-# unzip
+# Unzip
 unzip -d "$tmp_dir" -o "$supershy_zip"
 unzip -d "$tmp_dir" -o "$tun2proxy_zip"
 
-# move to binaries
+# Move to binaries
 sudo mv $supershy_tmp_exe $supershy_exe
 sudo mv $tun2proxy_tmp_exe $tun2proxy_exe
 
-# make user the owner of the binaries
+# Make user the owner of the binaries
 sudo chown -R $user $supershy_exe
 sudo chown -R $user $tun2proxy_exe
 
-# link to system binaries
+# Link to system binaries
 supershy_link="$usr_bin"/supershyd
 tun2proxy_link="$usr_bin"/tun2proxy-bin
 
@@ -90,10 +90,10 @@ sudo rm -f tun2proxy_link
 sudo ln -sf $supershy_exe $supershy_link
 sudo ln -sf $tun2proxy_exe $tun2proxy_link
 
-# remove old daemon service
+# Remove old daemon service
 rm -f $daemon
 
-# create daemon servicea
+# Create daemon servicea
 case $supershy_target in
     *"linux"*)
         sudo echo '[Unit]' >> $daemon
@@ -106,12 +106,12 @@ case $supershy_target in
         sudo echo '[Install]' >> $daemon
         sudo echo 'WantedBy=default.target' >> $daemon
 
-        # run supershy daemon in background
-        sudo -u $user XDG_RUNTIME_DIR="/run/user/$(id -u $user)" systemctl --user daemon-reload
-        sudo -u $user XDG_RUNTIME_DIR="/run/user/$(id -u $user)" systemctl --user enable supershy-daemon.service
-        sudo -u $user XDG_RUNTIME_DIR="/run/user/$(id -u $user)" systemctl --user restart supershy-daemon.service
+        # Run supershy daemon in background
+        sudo -u $user XDG_RUNTIME_DIR="/run/user/$(id -u $user)" systemctl --user daemon-reload || true
+        sudo -u $user XDG_RUNTIME_DIR="/run/user/$(id -u $user)" systemctl --user enable supershy-daemon.service || true
+        sudo -u $user XDG_RUNTIME_DIR="/run/user/$(id -u $user)" systemctl --user restart supershy-daemon.service || true
 
-        # since deno can not run sudo, yet tun2proxy needs it, hence work around
+        # Since deno can not run sudo, yet tun2proxy needs it, hence work around
         sudoer_dir=/etc/sudoers
         permission="${user} ALL=(ALL:ALL) NOPASSWD: ALL"
         if ! sudo grep -q "$permission" $sudoer_dir; then
@@ -136,8 +136,8 @@ case $supershy_target in
         sudo echo '</dict>' >> $daemon
         sudo echo '</plist>' >> $daemon
 
-        # run supershy daemon in background
+        # Run supershy daemon in background
         sudo -u $user launchctl unload $daemon &>/dev/null || true
-        sudo -u $user launchctl load $daemon
+        sudo -u $user launchctl load $daemon || true
     ;;
 esac

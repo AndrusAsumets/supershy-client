@@ -1,4 +1,4 @@
-#disable background services
+# Disable background services
 systemctl --user stop supershy-daemon.service || true
 systemctl --user disable supershy-daemon.service || true
 sudo rm /etc/systemd/user/supershy-daemon.service || true
@@ -7,24 +7,24 @@ launch_agents_dir="/Users/${whoami}/Library/LaunchAgents"
 daemon="${launch_agents_dir}/org.supershy.supershyd.plist"
 sudo -u $(whoami) launchctl unload $daemon &>/dev/null || true
 
-# stop application
+# Stop application
 sudo pkill -f supershyd || true
 sudo pkill -f tun2proxy-bin || true
 
-# clean out application data
+# Clean out application data
 rm -rf ~/.supershy-data
 
-# remove possible tun interface
+# Remove possible tun interface
 sudo ip link del tun0 &>/dev/null || true
 
-# clear out dns
+# Clear out dns
 sudo chattr -i "$(realpath /etc/resolv.conf)" &>/dev/null || true
 sudo umount -f /etc/resolv.conf || true
 
-# linux firewall
-sudo ufw disable
+# Linux firewall
+sudo ufw disable || true
 
-# macos firewall
+# MacOS firewall
 daemon_dir=/Library/LaunchDaemons/org.supershy.firewall.plist
 firewall_dir=/usr/local/bin/supershy.firewall.sh
 rules_dir=/etc/pf.anchors/supershy.firewall.rules
