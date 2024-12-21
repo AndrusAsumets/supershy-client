@@ -7,6 +7,7 @@ import { open } from 'https://deno.land/x/open@v1.0.0/index.ts';
 import { existsSync } from 'https://deno.land/std@0.224.0/fs/mod.ts';
 import {
     LoopStatus,
+    ConnectionStatus,
     ProxyType,
     Proxy,
     InstanceProvider,
@@ -76,10 +77,10 @@ const connect = async (
     }
 
     logger.info(`Starting SSH tunnel proxy to ${proxy.instanceIp}:${proxy.sshPort}.`);
-    models.updateConfig({...config(), CONNECTED: false});
+    models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTING});
     io.emit('/config', config());
 
-    while (!config().CONNECTED) {
+    while (config().CONNECTION_STATUS != ConnectionStatus.CONNECTED) {
         await integrations.shell.pkill(`${port}:`);
         await lib.sleep(1000);
 
@@ -93,7 +94,7 @@ const connect = async (
             if (hasNetwork) {
                 logger.info(`Connected SSH tunnel to ${proxy.instanceIp}:${port}.`);
                 models.updateProxy(proxy);
-                models.updateConfig({...config(), CONNECTED: true});
+                models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTED});
                 io.emit('/config', config());
             }
         }
@@ -239,7 +240,7 @@ const heartbeat = async () => {
     }
 };
 
-models.updateConfig({...config(), CONNECTED: false});
+models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.DISCONNECTED});
 webserver.start();
 websocket.start(io);
 config().AUTO_LAUNCH_WEB && open(config().WEB_URL);

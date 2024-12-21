@@ -29,11 +29,16 @@ const visibleConfigKeys = {
     'DB_FILE_PATH': { editable: false },
 };
 const apiKeys = ['DIGITAL_OCEAN_API_KEY', 'HETZNER_API_KEY', 'VULTR_API_KEY'];
-const enabledFavicon = ['❊', 'white'];
-const disabledFavicon = ['❊', 'red'];
+const faviconStatus = {
+    'connected': ['❊', 'white'],
+    'connecting': ['❊', 'blue'],
+    'disconnected': ['❊', 'red'],
+};
 let isProxyEnabled = false;
 let config = {};
 let proxy = {};
+
+const capitalize = s => s && String(s[0]).toUpperCase() + String(s).slice(1);
 
 const updateEnablementToggle = (label) => $enablementToggle.innerText = label;
 
@@ -230,9 +235,7 @@ const updateStatus = () => {
 
     const status = [[
         'Connection',
-        config.CONNECTED
-            ? 'Enabled'
-            : 'Disabled'
+        capitalize(config.CONNECTION_STATUS)
     ],
     [
         'Proxy',
@@ -241,7 +244,7 @@ const updateStatus = () => {
             : 'Disabled'
     ]];
 
-    if (isProxyEnabled && proxy && Object.keys(proxy).length && config.CONNECTED) {
+    if (isProxyEnabled && proxy && Object.keys(proxy).length && config.CONNECTION_STATUS == 'connected') {
         status.push(['VPS', convertSnakeCaseToPascalCase(proxy.instanceProvider)]);
         status.push(['Country', COUNTRY_CODES[proxy.instanceCountry]]);
         status.push(['IPv4', proxy.instanceIp]);
@@ -255,12 +258,7 @@ const updateStatus = () => {
             )
         );
     });
-
-    changeFavicon(
-        config.CONNECTED
-            ? enabledFavicon
-            : disabledFavicon
-    );
+    changeFavicon(faviconStatus[config.CONNECTION_STATUS]);
 };
 
 const updateConfig = () => {

@@ -1,11 +1,11 @@
 import { homedir } from 'node:os';
 import * as path from 'https://deno.land/std@0.224.0/path/mod.ts';
-import { ProxyType, Config, InstanceProvider } from './types.ts';
+import { ProxyType, Config, InstanceProvider, ConnectionStatus } from './types.ts';
 
 const APP_ID = 'supershy-client';
 const ENV = 'dev';
 const PROXY_RECYCLE_INTERVAL_SEC = 1800;
-const CONNECTED = false;
+const CONNECTION_STATUS = ConnectionStatus.DISCONNECTED;
 const PROXY_SYSTEM_WIDE = false;
 const CONNECTION_KILLSWITCH = false;
 const AUTO_LAUNCH_WEB = true;
@@ -72,7 +72,7 @@ const INSTANCE_COUNTRIES_DISABLED: string[] = [];
 export const config: Config = {
     CONNECTION_KILLSWITCH,
     PROXY_SYSTEM_WIDE,
-    CONNECTED,
+    CONNECTION_STATUS,
     PROXY_RECYCLE_INTERVAL_SEC,
     DIGITAL_OCEAN_API_KEY,
     HETZNER_API_KEY,

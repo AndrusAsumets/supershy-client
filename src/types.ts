@@ -15,6 +15,12 @@ export enum LoopStatus {
 	FINISHED = 'finished',
 }
 
+export enum ConnectionStatus {
+	CONNECTED = 'connected',
+	CONNECTING = 'connecting',
+	DISCONNECTED = 'disconnected',
+}
+
 export enum InstanceProvider {
 	DIGITAL_OCEAN = 'digital_ocean',
 	HETZNER = 'hetzner',
@@ -86,7 +92,7 @@ export interface CreateVultrInstance {
 export interface Config {
 	APP_ID: string
 	ENV: string
-	CONNECTED: boolean
+	CONNECTION_STATUS: ConnectionStatus
 	PROXY_RECYCLE_INTERVAL_SEC: number
 	PROXY_SYSTEM_WIDE: boolean
 	CONNECTION_KILLSWITCH: boolean
