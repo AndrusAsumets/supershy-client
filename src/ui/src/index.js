@@ -223,6 +223,91 @@ const changeFavicon = (args) => {
     document.head.appendChild(link);
 };
 
+const updateStatus = () => {
+    $statusSection.innerText = '';
+
+    const status = [[
+        'Connection',
+        config.CONNECTED
+            ? 'Enabled'
+            : 'Disabled'
+    ],
+    [
+        'Proxy',
+        isProxyEnabled
+            ? 'Enabled'
+            : 'Disabled'
+    ]];
+
+    if (isProxyEnabled && proxy && Object.keys(proxy).length && config.CONNECTED) {
+        status.push(['VPS', convertSnakeCaseToPascalCase(proxy.instanceProvider)]);
+        status.push(['Country', COUNTRY_CODES[proxy.instanceCountry]]);
+        status.push(['IPv4', proxy.instanceIp]);
+    }
+
+    status.forEach((list) => {
+        $statusSection.append(
+            constructGenericLine(
+                list[0],
+                list[1],
+            )
+        );
+    });
+};
+
+const updateConfig = () => {
+    $providersSection.innerText = '';
+    $countriesSection.innerText = '';
+    $configSection.innerText = '';
+
+    const hasApiKey = apiKeys
+        .filter((apiKey) => config[apiKey])
+        .length > 0;
+
+    Object.keys(config)
+        .forEach((key) => {
+            visibleConfigKeys[key] && $configSection.append(
+                constructConfigLine(
+                    key,
+                    config[key],
+                    '/config/save',
+                    visibleConfigKeys[key].editable,
+                    hasApiKey
+                )
+            );
+        });
+
+    config.INSTANCE_PROVIDERS
+        .sort((a, b) => a.localeCompare(b))
+        .forEach((key) => {
+            $providersSection.append(
+                constructGenericLine(
+                    key,
+                    config['INSTANCE_PROVIDERS_DISABLED'].includes(key)
+                        ? 'Disabled'
+                        : 'Enabled',
+                    'INSTANCE_PROVIDERS_DISABLED',
+                    '/config/save'
+                )
+            );
+        });
+
+    config.INSTANCE_COUNTRIES
+        .sort((a, b) => COUNTRY_CODES[a].localeCompare(COUNTRY_CODES[b]))
+        .forEach((key) => {
+            $countriesSection.append(
+                constructGenericLine(
+                    key,
+                    config['INSTANCE_COUNTRIES_DISABLED'].includes(key)
+                        ? 'Disabled'
+                        : 'Enabled',
+                    'INSTANCE_COUNTRIES_DISABLED',
+                    '/config/save'
+                )
+            );
+        });
+};
+
 socket
     .on('/started', (_isProxyEnabled) => {
         isProxyEnabled = _isProxyEnabled;
@@ -239,82 +324,12 @@ socket
     })
     .on('/config', (_config) => {
         config = _config;
-        $providersSection.innerText = '';
-        $countriesSection.innerText = '';
-        $configSection.innerText = '';
-
-        const hasApiKey = apiKeys
-            .filter((apiKey) => config[apiKey])
-            .length > 0;
-
-        Object.keys(config)
-            .forEach((key) => {
-                visibleConfigKeys[key] && $configSection.append(
-                    constructConfigLine(
-                        key,
-                        config[key],
-                        '/config/save',
-                        visibleConfigKeys[key].editable,
-                        hasApiKey
-                    )
-                );
-            });
-
-        config.INSTANCE_PROVIDERS
-            .sort((a, b) => a.localeCompare(b))
-            .forEach((key) => {
-                $providersSection.append(
-                    constructGenericLine(
-                        key,
-                        config['INSTANCE_PROVIDERS_DISABLED'].includes(key)
-                            ? 'Disabled'
-                            : 'Enabled',
-                        'INSTANCE_PROVIDERS_DISABLED',
-                        '/config/save'
-                    )
-                );
-            });
-
-        config.INSTANCE_COUNTRIES
-            .sort((a, b) => COUNTRY_CODES[a].localeCompare(COUNTRY_CODES[b]))
-            .forEach((key) => {
-                $countriesSection.append(
-                    constructGenericLine(
-                        key,
-                        config['INSTANCE_COUNTRIES_DISABLED'].includes(key)
-                            ? 'Disabled'
-                            : 'Enabled',
-                        'INSTANCE_COUNTRIES_DISABLED',
-                        '/config/save'
-                    )
-                );
-            });
+        updateStatus();
+        updateConfig();
     })
     .on('/proxy', (_proxy) => {
         proxy = _proxy;
-        $statusSection.innerText = '';
-
-        const status = [[
-            'Proxy',
-            isProxyEnabled
-                ? 'Enabled'
-                : 'Disabled'
-        ]];
-
-        if (isProxyEnabled && proxy && Object.keys(proxy).length) {
-            status.push(['VPS', convertSnakeCaseToPascalCase(proxy.instanceProvider)]);
-            status.push(['Country', COUNTRY_CODES[proxy.instanceCountry]]);
-            status.push(['IPv4', proxy.instanceIp]);
-        }
-
-        status.forEach((list) => {
-            $statusSection.append(
-                constructGenericLine(
-                    list[0],
-                    list[1],
-                )
-            );
-        });
+        updateStatus();
     })
     .on('/log', (message) => {
         Object

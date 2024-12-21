@@ -86,6 +86,7 @@ export interface CreateVultrInstance {
 export interface Config {
 	APP_ID: string
 	ENV: string
+	CONNECTED: boolean
 	PROXY_RECYCLE_INTERVAL_SEC: number
 	PROXY_SYSTEM_WIDE: boolean
 	CONNECTION_KILLSWITCH: boolean

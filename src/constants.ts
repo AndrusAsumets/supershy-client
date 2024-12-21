@@ -5,6 +5,7 @@ import { ProxyType, Config, InstanceProvider } from './types.ts';
 const APP_ID = 'supershy-client';
 const ENV = 'dev';
 const PROXY_RECYCLE_INTERVAL_SEC = 1800;
+const CONNECTED = false;
 const PROXY_SYSTEM_WIDE = false;
 const CONNECTION_KILLSWITCH = false;
 const AUTO_LAUNCH_WEB = true;
@@ -71,6 +72,7 @@ const INSTANCE_COUNTRIES_DISABLED: string[] = [];
 export const config: Config = {
     CONNECTION_KILLSWITCH,
     PROXY_SYSTEM_WIDE,
+    CONNECTED,
     PROXY_RECYCLE_INTERVAL_SEC,
     DIGITAL_OCEAN_API_KEY,
     HETZNER_API_KEY,

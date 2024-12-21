@@ -76,8 +76,7 @@ const connect = async (
     }
 
     logger.info(`Starting SSH tunnel proxy to ${proxy.instanceIp}:${proxy.sshPort}.`);
-    let isConnected = false;
-    while (!isConnected) {
+    while (!config().CONNECTED) {
         await integrations.shell.pkill(`${port}:`);
         await lib.sleep(1000);
 
@@ -86,11 +85,13 @@ const connect = async (
 
         try {
             const output = Deno.readTextFileSync(proxy.sshLogPath);
-            isConnected = output.includes('pledge: network');
+            const hasNetwork = output.includes('pledge: network');
 
-            if (isConnected) {
+            if (hasNetwork) {
                 logger.info(`Connected SSH tunnel to ${proxy.instanceIp}:${port}.`);
                 models.updateProxy(proxy);
+                models.updateConfig({...config(), CONNECTED: true});
+                io.emit('/config', config());
             }
         }
         catch(err) {
@@ -235,6 +236,7 @@ const heartbeat = async () => {
     }
 };
 
+models.updateConfig({...config(), CONNECTED: false});
 webserver.start();
 websocket.start(io);
 config().AUTO_LAUNCH_WEB && open(config().WEB_URL);
