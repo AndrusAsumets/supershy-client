@@ -1,13 +1,9 @@
 import { serve } from 'https://deno.land/std@0.150.0/http/server.ts';
 import { Server } from 'https://deno.land/x/socket_io@0.2.0/mod.ts';
-
 import { Config } from './types.ts';
 import * as core from './core.ts';
 import * as models from './models.ts';
-import * as lib from './lib.ts';
-import { logger as _logger } from './logger.ts';
 
-const logger = _logger.get();
 const { config, proxies } = models;
 
 export const start = (io: Server) => {
@@ -34,8 +30,8 @@ export const start = (io: Server) => {
 
             const isInstanceProvidersDiff = prevConfig.INSTANCE_PROVIDERS.length != config().INSTANCE_PROVIDERS.length;
             const isInstanceProvidersDisabledDiff = prevConfig.INSTANCE_PROVIDERS_DISABLED.length != config().INSTANCE_PROVIDERS_DISABLED.length;
-            const isProxySystemWideDiff = lib.isDiff(prevConfig.PROXY_SYSTEM_WIDE, config().PROXY_SYSTEM_WIDE);
-            const isConnectionKillswitchDiff = lib.isDiff(prevConfig.CONNECTION_KILLSWITCH, config().CONNECTION_KILLSWITCH);
+            const isProxySystemWideDiff = prevConfig.PROXY_SYSTEM_WIDE != config().PROXY_SYSTEM_WIDE;
+            const isConnectionKillswitchDiff = prevConfig.CONNECTION_KILLSWITCH != config().CONNECTION_KILLSWITCH;
 
             (isInstanceProvidersDiff || isInstanceProvidersDisabledDiff) && models.updateConfig(await core.setInstanceCountries(config()));
             (isConnectionKillswitchDiff && config().CONNECTION_KILLSWITCH == true && models.getInitialProxy()) && core.enableConnectionKillSwitch();
