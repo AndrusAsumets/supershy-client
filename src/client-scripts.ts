@@ -130,6 +130,12 @@ case $target in
     ;;
     *"Darwin"*)
         daemon_dir=/Library/LaunchDaemons/org.supershy.firewall.plist
+        firewall_dir=/usr/local/bin/supershy.firewall.sh
+        rules_dir=/etc/pf.anchors/supershy.firewall.rules
+
+        sudo rm -rf $daemon_dir
+        sudo rm -rf $firewall_dir
+        sudo rm -rf $rules_dir
 
         sudo launchctl stop $daemon_dir &>/dev/null || true
         sudo launchctl remove $daemon_dir || true
