@@ -154,8 +154,6 @@ export enum ClientScriptFileName {
 	CONNECT_SSH_TUNNEL_FILE_NAME = 'connect-ssh-tunnel.sh',
 	ENABLE_CONNECTION_KILLSWITCH_FILE_NAME = 'enable-connection-killswitch.sh',
 	DISABLE_CONNECTION_KILLSWITCH_FILE_NAME = 'disable-connection-killswitch.sh',
-	ENABLE_TUN_FILE_NAME = 'enable-tun.sh',
-	DISABLE_TUN_FILE_NAME = 'disable-tun.sh',
 }
 
 export type Scripts = Record<ClientScriptFileName, string>

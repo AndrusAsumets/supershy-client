@@ -1,4 +1,4 @@
-Supershy is a DIY SSH tunnel proxy with a rotating exit node.
+Supershy is a DIY sshuttle VPN with a rotating exit node.
 
 <p align="center">
   <img width="480" src="/src/ui/assets/videos/supershy-recording-3.gif">
@@ -6,17 +6,16 @@ Supershy is a DIY SSH tunnel proxy with a rotating exit node.
 
 During its initiation, the client creates two new VPS instances (let's call them
 First Node and Second Node) inside Digital Ocean, Hetzner and/or Vultr containing
-nothing else but a simple Tinyproxy proxy daemon. Next up, it creates a SSH
-tunnel from your machine to the First Node. If you then change your browser's
-(or any other app or a system which has basic support for proxying) proxy
-settings to http://localhost:8888, all of your network activity will be routed
-through the instance via a SSH tunnel. After 30 minutes, the client will
-automatically connect to the Second Node, then creates a new fresh First Node
-instance for future use, and then eventually sunsets the original First Node by
-destrying it for good. The cycle of renewing your exit nodes (and thus IP
-addresses) will keep repeating itself as long as you have the client running.
-This way you can get stay pretty private, but still enjoy decent internet
-speeds.
+nothing else but a SSH server. Next up, it creates a sshuttle
+connection from your machine to the First Node. All of your local TCP (HTTP etc.) 
+traffic will be routed through the instance via a SSH as though
+you had been connected to a VPN.
+After 30 minutes, the client will automatically connect to the Second Node, then 
+creates a new fresh First Node instance for future use, and then eventually 
+sunsets the original First Node by destrying it for good. The cycle of renewing 
+your exit nodes (and thus IP addresses) will keep repeating itself as long as you 
+have the client running. This way you can get stay pretty private, but still 
+enjoy decent internet speeds.
 
 Each time a new instance is created, a phonehome call is made from it to
 Cloudflare KV containing instance's public host key, which will be then queried
@@ -31,9 +30,9 @@ been long gone.
 Supershy's use cases will depend on your possible adversaries. Firstly, if for
 some reason you aren't able to use Mullvad, Proton or any other of the mainstream
 VPNs either because they are blocked in your region or because you might not
-trust them enough, then Supershy could be the next option to try. Secondly, if
+trust them enough, then supershy could be the next option to try. Secondly, if
 you would like to have Tor-like experience, yet think Tor is too slow, then
-perhaps you should also check out Supershy.
+perhaps you should also check out supershy.
 
 The motivation for creating the project derives from the fact that my own
 communications started to be intercepted by several malicious nation-state
@@ -47,14 +46,14 @@ give something back to the humanity as kindness seems to be in short supply
 these days everywhere.
 
 ### Features
-* Creates a SSH tunnel proxy using VPS provider(s) you define.
+* Creates a sshuttle VPN using VPS provider(s) you define.
 * Periodically changes VPS nodes and thus your exit IPs.
 * Includes a connection killswitch toggle. If enabled, allows for only connections 
-made through the proxy to succeed. (Actions -> CONNECTION_KILLSWITCH -> Enabled).
-* Proxies all your system-wide TCP traffic. Uses tun2proxy under the hood, which 
-apparently appears to be leaking DNS and IPv6 requests, so use it together with the 
-killswitch. (Actions -> PROXY_SYSTEM_WIDE -> Enabled).
-* Runs as a daemon process in background, keeps Supershy running even after reboot.
+made through the VPN to succeed. (Actions -> CONNECTION_KILLSWITCH -> Enabled).
+* Uses sshuttle underneath to VPN all your system-wide TCP traffic through VPS.
+By default, it appears to be leaking UDP requests though, so make sure to have 
+connection killswitch enabled at all times.
+* Runs as a daemon process in background, keeps supershy running even after reboot.
 * All application's own requests (i.e, towards VPS providers and CloudFlare) will be
 redirected through SSH tunnels made by the application itself.
 * Has a web-based UI.
@@ -77,7 +76,7 @@ curl -fsSL https://install.supershy.org | sudo bash -s $(whoami)
 ```
 
 ```
-# Update Config through the Supershy's UI.
+# Update Config through the supershy's UI.
 PROXY_RECYCLE_INTERVAL_SEC=how often you would like to recycle the exit nodes in seconds, defaults to 1800.
 
 SSH_PORT_RANGE=colon separated [from:to] range of numbers for a random selection, overrides SSH_PORT if set.
@@ -136,27 +135,17 @@ CLOUDFLARE_API_KEY
 ```
 
 ```
-# Enable Supershy
- -> Click Enable Proxy on Supershy's UI.
+# Enable supershy
+ -> Click Enable VPN on upershy's UI.
 
 Depending on VPS, the first launch might take up to 10 minutes
 to have both Nodes prepared, so please be patient.
 ```
 
 ```
-# Update your browser's proxy url:
-Firefox
- -> Open https://support.mozilla.org/en-US/kb/connection-settings-firefox
- -> Check Manual proxy configuration. 
- -> Enter "localhost" for the HTTP field and "8888" for the Port field.
- -> Check "Also use this proxy for HTTPS".
- -> Ok.
-```
-
-```
 # Test that it's all working
  -> Open https://ipleak.net
- -> Make sure its IP matches with the IP found inside Status tab on Supershy's UI.
+ -> Make sure its IP matches with the IP found inside Status tab on supershy's UI.
 ```
 
 ## Development
@@ -169,25 +158,18 @@ cd supershy-client
 
 ```
 # Linux
-sudo apt install git expect screen unzip ufw build-essential -y
+sudo apt install git expect screen unzip ufw build-essential sshuttle -y
 
 # Mac
 brew install expect
 brew install screen
+brew install sshuttle
 ```
 
 ```
-# tun2proxy - optional, if you want to use system-wide proxy.
-Will also have to be enabled from the UI later on.
-# Rust
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-cargo install tun2proxy
-```
-
-```
-# Sudo workaround for toggling system-wide proxy and killswitch
-# as Deno can not run sudo directly. Not the prettiest solution, open to suggestions.
-echo "$(whoami) ALL=(ALL:ALL) NOPASSWD: ALL
+# Sudo workaround for enabling killswitch
+# as Deno can not run sudo directly. Not the prettiest solution, really-really open to suggestions here.
+echo "$(whoami) ALL=(ALL:ALL) NOPASSWD: $(getent passwd $(whoami) | cut -d: -f6)/.supershy-data/scripts" | sudo tee -a /etc/sudoers
 ```
 
 ```

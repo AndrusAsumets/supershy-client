@@ -9,17 +9,6 @@ sudo -u $(whoami) launchctl unload $daemon &>/dev/null || true
 
 # Stop application
 sudo pkill -f supershyd || true
-sudo pkill -f tun2proxy-bin || true
-
-# Clean out application data
-rm -rf ~/.supershy-data
-
-# Remove possible tun interface
-sudo ip link del tun0 &>/dev/null || true
-
-# Clear out dns
-sudo chattr -i /etc/resolv.conf &>/dev/null || true
-sudo umount -f /etc/resolv.conf || true
 
 # Linux firewall
 sudo ufw disable || true
@@ -37,3 +26,6 @@ sudo launchctl stop $daemon_dir &>/dev/null || true
 sudo launchctl remove $daemon_dir || true
 sudo launchctl unload $daemon_dir || true
 sudo pfctl -d || true
+
+# Clean out application data
+rm -rf ~/.supershy-data

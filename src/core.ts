@@ -80,19 +80,6 @@ export const disableConnectionKillSwitch = () => {
     integrations.shell.command(`bash ${config().SCRIPT_PATH}/${ClientScriptFileName.DISABLE_CONNECTION_KILLSWITCH_FILE_NAME}`);
 };
 
-export const enableSystemWideProxy = () => {
-    const proxies = models.proxies();
-    const bypasses = Object
-        .keys(proxies)
-        .map((key: string) => proxies[key].instanceIp)
-        .join(' ');
-    integrations.shell.command(`bash ${config().SCRIPT_PATH}/${ClientScriptFileName.ENABLE_TUN_FILE_NAME} ${config().PROXY_LOCAL_PORT} ${bypasses}`);
-};
-
-export const disableSystemWideProxy = () => {
-    integrations.shell.command(`bash ${config().SCRIPT_PATH}/${ClientScriptFileName.DISABLE_TUN_FILE_NAME}`);
-};
-
 export const cleanup = async (
     instanceIdsToKeep: string[]
 ) => {

@@ -144,43 +144,9 @@ case $target in
 esac
 `;
 
-const ENABLE_TUN_FILE = `#!/bin/bash
-
-proxy_port=$1
-resolv_conf_dir=/etc/resolv.conf
-
-sudo pkill -f tun2proxy-bin || true
-sleep 1
-
-if [ "$2" ]; then
-    bypass1="--bypass $2"
-fi
-if [ "$3" ]; then
-    bypass2="--bypass $3"
-fi
-if [ "$4" ]; then
-    bypass3="--bypass $4"
-fi
-sudo screen -dm sudo $(which tun2proxy-bin) --setup --proxy http://0.0.0.0:$proxy_port --dns virtual $bypass1 $bypass2 $bypass3 || true
-
-sudo chattr +i $resolv_conf_dir &>/dev/null || true
-`;
-
-const DISABLE_TUN_FILE = `#!/bin/bash
-
-resolv_conf_dir=/etc/resolv.conf
-
-sudo ip link del tun0 &>/dev/null || true
-sudo umount -f /etc/resolv.conf || true
-sudo pkill -f tun2proxy-bin || true
-sudo rm -f $resolv_conf_dir
-`;
-
 export const clientScripts: Scripts = {
     [ClientScriptFileName.GENERATE_SSH_KEY_FILE_NAME]: GENERATE_SSH_KEY_FILE,
     [ClientScriptFileName.CONNECT_SSH_TUNNEL_FILE_NAME]: CONNECT_SSH_TUNNEL_FILE,
     [ClientScriptFileName.ENABLE_CONNECTION_KILLSWITCH_FILE_NAME]: ENABLE_CONNECTION_KILLSWITCH_FILE,
     [ClientScriptFileName.DISABLE_CONNECTION_KILLSWITCH_FILE_NAME]: DISABLE_CONNECTION_KILLSWITCH_FILE,
-    [ClientScriptFileName.ENABLE_TUN_FILE_NAME]: ENABLE_TUN_FILE,
-    [ClientScriptFileName.DISABLE_TUN_FILE_NAME]: DISABLE_TUN_FILE,
 };

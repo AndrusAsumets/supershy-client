@@ -12,7 +12,6 @@ const $configSection = document.getElementsByClassName('section-content config')
 const $logSection = document.getElementsByClassName('section-content log')[0];
 const visibleActionKeys = {
     'CONNECTION_KILLSWITCH': { editable: 'boolean' },
-    'PROXY_SYSTEM_WIDE': { editable: 'boolean' },
 };
 const visibleConfigKeys = {
     'PROXY_RECYCLE_INTERVAL_SEC': { editable: 'number' },
@@ -341,8 +340,8 @@ socket
         isProxyEnabled = _isProxyEnabled;
         updateEnablementToggle(
             isProxyEnabled
-                ? 'Disable Proxy'
-                : 'Enable Proxy'
+                ? 'Disable VPN'
+                : 'Enable VPN'
         );
     })
     .on('/config', (_config) => {

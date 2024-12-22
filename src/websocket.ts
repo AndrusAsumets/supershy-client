@@ -21,7 +21,6 @@ export const start = (io: Server) => {
         socket.on('/proxy/disable', () => {
             models.updateConfig({...config(), 'PROXY_ENABLED': false, CONNECTION_STATUS: ConnectionStatus.DISCONNECTED});
             core.disableConnectionKillSwitch();
-            core.disableSystemWideProxy();
             io.emit('/config', config());
             core.exit('/proxy/disable', true);
         });
@@ -32,14 +31,11 @@ export const start = (io: Server) => {
 
             const isInstanceProvidersDiff = prevConfig.INSTANCE_PROVIDERS.length != config().INSTANCE_PROVIDERS.length;
             const isInstanceProvidersDisabledDiff = prevConfig.INSTANCE_PROVIDERS_DISABLED.length != config().INSTANCE_PROVIDERS_DISABLED.length;
-            const isProxySystemWideDiff = prevConfig.PROXY_SYSTEM_WIDE != config().PROXY_SYSTEM_WIDE;
             const isConnectionKillswitchDiff = prevConfig.CONNECTION_KILLSWITCH != config().CONNECTION_KILLSWITCH;
 
             (isInstanceProvidersDiff || isInstanceProvidersDisabledDiff) && models.updateConfig(await core.setInstanceCountries(config()));
             (isConnectionKillswitchDiff && config().CONNECTION_KILLSWITCH == true && models.getInitialProxy()) && core.enableConnectionKillSwitch();
             (isConnectionKillswitchDiff && config().CONNECTION_KILLSWITCH == false) && core.disableConnectionKillSwitch();
-            (isProxySystemWideDiff && config().PROXY_SYSTEM_WIDE == true && models.getInitialProxy()) && core.exit('prepare for enabling system wide proxy', true);
-            (isProxySystemWideDiff && config().PROXY_SYSTEM_WIDE == false) && core.disableSystemWideProxy();
 
             io.emit('/config', config());
         });

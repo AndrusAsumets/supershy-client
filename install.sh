@@ -3,14 +3,15 @@ user=$1
 
 # install dependencies
 if [[ ! -z $(type -p yum) ]]; then
-    sudo yum install unzip expect ufw -y
+    sudo yum install unzip expect ufw sshuttle -y
 elif [[ ! -z $(type -p dnf) ]]; then
-    sudo dnf install unzip expect ufw -y
+    sudo dnf install unzip expect ufw sshuttle -y
 elif [[ ! -z $(type -p apt) ]]; then
-    sudo apt install unzip expect ufw -y
+    sudo apt install unzip expect ufw sshuttle -y
 elif [[ ! -z $(type -p brew) ]]; then
     sudo -u $user brew install unzip
     sudo -u $user brew install expect
+    sudo -u $user brew install sshuttle
 else
     echo "Warning: Can't install packages as no package manager was found."
 fi
@@ -19,25 +20,20 @@ fi
 case $(uname -sm) in
 	"Darwin x86_64")
         supershy_target="macos-x86_64"
-        tun2proxy_target="x86_64-apple-darwin"
     ;;
 	"Darwin arm64")
         supershy_target="macos-arm64"
-        tun2proxy_target="aarch64-apple-darwin"
     ;;
 	"Linux aarch64")
         supershy_target="linux-arm64"
-        tun2proxy_target="aarch64-unknown-linux-gnu"
     ;;
 	*)
         supershy_target="linux-x86_64"
-        tun2proxy_target="i686-unknown-linux-musl"
     ;;
 esac
 
 version="$(curl -s https://version.supershy.org/)"
 supershy_uri="https://github.com/AndrusAsumets/supershy-client/releases/download/${version}/supershy-${supershy_target}.zip"
-tun2proxy_uri="https://github.com/tun2proxy/tun2proxy/releases/download/v0.6.6/tun2proxy-${tun2proxy_target}.zip"
 
 app_id="org.supershy.supershyd"
 daemon="/etc/systemd/user/supershy-daemon.service"
@@ -56,42 +52,36 @@ tmp_dir="/tmp"
 
 # File paths
 supershy_zip="$tmp_dir/supershy.zip"
-tun2proxy_zip="$tmp_dir/tun2proxy.zip"
-
 supershy_tmp_exe="$tmp_dir/supershyd"
-tun2proxy_tmp_exe="$tmp_dir/tun2proxy-bin"
-
 supershy_exe="$data_dir/supershyd"
-tun2proxy_exe="$data_dir/tun2proxy-bin"
 
 # Download
-curl --fail --location --progress-bar --output "$supershy_zip" "$supershy_uri"
-curl --fail --location --progress-bar --output "$tun2proxy_zip" "$tun2proxy_uri"
+curl --fail --location --progress-bar --output $supershy_zip $supershy_uri
 
 # Unzip
-unzip -d "$tmp_dir" -o "$supershy_zip"
-unzip -d "$tmp_dir" -o "$tun2proxy_zip"
+unzip -d $tmp_dir -o $supershy_zip
 
 # Move to binaries
 sudo mv $supershy_tmp_exe $supershy_exe
-sudo mv $tun2proxy_tmp_exe $tun2proxy_exe
 
 # Make user the owner of the binaries
 sudo chown -R $user $supershy_exe
-sudo chown -R $user $tun2proxy_exe
 
 # Link to system binaries
-supershy_link="$usr_bin"/supershyd
-tun2proxy_link="$usr_bin"/tun2proxy-bin
-
+supershy_link=$usr_bin/supershyd
 sudo rm -f supershy_link
-sudo rm -f tun2proxy_link
-
 sudo ln -sf $supershy_exe $supershy_link
-sudo ln -sf $tun2proxy_exe $tun2proxy_link
 
 # Remove old daemon service
 rm -f $daemon
+
+# Deno can not run sudo, yet supershy needs it for killswitch
+sudoer_dir=/etc/sudoers
+script_dir="${data_dir}/scripts"
+permission="${user} ALL=(ALL:ALL) NOPASSWD: ${script_dir}"
+if ! sudo grep -q "$permission" $sudoer_dir; then
+    echo $permission | sudo tee -a $sudoer_dir
+fi
 
 # Create daemon servicea
 case $supershy_target in
@@ -110,13 +100,6 @@ case $supershy_target in
         sudo -u $user XDG_RUNTIME_DIR="/run/user/$(id -u $user)" systemctl --user daemon-reload || true
         sudo -u $user XDG_RUNTIME_DIR="/run/user/$(id -u $user)" systemctl --user enable supershy-daemon.service || true
         sudo -u $user XDG_RUNTIME_DIR="/run/user/$(id -u $user)" systemctl --user restart supershy-daemon.service || true
-
-        # Since deno can not run sudo, yet tun2proxy needs it, hence work around
-        sudoer_dir=/etc/sudoers
-        permission="${user} ALL=(ALL:ALL) NOPASSWD: ALL"
-        if ! sudo grep -q "$permission" $sudoer_dir; then
-            echo -e $permission | sudo tee -a $sudoer_dir
-        fi
     ;;
     *"macos"*)
         sudo echo '<?xml version="1.0" encoding="UTF-8"?>' >> $daemon
