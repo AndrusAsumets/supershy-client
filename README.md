@@ -20,7 +20,8 @@ enjoy decent internet speeds.
 Each time a new instance is created, a phonehome call is made from it to
 Cloudflare KV containing instance's public host key, which will be then queried
 by supershy, and henceforth added to your SSH's known_hosts file. When SSH
-client is connecting to the SSH server, StrictHostKeyChecking=yes will be set. This adds a layer of security against possible MITM attacks.
+client is connecting to the SSH server, StrictHostKeyChecking=yes will be set. 
+This adds a layer of security against possible MITM attacks.
 
 The logic behind jumping from one exit node to another is that it helps you to
 keep your communications safe. Should anyone try to pinpoint you using your exit
@@ -158,11 +159,10 @@ cd supershy-client
 
 ```
 # Linux
-sudo apt install git expect screen unzip ufw build-essential sshuttle -y
+sudo apt install git expect unzip ufw build-essential sshuttle -y
 
 # Mac
 brew install expect
-brew install screen
 brew install sshuttle
 ```
 

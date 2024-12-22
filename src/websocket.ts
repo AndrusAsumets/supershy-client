@@ -20,7 +20,6 @@ export const start = (io: Server) => {
 
         socket.on('/proxy/disable', () => {
             models.updateConfig({...config(), 'PROXY_ENABLED': false, CONNECTION_STATUS: ConnectionStatus.DISCONNECTED});
-            core.disableConnectionKillSwitch();
             io.emit('/config', config());
             core.exit('/proxy/disable', true);
         });
