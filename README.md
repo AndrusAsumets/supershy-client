@@ -167,12 +167,6 @@ brew install sshuttle
 ```
 
 ```
-# Sudo workaround for enabling killswitch
-# as Deno can not run sudo directly. Not the prettiest solution, really-really open to suggestions here.
-echo "$(whoami) ALL=(ALL:ALL) NOPASSWD: $(getent passwd $(whoami) | cut -d: -f6)/.supershy-data/scripts" | sudo tee -a /etc/sudoers
-```
-
-```
 # Deno
 curl -fsSL https://deno.land/install.sh | sh
 ```

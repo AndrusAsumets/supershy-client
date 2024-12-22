@@ -126,7 +126,6 @@ export interface Config {
 	SSH_LOG_EXTENSION: string
 	SSH_USER: string
 	SSH_CONNECTION_TIMEOUT_SEC: number
-	SSHUTTLE_PID_FILE_PATH: string
 	PROXY_TYPES: ProxyType[]
 	DIGITAL_OCEAN_INSTANCE_SIZE: string
 	HETZNER_SERVER_TYPE: string

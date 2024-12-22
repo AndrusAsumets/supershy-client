@@ -59,7 +59,7 @@ const connect = async (
     proxy: Proxy,
 ) => {
     const port = config().PROXY_LOCAL_PORT;
-    proxy.connectionString = core.getConnectionString(proxy)
+    proxy.connectionString = core.getConnectionString(proxy);
 
     integrations.fs.hostKey.save(proxy);
     existsSync(proxy.sshLogPath) && Deno.removeSync(proxy.sshLogPath);
@@ -75,11 +75,8 @@ const connect = async (
     io.emit('/config', config());
 
     while (config().CONNECTION_STATUS != ConnectionStatus.CONNECTED) {
-        existsSync(config().SSHUTTLE_PID_FILE_PATH) && integrations.shell.command(
-            `kill -9 ${Deno.readTextFileSync(config().SSHUTTLE_PID_FILE_PATH).replace('\n', '')}`
-        );
+        await integrations.shell.pkill('0.0.0.0/0');
         await lib.sleep(1000);
-
         integrations.shell.command(proxy.connectionString);
         await lib.sleep(config().SSH_CONNECTION_TIMEOUT_SEC * 1000);
 

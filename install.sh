@@ -75,14 +75,6 @@ sudo ln -sf $supershy_exe $supershy_link
 # Remove old daemon service
 rm -f $daemon
 
-# Deno can not run sudo, yet supershy needs it for killswitch
-sudoer_dir=/etc/sudoers
-script_dir="${data_dir}/scripts"
-permission="${user} ALL=(ALL:ALL) NOPASSWD: ${script_dir}"
-if ! sudo grep -q "$permission" $sudoer_dir; then
-    echo $permission | sudo tee -a $sudoer_dir
-fi
-
 # Create daemon servicea
 case $supershy_target in
     *"linux"*)

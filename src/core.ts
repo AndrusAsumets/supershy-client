@@ -58,7 +58,7 @@ export const getConnectionString = (
         sshKeyPath,
         sshLogPath
     } = proxy;
-    return `${config().SCRIPT_PATH}/${ClientScriptFileName.CONNECT_SSH_TUNNEL_FILE_NAME} ${instanceIp} ${config().SSH_USER} ${sshPort} ${config().PROXY_LOCAL_PORT} ${config().PROXY_REMOTE_PORT} ${sshKeyPath} ${sshLogPath} ${config().SSHUTTLE_PID_FILE_PATH}`
+    return `${config().SCRIPT_PATH}/${ClientScriptFileName.CONNECT_SSH_TUNNEL_FILE_NAME} ${instanceIp} ${config().SSH_USER} ${sshPort} ${config().PROXY_LOCAL_PORT} ${config().PROXY_REMOTE_PORT} ${sshKeyPath} ${sshLogPath}`
         .replace('\n', '');
 };
 

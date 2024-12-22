@@ -23,9 +23,8 @@ local_port=$4
 remote_port=$5
 key_path=$6
 output_path=$7
-sshuttle_pid_file_path=$8
 
-sshuttle --daemon --dns -r $user@$server:$ssh_port 0/0 -x $server:$ssh_port --pidfile=$sshuttle_pid_file_path -e "ssh -v -i $key_path -o StrictHostKeyChecking=yes -E $output_path"
+sshuttle --daemon --dns -r $user@$server:$ssh_port 0.0.0.0/0 -x $server:$ssh_port -e "ssh -v -i $key_path -o StrictHostKeyChecking=yes -E $output_path"
 `;
 
 const ENABLE_CONNECTION_KILLSWITCH_FILE = `#!/bin/bash
