@@ -8,8 +8,8 @@ During its initiation, the client creates two new VPS instances (let's call them
 First Node and Second Node) inside Digital Ocean, Hetzner and/or Vultr containing
 nothing else but a SSH server. Next up, it creates a sshuttle
 connection from your machine to the First Node. All of your local TCP (HTTP etc.) 
-traffic will be routed through the instance via a SSH as though
-you had been connected to a VPN.
+traffic will be routed through the instance via sshuttle as though you had been
+connected to a VPN.
 After 30 minutes, the client will automatically connect to the Second Node, then 
 creates a new fresh First Node instance for future use, and then eventually 
 sunsets the original First Node by destrying it for good. The cycle of renewing 
@@ -138,7 +138,7 @@ CLOUDFLARE_API_KEY
 # Enable supershy
  -> Click Enable VPN on upershy's UI.
 
-Depending on VPS, the first launch might take up to 10 minutes
+Depending on VPS, the first launch might take up to 5 minutes
 to have both Nodes prepared, so please be patient.
 ```
 

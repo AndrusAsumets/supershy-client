@@ -70,18 +70,14 @@ const connect = async (
         logger.info(`Enabled connection killswitch.`);
     }
 
-    if (config().PROXY_SYSTEM_WIDE && models.getInitialProxy()) {
-        logger.info(`Enabling system-wide proxy via tun2proxy.`);
-        core.enableSystemWideProxy();
-        logger.info(`Enabled system-wide proxy via tun2proxy.`);
-    }
-
     logger.info(`Starting SSH tunnel proxy to ${proxy.instanceIp}:${proxy.sshPort}.`);
     models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTING});
     io.emit('/config', config());
 
     while (config().CONNECTION_STATUS != ConnectionStatus.CONNECTED) {
-        await integrations.shell.pkill(`sshuttle`);
+        existsSync(config().SSHUTTLE_PID_FILE_PATH) && integrations.shell.command(
+            `kill -9 ${Deno.readTextFileSync(config().SSHUTTLE_PID_FILE_PATH).replace('\n', '')}`
+        );
         await lib.sleep(1000);
 
         integrations.shell.command(proxy.connectionString);
