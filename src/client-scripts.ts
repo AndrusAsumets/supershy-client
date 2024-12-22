@@ -25,7 +25,7 @@ key_path=$6
 output_path=$7
 sshuttle_pid_file_path=$8
 
-sshuttle --daemon --dns -r $user@$server:$ssh_port 0.0.0.0/0 -x $server:$ssh_port --pidfile=$sshuttle_pid_file_path -e "ssh -v -i $key_path -o StrictHostKeyChecking=yes -E $output_path"
+sshuttle --daemon --dns --disable-ipv6 -r $user@$server:$ssh_port 0.0.0.0/0 -x $server:$ssh_port --pidfile=$sshuttle_pid_file_path -e "ssh -v -i $key_path -o StrictHostKeyChecking=yes -E $output_path"
 `;
 
 const ENABLE_CONNECTION_KILLSWITCH_FILE = `#!/bin/bash
@@ -40,6 +40,9 @@ target=$(uname -sm)
 
 case $target in
     *"Linux"*)
+        sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1 || true
+        sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1 || true
+
         sudo ufw --force reset
         sudo ufw default deny incoming
         sudo ufw default deny outgoing
@@ -125,6 +128,8 @@ target=$(uname -sm)
 
 case $target in
     *"Linux"*)
+        sudo sysctl -w net.ipv6.conf.all.disable_ipv6=0 || true
+        sudo sysctl -w net.ipv6.conf.default.disable_ipv6=0 || true
         sudo ufw disable || true
         sudo ufw --force reset || true
     ;;

@@ -52,8 +52,8 @@ these days everywhere.
 * Includes a connection killswitch toggle. If enabled, allows for only connections 
 made through the VPN to succeed. (Actions -> CONNECTION_KILLSWITCH -> Enabled).
 * Uses sshuttle underneath to VPN all your system-wide TCP traffic through VPS.
-By default, it appears to be leaking UDP requests though, so make sure to have 
-connection killswitch enabled at all times.
+It appears to be leaking IPv6 requests though, so make sure to have connection 
+killswitch enabled at all times.
 * Runs as a daemon process in background, keeps supershy running even after reboot.
 * All application's own requests (i.e, towards VPS providers and CloudFlare) will be
 redirected through SSH tunnels made by the application itself.

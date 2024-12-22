@@ -11,6 +11,8 @@ sudo -u $(whoami) launchctl unload $daemon &>/dev/null || true
 sudo pkill -f supershyd || true
 
 # Linux firewall
+sudo sysctl -w net.ipv6.conf.all.disable_ipv6=0 || true
+sudo sysctl -w net.ipv6.conf.default.disable_ipv6=0 || true
 sudo ufw disable || true
 
 # MacOS firewall
