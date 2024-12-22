@@ -116,8 +116,6 @@ export interface Config {
 	HOME_PATH: string
 	DATA_PATH: string
 	BACKUP_PATH: string
-	UFW_BACKUP_PATH: string
-	RESOLV_CONF_BACKUP_PATH: string
 	SCRIPT_PATH: string
 	SSH_KEY_PATH: string
 	UI_PATH: string

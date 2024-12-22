@@ -18,7 +18,7 @@ rm -rf ~/.supershy-data
 sudo ip link del tun0 &>/dev/null || true
 
 # Clear out dns
-sudo chattr -i "$(realpath /etc/resolv.conf)" &>/dev/null || true
+sudo chattr -i /etc/resolv.conf &>/dev/null || true
 sudo umount -f /etc/resolv.conf || true
 
 # Linux firewall

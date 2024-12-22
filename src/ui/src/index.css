@@ -115,6 +115,10 @@ body {
     margin-top: 12px;
 }
 
+.section-content.log {
+    min-height: calc(100vh - 200px);
+}
+
 .config-line {
     display: flex;
     justify-content: space-between;

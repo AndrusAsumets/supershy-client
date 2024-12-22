@@ -34,27 +34,24 @@ exit 0`;
 
 const ENABLE_CONNECTION_KILLSWITCH_FILE = `#!/bin/bash
 
-ufw_backup_path=$1
-proxy_host_1=$2
-proxy_port_1=$3
-proxy_host_2=$4
-proxy_port_2=$5
-proxy_host_3=$6
-proxy_port_3=$7
+proxy_host1=$1
+proxy_port1=$2
+proxy_host2=$3
+proxy_port2=$4
+proxy_host3=$5
+proxy_port3=$6
 target=$(uname -sm)
 
 case $target in
     *"Linux"*)
-        sudo tar -cvzf $ufw_backup_path /etc/ufw
         sudo ufw --force reset
         sudo ufw default deny incoming
         sudo ufw default deny outgoing
         sudo ufw allow out from any to 10.0.0.0/24
         sudo ufw allow out from any to 198.18.0.0/24
-        sudo ufw allow out from any to $proxy_host_1 port $proxy_port_1 || true
-        sudo ufw allow out from any to $proxy_host_2 port $proxy_port_2 || true
-        sudo ufw allow out from any to $proxy_host_3 port $proxy_port_3 || true
-
+        sudo ufw allow out from any to $proxy_host1 port $proxy_port1 || true
+        sudo ufw allow out from any to $proxy_host2 port $proxy_port2 || true
+        sudo ufw allow out from any to $proxy_host3 port $proxy_port3 || true
         sudo ufw reload
         sudo ufw enable
     ;;
@@ -100,9 +97,19 @@ case $target in
         echo "block out all" | sudo tee -a $rules_dir
         echo "pass out to 10.0.0.0/24" | sudo tee -a $rules_dir
         echo "pass out to 198.18.0.0/24" | sudo tee -a $rules_dir
-        echo "pass out proto tcp to $\{proxy_host_1} port $\{proxy_port_1}" | sudo tee -a $rules_dir || true
-        echo "pass out proto tcp to $\{proxy_host_2} port $\{proxy_port_2}" | sudo tee -a $rules_dir || true
-        echo "pass out proto tcp to $\{proxy_host_3} port $\{proxy_port_3}" | sudo tee -a $rules_dir || true
+
+        if [ "$proxy_host1" ]; then
+            proxy1="pass out proto tcp to $proxy_host1 port $proxy_port1"
+            echo "$\{proxy1}" | sudo tee -a $rules_dir || true
+        fi
+        if [ "$proxy_host2" ]; then
+            proxy2="pass out proto tcp to $proxy_host2 port $proxy_port2"
+            echo "$\{proxy2}" | sudo tee -a $rules_dir || true
+        fi
+        if [ "$proxy_host3" ]; then
+            proxy3="pass out proto tcp to $proxy_host3 port $proxy_port3"
+            echo "$\{proxy3}" | sudo tee -a $rules_dir || true
+        fi
 
         # permissions
         sudo chmod +x $firewall_dir
@@ -121,12 +128,8 @@ target=$(uname -sm)
 
 case $target in
     *"Linux"*)
-        ufw_backup_path=$1
-
         sudo ufw disable || true
         sudo ufw --force reset || true
-        sudo tar -xvzf $ufw_backup_path -C / || true
-        sudo rm -rf $ufw_backup_path || true
     ;;
     *"Darwin"*)
         daemon_dir=/Library/LaunchDaemons/org.supershy.firewall.plist
@@ -148,47 +151,33 @@ esac
 const ENABLE_TUN_FILE = `#!/bin/bash
 
 proxy_port=$1
-backup_resolv_conf_path=$2
-system_resolv_conf_path="$(realpath /etc/resolv.conf)"
-
-if [ -f $system_resolv_conf_path ]; then
-    sudo cp $system_resolv_conf_path $backup_resolv_conf_path || true
-fi
-
-if [ "$3" ]; then
-    bypass1="--bypass $3"
-fi
-
-if [ "$4" ]; then
-    bypass2="--bypass $4"
-fi
-
-if [ "$5" ]; then
-    bypass3="--bypass $5"
-fi
+resolv_conf_dir=/etc/resolv.conf
 
 sudo pkill -f tun2proxy-bin || true
 sleep 1
+
+if [ "$2" ]; then
+    bypass1="--bypass $2"
+fi
+if [ "$3" ]; then
+    bypass2="--bypass $3"
+fi
+if [ "$4" ]; then
+    bypass3="--bypass $4"
+fi
 sudo screen -dm sudo $(which tun2proxy-bin) --setup --proxy http://0.0.0.0:$proxy_port --dns virtual $bypass1 $bypass2 $bypass3 || true
-sudo chattr +i $system_resolv_conf_path &>/dev/null || true
+
+sudo chattr +i $resolv_conf_dir &>/dev/null || true
 `;
 
 const DISABLE_TUN_FILE = `#!/bin/bash
 
-backup_resolv_conf_path=$1
-system_resolv_conf_path="$(realpath /etc/resolv.conf)" || true
-
-sudo chattr -i $system_resolv_conf_path &>/dev/null || true
-sudo mv $backup_resolv_conf_path $system_resolv_conf_path || true
-
-if [ -f $backup_resolv_conf_path ]; then
-    sudo mv $backup_resolv_conf_path $system_resolv_conf_path || true
-fi
+resolv_conf_dir=/etc/resolv.conf
 
 sudo ip link del tun0 &>/dev/null || true
 sudo umount -f /etc/resolv.conf || true
 sudo pkill -f tun2proxy-bin || true
-sudo rm $backup_resolv_conf_path || true
+sudo rm -f $resolv_conf_dir
 `;
 
 export const clientScripts: Scripts = {

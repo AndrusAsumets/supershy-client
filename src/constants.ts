@@ -30,8 +30,6 @@ const __DIRNAME = path.dirname(path.fromFileUrl(import.meta.url));
 const UI_PATH = `${__DIRNAME}/ui`;
 const DATA_PATH = `${HOME_PATH}/.supershy-data`;
 const BACKUP_PATH = `${DATA_PATH}/backups`;
-const UFW_BACKUP_PATH = `${BACKUP_PATH}/ufw.tar.gz`;
-const RESOLV_CONF_BACKUP_PATH = `${BACKUP_PATH}/resolv.conf`;
 const SCRIPT_PATH = `${DATA_PATH}/scripts`;
 const SSH_KEY_PATH = `${DATA_PATH}/.keys`;
 const LOG_PATH = `${DATA_PATH}/logs`;
@@ -106,8 +104,6 @@ export const config: Config = {
     HOME_PATH,
     DATA_PATH,
     BACKUP_PATH,
-    UFW_BACKUP_PATH,
-    RESOLV_CONF_BACKUP_PATH,
     SCRIPT_PATH,
     SSH_KEY_PATH,
     UI_PATH,

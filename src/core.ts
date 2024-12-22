@@ -78,16 +78,16 @@ export const getSshLogPath = (
 
 export const enableConnectionKillSwitch = () => {
     const proxies = models.proxies();
-    const args = Object
+    const hosts = Object
         .keys(proxies)
         .map((key: string) => [proxies[key].instanceIp, proxies[key].sshPort])
         .flat()
         .join(' ');
-    integrations.shell.command(`bash ${config().SCRIPT_PATH}/${ClientScriptFileName.ENABLE_CONNECTION_KILLSWITCH_FILE_NAME} ${config().UFW_BACKUP_PATH} ${args}`);
+    integrations.shell.command(`bash ${config().SCRIPT_PATH}/${ClientScriptFileName.ENABLE_CONNECTION_KILLSWITCH_FILE_NAME} ${hosts}`);
 };
 
 export const disableConnectionKillSwitch = () => {
-    integrations.shell.command(`bash ${config().SCRIPT_PATH}/${ClientScriptFileName.DISABLE_CONNECTION_KILLSWITCH_FILE_NAME} ${config().UFW_BACKUP_PATH}`);
+    integrations.shell.command(`bash ${config().SCRIPT_PATH}/${ClientScriptFileName.DISABLE_CONNECTION_KILLSWITCH_FILE_NAME}`);
 };
 
 export const enableSystemWideProxy = () => {
@@ -96,11 +96,11 @@ export const enableSystemWideProxy = () => {
         .keys(proxies)
         .map((key: string) => proxies[key].instanceIp)
         .join(' ');
-    integrations.shell.command(`bash ${config().SCRIPT_PATH}/${ClientScriptFileName.ENABLE_TUN_FILE_NAME} ${config().PROXY_LOCAL_PORT} ${config().RESOLV_CONF_BACKUP_PATH} ${bypasses}`);
+    integrations.shell.command(`bash ${config().SCRIPT_PATH}/${ClientScriptFileName.ENABLE_TUN_FILE_NAME} ${config().PROXY_LOCAL_PORT} ${bypasses}`);
 };
 
 export const disableSystemWideProxy = () => {
-    integrations.shell.command(`bash ${config().SCRIPT_PATH}/${ClientScriptFileName.DISABLE_TUN_FILE_NAME} ${config().RESOLV_CONF_BACKUP_PATH}`);
+    integrations.shell.command(`bash ${config().SCRIPT_PATH}/${ClientScriptFileName.DISABLE_TUN_FILE_NAME}`);
 };
 
 export const cleanup = async (
