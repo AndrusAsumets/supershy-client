@@ -10,15 +10,6 @@ import * as integrations from './integrations.ts';
 
 const logger = _logger.get();
 
-export const useProxy = (options: any) => {
-    if (models.getInitialProxy()) {
-        const proxy = { url: config().PROXY_URL };
-        options.client = Deno.createHttpClient({ proxy });
-    }
-
-    return options;
-};
-
 export const setInstanceProviders = (
     config: Config
 ): Config => {
@@ -62,13 +53,12 @@ export const getConnectionString = (
     proxy: Proxy,
 ): string => {
     const {
-        passphrase,
         instanceIp,
         sshPort,
         sshKeyPath,
         sshLogPath
     } = proxy;
-    return `${config().SCRIPT_PATH}/${ClientScriptFileName.CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${instanceIp} ${config().SSH_USER} ${sshPort} ${config().PROXY_LOCAL_PORT} ${config().PROXY_REMOTE_PORT} ${sshKeyPath} ${sshLogPath}`
+    return `${config().SCRIPT_PATH}/${ClientScriptFileName.CONNECT_SSH_TUNNEL_FILE_NAME} ${instanceIp} ${config().SSH_USER} ${sshPort} ${config().PROXY_LOCAL_PORT} ${config().PROXY_REMOTE_PORT} ${sshKeyPath} ${sshLogPath}`
         .replace('\n', '');
 };
 

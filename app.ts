@@ -81,7 +81,7 @@ const connect = async (
     io.emit('/config', config());
 
     while (config().CONNECTION_STATUS != ConnectionStatus.CONNECTED) {
-        await integrations.shell.pkill(`${port}:`);
+        await integrations.shell.pkill(`sshuttle`);
         await lib.sleep(1000);
 
         integrations.shell.command(proxy.connectionString);
@@ -128,6 +128,7 @@ const rotate = async () => {
         const proxyUuid = uuidv7();
         const proxyType = proxyTypes[proxyIndex];
         const instanceLocationsList = await integrations.compute[instanceProvider].regions.parse();
+        !instanceLocationsList.length && logger.info('No locations were found. Are any of the countries enabled for the VPS?');
         const [instanceRegion, instanceCountry]: string[] = lib.shuffle(instanceLocationsList)[0];
         const instanceName = `${config().APP_ID}-${config().ENV}-${proxyType}-${proxyUuid}`;
         const { instanceSize, instanceImage } = integrations.compute[instanceProvider];

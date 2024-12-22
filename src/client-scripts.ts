@@ -2,7 +2,6 @@ import { Scripts, ClientScriptFileName } from './types.ts';
 
 const GENERATE_SSH_KEY_FILE = `#!/usr/bin/expect -f
 
-set passphrase [lrange $argv 0 0]
 set key_path [lrange $argv 1 1]
 set key_algorithm [lrange $argv 2 2]
 set key_length [lrange $argv 3 3]
@@ -15,22 +14,18 @@ send -- "$passphrase\r"
 interact
 exit 0`;
 
-const CONNECT_SSH_TUNNEL_FILE = `#!/usr/bin/expect -f
+const CONNECT_SSH_TUNNEL_FILE = `#!/bin/bash
 
-set passphrase [lrange $argv 0 0]
-set server [lrange $argv 1 1]
-set user [lrange $argv 2 2]
-set ssh_port [lrange $argv 3 3]
-set local_port [lrange $argv 4 4]
-set remote_port [lrange $argv 5 5]
-set key_path [lrange $argv 6 6]
-set output_path [lrange $argv 7 7]
+server=$1
+user=$2
+ssh_port=$3
+local_port=$4
+remote_port=$5
+key_path=$6
+output_path=$7
 
-spawn -ignore HUP ssh -v $user@$server -f -N -L $local_port:0.0.0.0:$remote_port -p $ssh_port -i $key_path -o StrictHostKeyChecking=yes -E $output_path
-expect "*passphrase*"
-send -- "$passphrase\r"
-interact
-exit 0`;
+screen -dm sshuttle --auto-hosts --dns -r $user@$server:$ssh_port 0/0 -x $server:$ssh_port -e "ssh -v -i $key_path -o StrictHostKeyChecking=yes -E $output_path"
+`;
 
 const ENABLE_CONNECTION_KILLSWITCH_FILE = `#!/bin/bash
 
@@ -47,11 +42,12 @@ case $target in
         sudo ufw --force reset
         sudo ufw default deny incoming
         sudo ufw default deny outgoing
-        sudo ufw allow out from any to 10.0.0.0/24
-        sudo ufw allow out from any to 198.18.0.0/24
+        sudo ufw allow out from any to 127.0.0.1/24
+        sudo ufw allow out from any to 0.0.0.0/24
         sudo ufw allow out from any to $proxy_host1 port $proxy_port1 || true
         sudo ufw allow out from any to $proxy_host2 port $proxy_port2 || true
         sudo ufw allow out from any to $proxy_host3 port $proxy_port3 || true
+        sudo ufw deny from any to any proto udp || true
         sudo ufw reload
         sudo ufw enable
     ;;
@@ -95,8 +91,8 @@ case $target in
         echo "set skip on lo0" | sudo tee -a $rules_dir
         echo "block in all" | sudo tee -a $rules_dir
         echo "block out all" | sudo tee -a $rules_dir
-        echo "pass out to 10.0.0.0/24" | sudo tee -a $rules_dir
-        echo "pass out to 198.18.0.0/24" | sudo tee -a $rules_dir
+        echo "pass out to 127.0.0.1/24" | sudo tee -a $rules_dir
+        echo "pass out to 0.0.0.0/24" | sudo tee -a $rules_dir
 
         if [ "$proxy_host1" ]; then
             proxy1="pass out proto tcp to $proxy_host1 port $proxy_port1"
