@@ -96,7 +96,7 @@ export interface Config {
 	PROXY_SYSTEM_WIDE: boolean
 	CONNECTION_KILLSWITCH: boolean
 	AUTO_LAUNCH_WEB: boolean
-	SSH_PORT_RANGE: number[]
+	SSH_PORT_RANGE: string
 	SSH_KEY_ALGORITHM: string
 	SSH_KEY_LENGTH: number
 	DIGITAL_OCEAN_API_KEY: string

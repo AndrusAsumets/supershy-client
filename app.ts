@@ -92,6 +92,45 @@ const connect = async (
     }
 };
 
+const loop = async () => {
+    setTimeout(async () => {
+        const isStillWorking = config().LOOP_STATUS == LoopStatus.ACTIVE;
+        isStillWorking
+            ? await core.exit(`Timeout after passing ${config().PROXY_RECYCLE_INTERVAL_SEC} seconds.`)
+            : await loop();
+    }, config().PROXY_RECYCLE_INTERVAL_SEC * 1000);
+
+    try {
+        updateStatus(LoopStatus.ACTIVE);
+        const startTime = performance.now();
+        await rotate();
+        logger.info('Started proxy rotation.');
+        const endTime = performance.now();
+        updateStatus(LoopStatus.FINISHED);
+
+        logger.info(
+            `Proxy rotation finished in ${
+                Number((endTime - startTime) / 1000).toFixed(0)
+            } seconds.`,
+        );
+    } catch (err) {
+        await core.exit(`Loop failure: ${err}`);
+    }
+};
+
+const updateStatus = (loopStatus: LoopStatus) => {
+    models.updateConfig({...config(), LOOP_STATUS: loopStatus});
+    io.emit('event', config().LOOP_STATUS);
+};
+
+const heartbeat = async () => {
+    const hasHeartbeat = await integrations.kv.cloudflare.heartbeat();
+    if (!hasHeartbeat) {
+        const isLooped = config().LOOP_STATUS == LoopStatus.FINISHED;
+        isLooped && await core.exit('Heartbeat failure');
+    }
+};
+
 const rotate = async () => {
     const instanceProviders = lib.shuffle(config().INSTANCE_PROVIDERS)
         .filter((instanceProvider: InstanceProvider) => !config().INSTANCE_PROVIDERS_DISABLED.includes(instanceProvider));
@@ -124,7 +163,8 @@ const rotate = async () => {
         const publicKey = await integrations.shell.privateKey.create(sshKeyPath, instancePassphrase);
         const instancePublicKeyId = await integrations.compute[instanceProvider].keys.add(publicKey, instanceName);
         const jwtSecret = crypto.randomBytes(64).toString('hex');
-        const sshPort = lib.randomNumberFromRange(config().SSH_PORT_RANGE[0], config().SSH_PORT_RANGE[1]);
+        const sshPortRange: number[] = config().SSH_PORT_RANGE.split(',').map((item: string) => Number(item));
+        const sshPort = lib.randomNumberFromRange(sshPortRange);
         const userData = serverScripts.getUserData(proxyUuid, sshPort, jwtSecret);
         const formattedUserData = integrations.compute[instanceProvider].userData.format(userData);
         const instancePayload: CreateDigitalOceanInstance & CreateHetznerInstance & CreateVultrInstance = {
@@ -185,45 +225,6 @@ const rotate = async () => {
     await core.cleanup(
         activeProxies.map(proxy => proxy.instanceId)
     );
-};
-
-const loop = async () => {
-    setTimeout(async () => {
-        const isStillWorking = config().LOOP_STATUS == LoopStatus.ACTIVE;
-        isStillWorking
-            ? await core.exit(`Timeout after passing ${config().PROXY_RECYCLE_INTERVAL_SEC} seconds.`)
-            : await loop();
-    }, config().PROXY_RECYCLE_INTERVAL_SEC * 1000);
-
-    try {
-        updateStatus(LoopStatus.ACTIVE);
-        const startTime = performance.now();
-        await rotate();
-        logger.info('Started proxy rotation.');
-        const endTime = performance.now();
-        updateStatus(LoopStatus.FINISHED);
-
-        logger.info(
-            `Proxy rotation finished in ${
-                Number((endTime - startTime) / 1000).toFixed(0)
-            } seconds.`,
-        );
-    } catch (err) {
-        await core.exit(`Loop failure: ${err}`);
-    }
-};
-
-const updateStatus = (loopStatus: LoopStatus) => {
-    models.updateConfig({...config(), LOOP_STATUS: loopStatus});
-    io.emit('event', config().LOOP_STATUS);
-};
-
-const heartbeat = async () => {
-    const hasHeartbeat = await integrations.kv.cloudflare.heartbeat();
-    if (!hasHeartbeat) {
-        const isLooped = config().LOOP_STATUS == LoopStatus.FINISHED;
-        isLooped && await core.exit('Heartbeat failure');
-    }
 };
 
 models.updateConfig({
