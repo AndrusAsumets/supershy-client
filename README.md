@@ -1,4 +1,4 @@
-Supershy is a DIY sshuttle VPN with a rotating exit node.
+Supershy is a DIY VPN with a rotating exit node.
 
 <p align="center">
   <img width="480" src="/src/ui/assets/videos/supershy-recording-3.gif">
