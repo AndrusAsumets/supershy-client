@@ -2,12 +2,11 @@
 
 import { logger as _logger } from './logger.ts';
 import * as models from './models.ts';
-
-const { config } = models;
 import { Config, Proxy, InstanceProvider, ClientScriptFileName } from './types.ts';
 import * as lib from './lib.ts';
 import * as integrations from './integrations.ts';
 
+const { config } = models;
 const logger = _logger.get();
 
 export const setInstanceProviders = (

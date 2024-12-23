@@ -23,11 +23,10 @@ import * as websocket from './src/websocket.ts';
 import { logger as _logger } from './src/logger.ts';
 import * as lib from './src/lib.ts';
 import * as integrations from './src/integrations.ts';
-const { config } = models;
-
 import { clientScripts } from './src/client-scripts.ts';
 import * as serverScripts from './src/server-scripts.ts';
 
+const { config } = models;
 const io = new Server({ cors: { origin: '*' }});
 const logger = _logger.get(io);
 

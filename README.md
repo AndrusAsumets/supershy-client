@@ -59,6 +59,15 @@ killswitch enabled at all times.
 redirected through SSH tunnels made by the application itself.
 * Has a web-based UI.
 
+### Changelog
+* Upgrading from v0.2.30 to >= v1.0.0 introduces some breaking changes, namely:
+the app is now behaving more like a VPN than a proxy, which means that you do not 
+need to manually configure proxy on your browser anymore as all TCP requests 
+will be routed automatically to the VPS. If you previously had your browser 
+manually configured to use the proxy, then please reset your proxy settings back 
+to default.
+
+
 ### Supported VPS
 Digital Ocean, Hetzner, Vultr.
 
