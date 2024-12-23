@@ -31,8 +31,6 @@ import * as serverScripts from './src/server-scripts.ts';
 const io = new Server({ cors: { origin: '*' }});
 const logger = _logger.get(io);
 
-let loopStatus: LoopStatus = LoopStatus.INACTIVE;
-
 const init = () => {
     integrations.fs.ensureFolder(config().DATA_PATH);
     integrations.fs.ensureFolder(config().BACKUP_PATH);
@@ -192,7 +190,7 @@ const rotate = async () => {
 
 const loop = async () => {
     setTimeout(async () => {
-        const isStillWorking = loopStatus == LoopStatus.ACTIVE;
+        const isStillWorking = config().LOOP_STATUS == LoopStatus.ACTIVE;
         isStillWorking
             ? await core.exit(`Timeout after passing ${config().PROXY_RECYCLE_INTERVAL_SEC} seconds.`)
             : await loop();
@@ -216,20 +214,24 @@ const loop = async () => {
     }
 };
 
-const updateStatus = (status: LoopStatus) => {
-    loopStatus = status;
-    io.emit('event', status);
+const updateStatus = (loopStatus: LoopStatus) => {
+    models.updateConfig({...config(), LOOP_STATUS: loopStatus});
+    io.emit('event', config().LOOP_STATUS);
 };
 
 const heartbeat = async () => {
     const hasHeartbeat = await integrations.kv.cloudflare.heartbeat();
     if (!hasHeartbeat) {
-        const isLooped = loopStatus == LoopStatus.FINISHED;
+        const isLooped = config().LOOP_STATUS == LoopStatus.FINISHED;
         isLooped && await core.exit('Heartbeat failure');
     }
 };
 
-models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.DISCONNECTED});
+models.updateConfig({
+    ...config(),
+    LOOP_STATUS: LoopStatus.INACTIVE,
+    CONNECTION_STATUS: ConnectionStatus.DISCONNECTED
+});
 webserver.start();
 websocket.start(io);
 config().AUTO_LAUNCH_WEB && open(config().WEB_URL);

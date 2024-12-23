@@ -90,6 +90,7 @@ export interface CreateVultrInstance {
 export interface Config {
 	APP_ID: string
 	ENV: string
+	LOOP_STATUS: LoopStatus
 	CONNECTION_STATUS: ConnectionStatus
 	PROXY_RECYCLE_INTERVAL_SEC: number
 	PROXY_SYSTEM_WIDE: boolean
