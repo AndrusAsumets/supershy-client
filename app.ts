@@ -58,9 +58,7 @@ const init = () => {
 const connect = async (
     proxy: Proxy,
 ) => {
-    const port = config().PROXY_LOCAL_PORT;
-    proxy.connectionString = core.getConnectionString(proxy);
-
+    proxy = core.getConnectionString(proxy);
     integrations.fs.hostKey.save(proxy);
     existsSync(proxy.sshLogPath) && Deno.removeSync(proxy.sshLogPath);
 
@@ -70,7 +68,7 @@ const connect = async (
         logger.info(`Enabled connection killswitch.`);
     }
 
-    logger.info(`Starting SSH tunnel proxy to ${proxy.instanceIp}:${proxy.sshPort}.`);
+    logger.info(`Connecting SSH tunnel proxy to ${proxy.instanceIp}:${proxy.sshPort}.`);
     models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTING});
     io.emit('/config', config());
 
@@ -85,15 +83,14 @@ const connect = async (
             const hasNetwork = output.includes('pledge: network');
 
             if (hasNetwork) {
-                logger.info(`Connected SSH tunnel to ${proxy.instanceIp}:${port}.`);
+                logger.info(`Connected SSH tunnel to ${proxy.instanceIp}:${proxy.sshPort}.`);
                 models.updateProxy(proxy);
                 models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTED});
                 io.emit('/config', config());
             }
         }
         catch(err) {
-            logger.warn(err);
-            logger.warn(`Restarting SSH tunnel to ${proxy.instanceIp}:${port}.`);
+            logger.warn({ message: `Restarting connecting of SSH tunnel to ${proxy.instanceIp}:${proxy.sshPort}.`, err });
         }
     }
 };
@@ -126,8 +123,8 @@ const rotate = async () => {
         const instanceName = `${config().APP_ID}-${config().ENV}-${proxyType}-${proxyUuid}`;
         const { instanceSize, instanceImage } = integrations.compute[instanceProvider];
         const sshKeyPath = `${config().SSH_KEY_PATH}/${instanceName}`;
-        const passphrase = crypto.randomBytes(64).toString('hex');
-        const publicKey = await integrations.shell.privateKey.create(sshKeyPath, passphrase);
+        const instancePassphrase = crypto.randomBytes(64).toString('hex');
+        const publicKey = await integrations.shell.privateKey.create(sshKeyPath, instancePassphrase);
         const instancePublicKeyId = await integrations.compute[instanceProvider].keys.add(publicKey, instanceName);
         const jwtSecret = crypto.randomBytes(64).toString('hex');
         const sshPort = lib.randomNumberFromRange(config().SSH_PORT_RANGE[0], config().SSH_PORT_RANGE[1]);
@@ -164,12 +161,10 @@ const rotate = async () => {
             instanceCountry,
             instanceSize,
             instanceImage,
+            instancePassphrase,
             instancePublicKeyId,
             proxyType,
             sshUser: config().SSH_USER,
-            passphrase,
-            proxyLocalPort: config().PROXY_LOCAL_PORT,
-            proxyRemotePort: config().PROXY_REMOTE_PORT,
             sshHostKey: '',
             sshKeyAlgorithm: config().SSH_KEY_ALGORITHM,
             sshKeyLength: config().SSH_KEY_LENGTH,

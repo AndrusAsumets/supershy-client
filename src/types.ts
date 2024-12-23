@@ -39,10 +39,8 @@ export interface Proxy {
 	instanceSize: string
 	instanceImage: string
 	instancePublicKeyId: number
+	instancePassphrase: string
 	sshUser: string
-	passphrase: string
-	proxyLocalPort: number
-	proxyRemotePort: number
 	sshKeyAlgorithm: string
 	sshKeyLength: number;
 	sshKeyPath: string
@@ -98,8 +96,6 @@ export interface Config {
 	CONNECTION_KILLSWITCH: boolean
 	AUTO_LAUNCH_WEB: boolean
 	SSH_PORT_RANGE: number[]
-	PROXY_LOCAL_PORT: number
-	PROXY_REMOTE_PORT: number
 	SSH_KEY_ALGORITHM: string
 	SSH_KEY_LENGTH: number
 	DIGITAL_OCEAN_API_KEY: string
@@ -108,7 +104,6 @@ export interface Config {
 	CLOUDFLARE_ACCOUNT_ID: string
 	CLOUDFLARE_API_KEY: string
 	CLOUDFLARE_KV_NAMESPACE: string
-	PROXY_URL: string
 	DIGITAL_OCEAN_BASE_URL: string
 	HETZNER_BASE_URL: string
 	VULTR_BASE_URL: string
@@ -151,8 +146,8 @@ export type Proxies = Record<string, Proxy>
 export type DatabaseData = Record<DatabaseKey, Proxies | Config>
 
 export enum ClientScriptFileName {
-	GENERATE_SSH_KEY_FILE_NAME = 'generate-ssh-key.sh',
-	CONNECT_SSH_TUNNEL_FILE_NAME = 'connect-ssh-tunnel.sh',
+	GENERATE_SSH_KEY_FILE_NAME = 'generate-ssh-key.expect',
+	CONNECT_SSH_TUNNEL_FILE_NAME = 'connect-ssh-tunnel.expect',
 	ENABLE_CONNECTION_KILLSWITCH_FILE_NAME = 'enable-connection-killswitch.sh',
 	DISABLE_CONNECTION_KILLSWITCH_FILE_NAME = 'disable-connection-killswitch.sh',
 }

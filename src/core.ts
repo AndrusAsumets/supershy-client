@@ -51,15 +51,17 @@ export const setInstanceCountries = async (
 
 export const getConnectionString = (
     proxy: Proxy,
-): string => {
+): Proxy => {
     const {
         instanceIp,
+        instancePassphrase,
         sshPort,
         sshKeyPath,
-        sshLogPath
+        sshLogPath,
     } = proxy;
-    return `${config().SCRIPT_PATH}/${ClientScriptFileName.CONNECT_SSH_TUNNEL_FILE_NAME} ${instanceIp} ${config().SSH_USER} ${sshPort} ${config().PROXY_LOCAL_PORT} ${config().PROXY_REMOTE_PORT} ${sshKeyPath} ${sshLogPath} ${config().SSHUTTLE_PID_FILE_PATH}`
+    proxy.connectionString = `${config().SCRIPT_PATH}/${ClientScriptFileName.CONNECT_SSH_TUNNEL_FILE_NAME} ${instanceIp} ${config().SSH_USER} ${sshPort} ${sshKeyPath} ${instancePassphrase} ${sshLogPath} ${config().SSHUTTLE_PID_FILE_PATH}`
         .replace('\n', '');
+    return proxy;
 };
 
 export const getSshLogPath = (

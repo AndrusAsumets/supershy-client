@@ -3,7 +3,6 @@
 import jwt from 'npm:jsonwebtoken';
 import { encodeBase64 } from 'jsr:@std/encoding/base64';
 import { existsSync } from 'https://deno.land/std@0.224.0/fs/mod.ts';
-import * as core from './core.ts';
 import * as lib from './lib.ts';
 import * as models from './models.ts';
 import * as integrations from './integrations.ts';
@@ -24,10 +23,10 @@ export const shell = {
 	privateKey: {
 		create: async (
             keyPath: string,
-            passphrase: string,
+            instancePassphrase: string,
         ) => {
             const cmd =
-                `${config().SCRIPT_PATH}/${ClientScriptFileName.GENERATE_SSH_KEY_FILE_NAME} ${passphrase} ${keyPath} ${config().SSH_KEY_ALGORITHM} ${config().SSH_KEY_LENGTH}`;
+                `${config().SCRIPT_PATH}/${ClientScriptFileName.GENERATE_SSH_KEY_FILE_NAME} ${instancePassphrase} ${keyPath} ${config().SSH_KEY_ALGORITHM} ${config().SSH_KEY_LENGTH}`;
             const publicKeyPath = `${keyPath}.pub`;
             integrations.shell.command(cmd);
 

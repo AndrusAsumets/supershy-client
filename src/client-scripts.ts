@@ -2,31 +2,36 @@ import { Scripts, ClientScriptFileName } from './types.ts';
 
 const GENERATE_SSH_KEY_FILE = `#!/usr/bin/expect -f
 
+set ssh_passphrase [lrange $argv 0 0]
 set key_path [lrange $argv 1 1]
 set key_algorithm [lrange $argv 2 2]
 set key_length [lrange $argv 3 3]
 
 spawn -ignore HUP ssh-keygen -t $key_algorithm -b $key_length -f $key_path
 expect "*passphrase*"
-send -- "$passphrase\r"
+send -- "$ssh_passphrase\r"
 expect "*?again:*"
-send -- "$passphrase\r"
+send -- "$ssh_passphrase\r"
 interact
 exit 0`;
 
-const CONNECT_SSH_TUNNEL_FILE = `#!/bin/bash
+const CONNECT_SSH_TUNNEL_FILE = `#!/usr/bin/expect -f
 
-server=$1
-user=$2
-ssh_port=$3
-local_port=$4
-remote_port=$5
-key_path=$6
-output_path=$7
-sshuttle_pid_file_path=$8
+set ssh_host [lrange $argv 0 0]
+set ssh_user [lrange $argv 1 1]
+set ssh_port [lrange $argv 2 2]
+set key_path [lrange $argv 3 3]
+set ssh_passphrase [lrange $argv 4 4]
+set output_path [lrange $argv 5 5]
+set sshuttle_pid_file_path [lrange $argv 6 6]
 
-sshuttle --daemon --dns --disable-ipv6 -r $user@$server:$ssh_port 0.0.0.0/0 -x $server:$ssh_port --pidfile=$sshuttle_pid_file_path -e "ssh -v -i $key_path -o StrictHostKeyChecking=yes -E $output_path"
-`;
+spawn -ignore HUP sshuttle --dns --daemon --disable-ipv6 -r $ssh_user@$ssh_host:$ssh_port 0.0.0.0/0 -x $ssh_host:$ssh_port --pidfile=$sshuttle_pid_file_path -e "ssh -v -i $key_path -o StrictHostKeyChecking=yes -E $output_path"
+expect "*passphrase*"
+send -- "$ssh_passphrase\r"
+expect "*?again:*"
+send -- "$ssh_passphrase\r"
+interact
+exit 0`;
 
 const ENABLE_CONNECTION_KILLSWITCH_FILE = `#!/bin/bash
 

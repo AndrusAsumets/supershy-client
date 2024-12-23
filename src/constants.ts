@@ -10,8 +10,6 @@ const PROXY_SYSTEM_WIDE = false;
 const CONNECTION_KILLSWITCH = false;
 const AUTO_LAUNCH_WEB = true;
 const SSH_PORT_RANGE: number[] = [10000, 65535];
-const PROXY_LOCAL_PORT = 8888;
-const PROXY_REMOTE_PORT = 8888;
 const SSH_KEY_ALGORITHM = 'ed25519';
 const SSH_KEY_LENGTH = 32768;
 const DIGITAL_OCEAN_API_KEY = '';
@@ -20,7 +18,6 @@ const VULTR_API_KEY = '';
 const CLOUDFLARE_ACCOUNT_ID = '';
 const CLOUDFLARE_API_KEY = '';
 const CLOUDFLARE_KV_NAMESPACE = '';
-const PROXY_URL = `http://localhost:${PROXY_LOCAL_PORT}`;
 const DIGITAL_OCEAN_BASE_URL = 'https://api.digitalocean.com/v2';
 const HETZNER_BASE_URL = 'https://api.hetzner.cloud/v1';
 const VULTR_BASE_URL = 'https://api.vultr.com/v2';
@@ -89,12 +86,6 @@ export const config: Config = {
     AUTO_LAUNCH_WEB,
     APP_ID,
     ENV,
-    WEB_SERVER_PORT,
-    WEB_URL,
-    WEB_SOCKET_PORT,
-    PROXY_LOCAL_PORT,
-    PROXY_REMOTE_PORT,
-    PROXY_URL,
     DIGITAL_OCEAN_BASE_URL,
     HETZNER_BASE_URL,
     VULTR_BASE_URL,
@@ -113,6 +104,9 @@ export const config: Config = {
     SSH_KEY_LENGTH,
     SSH_PATH,
     SSH_CONNECTION_TIMEOUT_SEC,
+    WEB_SERVER_PORT,
+    WEB_URL,
+    WEB_SOCKET_PORT,
     SSHUTTLE_PID_FILE_PATH,
     SSH_KNOWN_HOSTS_PATH,
     DB_FILE_PATH,
