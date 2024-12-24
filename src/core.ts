@@ -53,12 +53,11 @@ export const getConnectionString = (
 ): Proxy => {
     const {
         instanceIp,
-        instancePassphrase,
         sshPort,
         sshKeyPath,
         sshLogPath,
     } = proxy;
-    proxy.connectionString = `${config().SCRIPT_PATH}/${ClientScriptFileName.CONNECT_SSH_TUNNEL_FILE_NAME} ${instanceIp} ${config().SSH_USER} ${sshPort} ${sshKeyPath} ${instancePassphrase} ${sshLogPath} ${config().SSHUTTLE_PID_FILE_PATH}`
+    proxy.connectionString = `${config().SCRIPT_PATH}/${ClientScriptFileName.CONNECT_SSH_TUNNEL_FILE_NAME} ${instanceIp} ${config().SSH_USER} ${sshPort} ${sshKeyPath} ${sshLogPath} ${config().SSHUTTLE_PID_FILE_PATH}`
         .replace('\n', '');
     return proxy;
 };

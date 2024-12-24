@@ -3,14 +3,13 @@ user=$1
 
 # install dependencies
 if [[ ! -z $(type -p yum) ]]; then
-    sudo yum install unzip expect ufw sshuttle -y
+    sudo yum install unzip ufw sshuttle -y
 elif [[ ! -z $(type -p dnf) ]]; then
-    sudo dnf install unzip expect ufw sshuttle -y
+    sudo dnf install unzip ufw sshuttle -y
 elif [[ ! -z $(type -p apt) ]]; then
-    sudo apt install unzip expect ufw sshuttle -y
+    sudo apt install unzip  ufw sshuttle -y
 elif [[ ! -z $(type -p brew) ]]; then
     sudo -u $user brew install unzip
-    sudo -u $user brew install expect
     sudo -u $user brew install sshuttle
 else
     echo "Warning: Can't install packages as no package manager was found."

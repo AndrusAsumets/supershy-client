@@ -168,10 +168,9 @@ cd supershy-client
 
 ```
 # Linux
-sudo apt install git expect unzip ufw build-essential sshuttle -y
+sudo apt install git unzip ufw build-essential sshuttle -y
 
 # Mac
-brew install expect
 brew install sshuttle
 ```
 

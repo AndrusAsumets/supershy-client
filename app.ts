@@ -159,8 +159,7 @@ const rotate = async () => {
         const instanceName = `${config().APP_ID}-${config().ENV}-${proxyType}-${proxyUuid}`;
         const { instanceSize, instanceImage } = integrations.compute[instanceProvider];
         const sshKeyPath = `${config().SSH_KEY_PATH}/${instanceName}`;
-        const instancePassphrase = crypto.randomBytes(64).toString('hex');
-        const publicKey = await integrations.shell.privateKey.create(sshKeyPath, instancePassphrase);
+        const publicKey = await integrations.shell.privateKey.create(sshKeyPath);
         const instancePublicKeyId = await integrations.compute[instanceProvider].keys.add(publicKey, instanceName);
         const jwtSecret = crypto.randomBytes(64).toString('hex');
         const sshPortRange: number[] = config().SSH_PORT_RANGE.split(',').map((item: string) => Number(item));
@@ -198,7 +197,6 @@ const rotate = async () => {
             instanceCountry,
             instanceSize,
             instanceImage,
-            instancePassphrase,
             instancePublicKeyId,
             proxyType,
             sshUser: config().SSH_USER,

@@ -39,7 +39,6 @@ export interface Proxy {
 	instanceSize: string
 	instanceImage: string
 	instancePublicKeyId: number
-	instancePassphrase: string
 	sshUser: string
 	sshKeyAlgorithm: string
 	sshKeyLength: number;
