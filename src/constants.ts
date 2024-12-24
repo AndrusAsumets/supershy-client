@@ -5,12 +5,14 @@ import { ProxyType, Config, InstanceProvider, LoopStatus, ConnectionStatus } fro
 const APP_ID = 'supershy-client';
 const ENV = 'dev';
 const PROXY_RECYCLE_INTERVAL_SEC = 1800;
+const PROXY_RESERVE_COUNT = 1;
+const PROXY_CURRENT_RESERVE_COUNT = 0;
 const LOOP_STATUS = LoopStatus.INACTIVE;
 const CONNECTION_STATUS = ConnectionStatus.DISCONNECTED;
 const PROXY_SYSTEM_WIDE = false;
 const CONNECTION_KILLSWITCH = false;
 const AUTO_LAUNCH_WEB = true;
-const SSH_PORT_RANGE: string = '10000, 65535';
+const SSH_PORT_RANGE: string = '10000:65535';
 const SSH_KEY_ALGORITHM = 'ed25519';
 const SSH_KEY_LENGTH = 32768;
 const DIGITAL_OCEAN_API_KEY = '';
@@ -38,7 +40,7 @@ const SSH_LOG_EXTENSION = '.ssh.log';
 const SSH_USER = 'root';
 const SSH_CONNECTION_TIMEOUT_SEC = 5;
 const SSHUTTLE_PID_FILE_PATH = `${DATA_PATH}/sshuttle.pid`;
-const PROXY_TYPES = [ProxyType.A, ProxyType.A];
+const PROXY_TYPES = [...Array(PROXY_RESERVE_COUNT + 1).keys().map(() => ProxyType.A)];
 const DIGITAL_OCEAN_INSTANCE_SIZE = 's-1vcpu-512mb-10gb';
 const HETZNER_SERVER_TYPE = 'cx22';
 const VULTR_INSTANCE_PLAN = 'vc2-1c-1gb';
@@ -72,6 +74,8 @@ export const config: Config = {
     LOOP_STATUS,
     CONNECTION_STATUS,
     PROXY_RECYCLE_INTERVAL_SEC,
+    PROXY_RESERVE_COUNT,
+    PROXY_CURRENT_RESERVE_COUNT,
     DIGITAL_OCEAN_API_KEY,
     HETZNER_API_KEY,
     VULTR_API_KEY,

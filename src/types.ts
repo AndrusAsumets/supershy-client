@@ -92,6 +92,8 @@ export interface Config {
 	LOOP_STATUS: LoopStatus
 	CONNECTION_STATUS: ConnectionStatus
 	PROXY_RECYCLE_INTERVAL_SEC: number
+	PROXY_RESERVE_COUNT: number;
+	PROXY_CURRENT_RESERVE_COUNT: number
 	PROXY_SYSTEM_WIDE: boolean
 	CONNECTION_KILLSWITCH: boolean
 	AUTO_LAUNCH_WEB: boolean

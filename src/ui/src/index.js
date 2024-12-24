@@ -15,6 +15,7 @@ const visibleActionKeys = {
 };
 const visibleConfigKeys = {
     'PROXY_RECYCLE_INTERVAL_SEC': { editable: 'number' },
+    'PROXY_RESERVE_COUNT': { editable: 'number' },
     'SSH_PORT_RANGE': { editable: 'string' },
     'SSH_KEY_ALGORITHM': { editable: 'string' },
     'SSH_KEY_LENGTH': { editable: 'number' },
@@ -249,6 +250,7 @@ const updateStatus = () => {
         status.push(['VPS', convertSnakeCaseToPascalCase(proxy.instanceProvider)]);
         status.push(['Country', COUNTRY_CODES[proxy.instanceCountry]]);
         status.push(['IPv4', proxy.instanceIp]);
+        status.push(['Proxies in reserve', String(config.PROXY_CURRENT_RESERVE_COUNT)]);
     }
 
     status.forEach((list) => {

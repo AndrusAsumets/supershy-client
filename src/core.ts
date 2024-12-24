@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
+import { Server } from 'https://deno.land/x/socket_io@0.2.0/mod.ts';
 import { logger as _logger } from './logger.ts';
 import * as models from './models.ts';
 import { Config, Proxy, InstanceProvider, ClientScriptFileName } from './types.ts';
@@ -78,6 +79,19 @@ export const enableConnectionKillSwitch = () => {
 
 export const disableConnectionKillSwitch = () => {
     integrations.shell.command(`bash ${config().SCRIPT_PATH}/${ClientScriptFileName.DISABLE_CONNECTION_KILLSWITCH_FILE_NAME}`);
+};
+
+export const getCurrentProxyReserve = (): string[] => {
+    const currentlyReservedProxies = Object
+        .keys(models.proxies())
+        // Ignore used proxies.
+        .filter((proxyUuid: string) => !models.proxies()[proxyUuid].connectionString);
+    return currentlyReservedProxies
+};
+
+export const setCurrentProxyReserve = (io: Server) => {
+    models.updateConfig({...config(), PROXY_CURRENT_RESERVE_COUNT: getCurrentProxyReserve().length });
+    io.emit('/config', config());
 };
 
 export const cleanup = async (

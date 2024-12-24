@@ -132,25 +132,33 @@ const heartbeat = async () => {
 };
 
 const rotate = async () => {
-    const instanceProviders = lib.shuffle(config().INSTANCE_PROVIDERS)
-        .filter((instanceProvider: InstanceProvider) => !config().INSTANCE_PROVIDERS_DISABLED.includes(instanceProvider));
-    if (!instanceProviders.length) {
-        return logger.warn('None of the VPS providers are enabled.');
-    }
-    const instanceProvider: InstanceProvider = lib.shuffle(instanceProviders)[0];
     const activeProxies: Proxy[] = [];
     const initialProxy = models.getInitialProxy();
+    const proxyTypes: ProxyType[] = !initialProxy
+        ? config().PROXY_TYPES
+        : [];
+
     if (initialProxy) {
         await connect(initialProxy);
         io.emit('/proxy', initialProxy);
         activeProxies.push(initialProxy);
+        const proxyCurrentReserveCount = core.getCurrentProxyReserve().length;
+        const proxiesToReserve = config().PROXY_RESERVE_COUNT - proxyCurrentReserveCount;
+        // Prepare enough proxies for the reserve.
+        [...Array(proxiesToReserve).keys()].map(() => proxyTypes.push(ProxyType.A));
+        // Mark down active proxies, so we would know which ones to keep from being deleted.
+        core.getCurrentProxyReserve().map(
+            (proxyUuid: string) => activeProxies.push(models.proxies()[proxyUuid]
+        ));
+        core.setCurrentProxyReserve(io);
     }
-    const proxyTypes: ProxyType[] = initialProxy
-        ? [ProxyType.A]
-        : config().PROXY_TYPES;
 
     let proxyIndex = 0;
     while (proxyIndex < proxyTypes.length) {
+        const instanceProviders = config().INSTANCE_PROVIDERS
+            .filter((instanceProvider: InstanceProvider) => !config().INSTANCE_PROVIDERS_DISABLED.includes(instanceProvider));
+        !instanceProviders.length && logger.warn('None of the VPS providers are enabled.');
+        const instanceProvider: InstanceProvider = lib.shuffle(instanceProviders)[0];
         const proxyUuid = uuidv7();
         const proxyType = proxyTypes[proxyIndex];
         const instanceLocationsList = await integrations.compute[instanceProvider].regions.parse();
@@ -162,7 +170,7 @@ const rotate = async () => {
         const publicKey = await integrations.shell.privateKey.create(sshKeyPath);
         const instancePublicKeyId = await integrations.compute[instanceProvider].keys.add(publicKey, instanceName);
         const jwtSecret = crypto.randomBytes(64).toString('hex');
-        const sshPortRange: number[] = config().SSH_PORT_RANGE.split(',').map((item: string) => Number(item));
+        const sshPortRange: number[] = config().SSH_PORT_RANGE.split(':').map((item: string) => Number(item));
         const sshPort = lib.randomNumberFromRange(sshPortRange);
         const userData = serverScripts.getUserData(proxyUuid, sshPort, jwtSecret);
         const formattedUserData = integrations.compute[instanceProvider].userData.format(userData);
@@ -215,7 +223,9 @@ const rotate = async () => {
         proxy = await integrations.kv.cloudflare.hostKey.get(proxy, jwtSecret);
         models.updateProxy(proxy);
         activeProxies.push(proxy);
+        core.setCurrentProxyReserve(io);
         proxyIndex = proxyIndex + 1;
+
     }
 
     !initialProxy && await connect(activeProxies[0]);

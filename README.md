@@ -87,9 +87,13 @@ curl -fsSL https://install.supershy.org | sudo bash -s $(whoami)
 
 ```
 # Update Config through the supershy's UI.
-PROXY_RECYCLE_INTERVAL_SEC=how often you would like to recycle the exit nodes in seconds, defaults to 1800.
+PROXY_RECYCLE_INTERVAL_SEC=How often you would like to recycle the exit nodes in seconds, defaults to 1800.
 
-SSH_PORT_RANGE=colon separated [from:to] range of numbers for a random selection, overrides SSH_PORT if set.
+PROXY_RESERVE_COUNT=The number of fresh VPS nodes you like to have for backup, defaults to 1.
+You can disable the whole rotation progress by setting this value to 0 (and always keep connecting to the same 
+original node), however that would kind of defeat the whole purpose of this project.
+
+SSH_PORT_RANGE=Colon separated [from:to] range of numbers for a random selection, overrides SSH_PORT if set.
 
 DIGITAL_OCEAN_API_KEY
  -> Open https://cloud.digitalocean.com/account/api/tokens

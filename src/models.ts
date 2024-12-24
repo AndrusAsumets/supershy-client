@@ -1,4 +1,5 @@
 import { db } from './db.ts';
+import * as lib from './lib.ts';
 import {
     Proxies,
     Proxy,
@@ -23,12 +24,19 @@ export const updateProxy = (
 };
 
 export const getInitialProxy = () => {
-    const proxy = Object
+    let proxy = Object
         .keys(proxies())
         .sort()
         .map((proxyUuid: string) => proxies()[proxyUuid])
-        .filter((proxy: Proxy) => !proxy.isDeleted)
-        .reverse()[0];
+        .filter((proxy: Proxy) => !proxy.connectionString)
+        .filter((proxy: Proxy) => !proxy.isDeleted)[0];
+
+    // Reuse, but only when fresh ones are out.
+    if (!proxy && Object.values(proxies())[0]) {
+        // If one might become unresponsive, then also keep trying the rest.
+        const randomProxyIndex = lib.randomNumberFromRange([0, Object.values(proxies()).length - 1]);
+        proxy = Object.values(proxies())[randomProxyIndex];
+    }
     return proxy;
 };
 
