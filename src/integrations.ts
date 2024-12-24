@@ -24,10 +24,9 @@ export const shell = {
 		create: async (
             keyPath: string,
         ) => {
-            const cmd =
-                `${config().SCRIPT_PATH}/${ClientScriptFileName.GENERATE_SSH_KEY_FILE_NAME} ${keyPath} ${config().SSH_KEY_ALGORITHM} ${config().SSH_KEY_LENGTH}`;
-            const publicKeyPath = `${keyPath}.pub`;
+            const cmd = `${config().SCRIPT_PATH}/${ClientScriptFileName.GENERATE_SSH_KEY_FILE_NAME} ${keyPath} ${config().SSH_KEY_ALGORITHM} ${config().SSH_KEY_LENGTH}`;
             integrations.shell.command(cmd);
+            const publicKeyPath = `${keyPath}.pub`;
 
             while (true) {
                 try {

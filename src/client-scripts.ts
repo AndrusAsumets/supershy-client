@@ -1,13 +1,13 @@
 import { Scripts, ClientScriptFileName } from './types.ts';
 
-const GENERATE_SSH_KEY_FILE = `#!/usr/bin/expect -f
+const GENERATE_SSH_KEY_FILE = `#!/bin/bash
 
-set key_path [lrange $argv 0 0]
-set key_algorithm [lrange $argv 1 1]
-set key_length [lrange $argv 2 2]
+key_path=$1
+key_algorithm=$2
+key_length=$3
 
-spawn -ignore HUP ssh-keygen -t $key_algorithm -b $key_length -f $key_path -q -N ""
-exit 0`;
+ssh-keygen -t $key_algorithm -b $key_length -f $key_path -q -N ""
+`;
 
 const CONNECT_SSH_TUNNEL_FILE = `#!/bin/bash
 
