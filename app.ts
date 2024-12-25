@@ -172,7 +172,7 @@ const rotate = async () => {
         const jwtSecret = crypto.randomBytes(64).toString('hex');
         const sshPortRange: number[] = config().SSH_PORT_RANGE.split(':').map((item: string) => Number(item));
         const sshPort = lib.randomNumberFromRange(sshPortRange);
-        const userData = serverScripts.getUserData(proxyUuid, sshPort, jwtSecret);
+        const userData = core.prepareCloudConfig(serverScripts.getUserData(proxyUuid, sshPort, jwtSecret));
         const formattedUserData = integrations.compute[instanceProvider].userData.format(userData);
         const instancePayload: CreateDigitalOceanInstance & CreateHetznerInstance & CreateVultrInstance = {
             datacenter: instanceRegion,

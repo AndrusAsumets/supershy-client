@@ -1,13 +1,12 @@
 import * as models from './models.ts';
 const { config } = models;
-import * as core from './core.ts';
 
 export const getUserData = (
     proxyUuid: string,
     sshPort: number,
     jwtSecret: string,
 ) => {
-    return core.prepareCloudConfig(`
+    return `
 echo 'PasswordAuthentication no' >> /etc/ssh/sshd_config
 echo 'Port ${sshPort}' >> /etc/ssh/sshd_config
 sudo systemctl restart ssh
@@ -17,5 +16,5 @@ ENCODED_HOST_KEY=$(python3 -c 'import sys;import jwt;payload={};payload[\"sshHos
 curl --request PUT -H 'Content-Type=*\/*' --data $ENCODED_HOST_KEY --url ${config().CLOUDFLARE_BASE_URL}/accounts/${config().CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${config().CLOUDFLARE_KV_NAMESPACE}/values/${proxyUuid} --oauth2-bearer ${config().CLOUDFLARE_API_KEY}
 
 iptables -A INPUT -p tcp --dport ${sshPort} -j ACCEPT
-`);
+`;
 };
