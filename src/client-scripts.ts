@@ -7,8 +7,6 @@ key_algorithm=$2
 key_length=$3
 
 ssh-keygen -t $key_algorithm -b $key_length -f $key_path -q -N ""
-
-
 `;
 
 const CONNECT_SSH_TUNNEL_FILE = `#!/bin/bash

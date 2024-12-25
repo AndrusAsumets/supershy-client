@@ -250,7 +250,7 @@ const updateStatus = () => {
         status.push(['VPS', convertSnakeCaseToPascalCase(proxy.instanceProvider)]);
         status.push(['Country', COUNTRY_CODES[proxy.instanceCountry]]);
         status.push(['IPv4', proxy.instanceIp]);
-        status.push(['Proxies in reserve', String(config.PROXY_CURRENT_RESERVE_COUNT)]);
+        status.push(['Proxies in reserve', `${config.PROXY_CURRENT_RESERVE_COUNT} / ${config.PROXY_RESERVE_COUNT}`]);
     }
 
     status.forEach((list) => {

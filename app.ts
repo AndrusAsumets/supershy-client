@@ -144,7 +144,10 @@ const rotate = async () => {
         io.emit('/proxy', initialProxy);
         activeProxies.push(initialProxy);
         const proxyCurrentReserveCount = core.getCurrentProxyReserve().length;
-        const proxiesToReserve = config().PROXY_RESERVE_COUNT - proxyCurrentReserveCount;
+         // Cant reserve negative proxies.
+        const proxiesToReserve = config().PROXY_RESERVE_COUNT - proxyCurrentReserveCount >= 0
+            ? config().PROXY_RESERVE_COUNT - proxyCurrentReserveCount
+            : 0;
         // Prepare enough proxies for the reserve.
         [...Array(proxiesToReserve).keys()].map(() => proxyTypes.push(ProxyType.A));
         // Mark down active proxies, so we would know which ones to keep from being deleted.
