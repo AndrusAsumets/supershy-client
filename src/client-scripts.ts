@@ -32,7 +32,11 @@ case $target in
         sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1 || true
         sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1 || true
 
-        sudo ufw --force reset
+        sudo ufw enable
+        for num in $(sudo ufw status numbered | grep "ALLOW" | awk -F"[][]" '{print $2}' | tr --delete [:blank:] | sort -rn); do
+            yes | sudo ufw delete $num
+        done
+
         sudo ufw default deny incoming
         sudo ufw default deny outgoing
         sudo ufw allow out from any to 127.0.0.1/24
@@ -43,9 +47,7 @@ case $target in
             eval "sudo ufw allow out from any to $\{host[0]} port $\{host[1]}"
         done
 
-        sudo ufw deny from any to any proto udp || true
         sudo ufw reload
-        sudo ufw enable
     ;;
     *"Darwin"*)
         daemon_dir=/Library/LaunchDaemons/org.supershy.firewall.plist
