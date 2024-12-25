@@ -341,8 +341,8 @@ socket
         isProxyEnabled = _isProxyEnabled;
         updateEnablementToggle(
             isProxyEnabled
-                ? 'Disable VPN'
-                : 'Enable VPN'
+                ? 'Disable'
+                : 'Enable'
         );
     })
     .on('/config', (_config) => {

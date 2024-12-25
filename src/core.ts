@@ -49,6 +49,21 @@ export const setInstanceCountries = async (
     return config;
 };
 
+export const prepareCloudConfig = (
+    string: string,
+): string => {
+    const lineSeparator = '\n';
+    const body = string
+        .split(lineSeparator)
+        .filter((line: string) => line)
+        .map((line: string) => `- ${line}`)
+        .join(lineSeparator);
+    return `
+#cloud-config
+runcmd:
+${body}`;
+};
+
 export const getConnectionString = (
     proxy: Proxy,
 ): Proxy => {
