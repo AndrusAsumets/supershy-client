@@ -41,7 +41,8 @@ const init = () => {
     !existsSync(config().SSH_KNOWN_HOSTS_PATH) && Deno.writeTextFileSync(config().SSH_KNOWN_HOSTS_PATH, '');
 
     Object.keys(clientScripts).forEach((fileName: string) => {
-        const file = clientScripts[fileName as ClientScriptFileName];
+        const escapeDollarSignOperator = ['\${', '${'];
+        const file = clientScripts[fileName as ClientScriptFileName].replace(escapeDollarSignOperator[0], escapeDollarSignOperator[1]);
         Deno.writeTextFileSync(`${config().SCRIPT_PATH}/${fileName}`, file);
         new Deno.Command('chmod', { args: ['+x', fileName] });
         Deno.chmodSync(`${config().SCRIPT_PATH}/${fileName}`, 0o700);

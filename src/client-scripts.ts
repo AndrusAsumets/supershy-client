@@ -7,6 +7,8 @@ key_algorithm=$2
 key_length=$3
 
 ssh-keygen -t $key_algorithm -b $key_length -f $key_path -q -N ""
+
+
 `;
 
 const CONNECT_SSH_TUNNEL_FILE = `#!/bin/bash
@@ -23,12 +25,8 @@ sshuttle --daemon --dns --disable-ipv6 --no-latency-control -r $ssh_user@$ssh_ho
 
 const ENABLE_CONNECTION_KILLSWITCH_FILE = `#!/bin/bash
 
-proxy_host1=$1
-proxy_port1=$2
-proxy_host2=$3
-proxy_port2=$4
-proxy_host3=$5
-proxy_port3=$6
+raw_hosts=$1
+IFS=',' read -r -a hosts <<< $raw_hosts
 target=$(uname -sm)
 
 case $target in
@@ -41,9 +39,12 @@ case $target in
         sudo ufw default deny outgoing
         sudo ufw allow out from any to 127.0.0.1/24
         sudo ufw allow out from any to 0.0.0.0/24
-        sudo ufw allow out from any to $proxy_host1 port $proxy_port1 || true
-        sudo ufw allow out from any to $proxy_host2 port $proxy_port2 || true
-        sudo ufw allow out from any to $proxy_host3 port $proxy_port3 || true
+
+        for raw_host in $\{hosts[@]}; do
+            IFS=':' read -r -a host <<< $raw_host
+            eval "sudo ufw allow out from any to $\{host[0]} port $\{host[1]}"
+        done
+
         sudo ufw deny from any to any proto udp || true
         sudo ufw reload
         sudo ufw enable
@@ -91,18 +92,10 @@ case $target in
         echo "pass out to 127.0.0.1/24" | sudo tee -a $rules_dir
         echo "pass out to 0.0.0.0/24" | sudo tee -a $rules_dir
 
-        if [ "$proxy_host1" ]; then
-            proxy1="pass out proto tcp to $proxy_host1 port $proxy_port1"
-            echo "$\{proxy1}" | sudo tee -a $rules_dir || true
-        fi
-        if [ "$proxy_host2" ]; then
-            proxy2="pass out proto tcp to $proxy_host2 port $proxy_port2"
-            echo "$\{proxy2}" | sudo tee -a $rules_dir || true
-        fi
-        if [ "$proxy_host3" ]; then
-            proxy3="pass out proto tcp to $proxy_host3 port $proxy_port3"
-            echo "$\{proxy3}" | sudo tee -a $rules_dir || true
-        fi
+        for raw_host in $\{hosts[@]}; do
+            IFS=':' read -r -a host <<< $raw_host
+            echo "pass out proto tcp to $\{host[0]} port $\{host[1]}" | sudo tee -a $rules_dir || true
+        done
 
         # permissions
         sudo chmod +x $firewall_dir

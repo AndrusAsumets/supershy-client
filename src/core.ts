@@ -86,9 +86,8 @@ export const enableConnectionKillSwitch = () => {
     const proxies = models.proxies();
     const hosts = Object
         .keys(proxies)
-        .map((key: string) => [proxies[key].instanceIp, proxies[key].sshPort])
-        .flat()
-        .join(' ');
+        .map((key: string) => `${proxies[key].instanceIp}:${proxies[key].sshPort}`)
+        .join(',');
     integrations.shell.command(`bash ${config().SCRIPT_PATH}/${ClientScriptFileName.ENABLE_CONNECTION_KILLSWITCH_FILE_NAME} ${hosts}`);
 };
 
