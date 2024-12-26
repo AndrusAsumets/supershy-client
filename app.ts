@@ -5,6 +5,7 @@ import { v7 as uuidv7 } from 'npm:uuid';
 import { Server } from 'https://deno.land/x/socket_io@0.2.0/mod.ts';
 import { open } from 'https://deno.land/x/open@v1.0.0/index.ts';
 import { existsSync } from 'https://deno.land/std@0.224.0/fs/mod.ts';
+import { platform as getPlatform } from 'node:os';
 import {
     LoopStatus,
     ConnectionStatus,
@@ -12,7 +13,10 @@ import {
     Proxy,
     InstanceProvider,
     InstancePayload,
-    ClientScriptFileName,
+    Action,
+    Side,
+    Platform,
+    Function,
 } from './src/types.ts';
 import * as core from './src/core.ts';
 import * as models from './src/models.ts';
@@ -21,8 +25,7 @@ import * as websocket from './src/websocket.ts';
 import { logger as _logger } from './src/logger.ts';
 import * as lib from './src/lib.ts';
 import * as integrations from './src/integrations.ts';
-import { clientScripts } from './src/client-scripts.ts';
-import * as serverScripts from './src/server-scripts.ts';
+import { plugins } from "./src/plugins.ts";
 
 const { config } = models;
 const io = new Server({ cors: { origin: '*' }});
@@ -46,8 +49,6 @@ const init = () => {
         Deno.chmodSync(`${config().SCRIPT_PATH}/${fileName}`, 0o700);
     });
 
-    return;
-
     loop();
     core.heartbeat();
     setInterval(() => core.heartbeat(), config().HEARTBEAT_INTERVAL_SEC);
@@ -56,21 +57,19 @@ const init = () => {
 const connect = async (
     proxy: Proxy,
 ) => {
-    proxy = core.getConnectionString(proxy);
+    const initialProxy = models.getInitialProxy();
+    const mainEnableFileName = core.getScriptFileName(proxy.pluginsEnabled[0], Side.CLIENT, Action.MAIN, Function.ENABLE);
+    proxy = core.getConnectionString(proxy, mainEnableFileName);
     integrations.fs.hostKey.save(proxy);
     existsSync(proxy.sshLogPath) && Deno.removeSync(proxy.sshLogPath);
-
-    if (config().CONNECTION_KILLSWITCH && models.getInitialProxy()) {
-        logger.info(`Enabling connection killswitch.`);
-        core.enableConnectionKillSwitch();
-        logger.info(`Enabled connection killswitch.`);
-    }
+    (config().CONNECTION_KILLSWITCH && initialProxy) && core.enableConnectionKillSwitch();
 
     logger.info(`Connecting SSH tunnel proxy to ${proxy.instanceIp}:${proxy.sshPort}.`);
     models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTING});
     io.emit('/config', config());
 
     while (config().CONNECTION_STATUS != ConnectionStatus.CONNECTED) {
+        await integrations.shell.pkill(`${config().PROXY_LOCAL_PORT}:0.0.0.0`);
         await integrations.shell.pkill('0.0.0.0/0');
         await lib.sleep(1000);
         integrations.shell.command(proxy.connectionString);
@@ -91,6 +90,9 @@ const connect = async (
             logger.warn({ message: `Restarting connecting of SSH tunnel to ${proxy.instanceIp}:${proxy.sshPort}.`, err });
         }
     }
+
+    // If we started from scratch, then enable it for that too.
+    (config().CONNECTION_KILLSWITCH && !initialProxy) && core.enableConnectionKillSwitch();
 };
 
 const loop = async () => {
@@ -163,7 +165,40 @@ const rotate = async () => {
         const jwtSecret = crypto.randomBytes(64).toString('hex');
         const sshPortRange: number[] = config().SSH_PORT_RANGE.split(':').map((item: string) => Number(item));
         const sshPort = lib.randomNumberFromRange(sshPortRange);
-        const userData = core.prepareCloudConfig(serverScripts.getUserData(proxyUuid, sshPort, jwtSecret));
+        const enabledPluginKey = core.getEnabledPluginKey();
+        !enabledPluginKey && logger.info(`No enabled plugins found.`);
+        let proxy: Proxy = {
+            proxyUuid,
+            proxyLocalPort: config().PROXY_LOCAL_PORT,
+            proxyRemotePort: config().PROXY_REMOTE_PORT,
+            appId: config().APP_ID,
+            pluginsEnabled: [enabledPluginKey],
+            instanceProvider,
+            instanceName,
+            instanceId: '',
+            instanceIp: '',
+            instanceRegion,
+            instanceCountry,
+            instanceSize,
+            instanceImage,
+            instancePublicKeyId,
+            proxyType,
+            sshUser: config().SSH_USER,
+            sshHostKey: '',
+            sshKeyAlgorithm: config().SSH_KEY_ALGORITHM,
+            sshKeyLength: config().SSH_KEY_LENGTH,
+            sshKeyPath,
+            sshPort,
+            jwtSecret,
+            sshLogPath: core.getSshLogPath(proxyUuid),
+            connectionString: '',
+            isDeleted: false,
+            createdTime: new Date().toISOString(),
+            modifiedTime: null,
+            deletedTime: null,
+        };
+        const script = plugins[enabledPluginKey][Side.SERVER][getPlatform()][Action.MAIN][Function.ENABLE](proxy);
+        const userData = core.prepareCloudConfig(script);
         const formattedUserData = integrations.compute[instanceProvider].userData.format(userData);
         const instancePayload: InstancePayload = {
             datacenter: instanceRegion,
@@ -181,36 +216,13 @@ const rotate = async () => {
             backups: 'disabled',
         };
         const { instanceId, instanceIp } = await integrations.compute[instanceProvider].instances.create(instancePayload);
+        proxy.instanceId = instanceId;
+        proxy.instanceIp = instanceIp;
+
         logger.info(`Created ${instanceProvider} instance.`);
         logger.info(instancePayload);
         logger.info(`Found network at ${instanceIp}.`);
 
-        let proxy: Proxy = {
-            proxyUuid,
-            appId: config().APP_ID,
-            instanceProvider,
-            instanceName,
-            instanceId,
-            instanceIp,
-            instanceRegion,
-            instanceCountry,
-            instanceSize,
-            instanceImage,
-            instancePublicKeyId,
-            proxyType,
-            sshUser: config().SSH_USER,
-            sshHostKey: '',
-            sshKeyAlgorithm: config().SSH_KEY_ALGORITHM,
-            sshKeyLength: config().SSH_KEY_LENGTH,
-            sshKeyPath,
-            sshPort,
-            sshLogPath: core.getSshLogPath(proxyUuid),
-            connectionString: '',
-            isDeleted: false,
-            createdTime: new Date().toISOString(),
-            modifiedTime: null,
-            deletedTime: null,
-        };
         proxy = await integrations.kv.cloudflare.hostKey.get(proxy, jwtSecret);
         models.updateProxy(proxy);
         activeProxies.push(proxy);

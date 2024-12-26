@@ -30,6 +30,9 @@ export enum InstanceProvider {
 export interface Proxy {
 	proxyUuid: string
 	proxyType: ProxyType
+	proxyLocalPort: number
+	proxyRemotePort: number
+	pluginsEnabled: Plugin[]
 	instanceProvider: InstanceProvider
 	instanceId: string
 	instanceName: string
@@ -48,6 +51,7 @@ export interface Proxy {
 	sshPort: number
 	sshHostKey: string
 	sshLogPath: string
+	jwtSecret: string
 	isDeleted: false
 	createdTime: string
 	modifiedTime: string | null
@@ -89,9 +93,9 @@ export interface CreateVultrInstance {
 export type InstancePayload = CreateDigitalOceanInstance & CreateHetznerInstance & CreateVultrInstance
 
 export enum Plugin {
-	HTTP_PROXY = 'http-proxy',
-	SOCKS5_PROXY = 'socks5-proxy',
-	SSHUTTLE_VPN = 'sshuttle-vpn',
+	HTTP_PROXY = 'http_proxy',
+	SOCKS5_PROXY = 'socks5_proxy',
+	SSHUTTLE_VPN = 'sshuttle_vpn',
 }
 
 export enum Side {
@@ -114,7 +118,7 @@ export enum Function {
 	DISABLE = 'disable',
 }
 
-export type Functions = Record<string, string>
+export type Functions = Record<string, (() => string) | ((proxy: Proxy | null) => string)>
 
 export type Actions = Record<string, Functions>
 
@@ -135,6 +139,8 @@ export interface Config {
 	PROXY_SYSTEM_WIDE: boolean
 	CONNECTION_KILLSWITCH: boolean
 	AUTO_LAUNCH_WEB: boolean
+	PROXY_LOCAL_PORT: number
+	PROXY_REMOTE_PORT: number
 	SSH_PORT_RANGE: string
 	SSH_KEY_ALGORITHM: string
 	SSH_KEY_LENGTH: number

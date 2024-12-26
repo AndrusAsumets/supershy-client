@@ -53,7 +53,7 @@ const convertSnakeCaseToPascalCase = (str) =>
     str
         .split('_')
         .map((element) => element.slice(0, 1).toUpperCase() + element.slice(1))
-        .join('');
+        .join(' ');
 
 const setChangeListener = (div, listener) => {
     div.addEventListener('focusout', listener);
@@ -150,7 +150,7 @@ const constructGenericLine = (
 ) => {
     const $key = document.createElement('div');
     $key.className = 'line-key';
-    $key.innerText = key;
+    $key.innerText = convertSnakeCaseToPascalCase(key);
 
     if (COUNTRY_CODES[$key.innerText]) {
         $key.innerText = COUNTRY_CODES[$key.innerText];
@@ -393,10 +393,11 @@ socket
             .forEach(key => appendLogMessage(message, key));
     })
     .on('connect', () => {
-        appendLogMessage(createLogMessage('Connected to WebSocket.'), 'Info')
+        appendLogMessage(createLogMessage('Connected to WebSocket.'), 'Info');
     })
     .on('disconnect', () => {
-        appendLogMessage(createLogMessage('Disconnected from WebSocket.'), 'Info')
+        appendLogMessage(createLogMessage('Disconnected from WebSocket.'), 'Info');
+        changeFavicon(faviconStatus.disconnected);
     });
 
 $enablementToggle
