@@ -86,6 +86,8 @@ export interface CreateVultrInstance {
 	backups: string
 }
 
+export type InstancePayload = CreateDigitalOceanInstance & CreateHetznerInstance & CreateVultrInstance
+
 export interface Config {
 	APP_ID: string
 	ENV: string

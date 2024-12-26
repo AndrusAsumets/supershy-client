@@ -11,9 +11,7 @@ import {
     ProxyType,
     Proxy,
     InstanceProvider,
-    CreateDigitalOceanInstance,
-    CreateHetznerInstance,
-    CreateVultrInstance,
+    InstancePayload,
     ClientScriptFileName,
 } from './src/types.ts';
 import * as core from './src/core.ts';
@@ -165,7 +163,7 @@ const rotate = async () => {
         const sshPort = lib.randomNumberFromRange(sshPortRange);
         const userData = core.prepareCloudConfig(serverScripts.getUserData(proxyUuid, sshPort, jwtSecret));
         const formattedUserData = integrations.compute[instanceProvider].userData.format(userData);
-        const instancePayload: CreateDigitalOceanInstance & CreateHetznerInstance & CreateVultrInstance = {
+        const instancePayload: InstancePayload = {
             datacenter: instanceRegion,
             region: instanceRegion,
             image: instanceImage,
@@ -216,7 +214,6 @@ const rotate = async () => {
         activeProxies.push(proxy);
         core.setCurrentProxyReserve(io);
         proxyIndex = proxyIndex + 1;
-
     }
 
     !initialProxy && await connect(activeProxies[0]);
