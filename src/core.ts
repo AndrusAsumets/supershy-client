@@ -3,7 +3,7 @@
 import { Server } from 'https://deno.land/x/socket_io@0.2.0/mod.ts';
 import { logger as _logger } from './logger.ts';
 import * as models from './models.ts';
-import { Config, Proxy, InstanceProvider, ClientScriptFileName } from './types.ts';
+import { Config, Proxy, InstanceProvider, ClientScriptFileName, LoopStatus } from './types.ts';
 import * as lib from './lib.ts';
 import * as integrations from './integrations.ts';
 
@@ -95,6 +95,19 @@ export const disableConnectionKillSwitch = () => {
     integrations.shell.command(`bash ${config().SCRIPT_PATH}/${ClientScriptFileName.DISABLE_CONNECTION_KILLSWITCH_FILE_NAME}`);
 };
 
+export const heartbeat = async () => {
+    const hasHeartbeat = await integrations.kv.cloudflare.heartbeat();
+    if (!hasHeartbeat) {
+        const isLooped = config().LOOP_STATUS == LoopStatus.FINISHED;
+        isLooped && await exit('Heartbeat failure');
+    }
+};
+
+export const setLoopStatus = (io: Server, loopStatus: LoopStatus) => {
+    models.updateConfig({...config(), LOOP_STATUS: loopStatus});
+    io.emit('event', config().LOOP_STATUS);
+};
+
 export const getCurrentProxyReserve = (): string[] => {
     const currentlyReservedProxies = Object
         .keys(models.proxies())
@@ -154,7 +167,7 @@ export const exit = async (
     const hasProxies = Object.keys(proxies).length > 0;
     onPurpose && hasProxies && await integrations.shell.pkill(`${config().APP_ID}-${config().ENV}`);
     onPurpose && Object.keys(proxies).forEach(async (proxyUuid: string) => await integrations.shell.pkill(proxyUuid));
-    // Give a little time to kill the process
+    // Give a little time to kill the process.
     onPurpose && await lib.sleep(1000);
     throw new Error();
 };

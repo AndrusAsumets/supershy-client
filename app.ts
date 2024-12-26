@@ -49,8 +49,8 @@ const init = () => {
     });
 
     loop();
-    heartbeat();
-    setInterval(() => heartbeat(), config().HEARTBEAT_INTERVAL_SEC);
+    core.heartbeat();
+    setInterval(() => core.heartbeat(), config().HEARTBEAT_INTERVAL_SEC);
 };
 
 const connect = async (
@@ -102,12 +102,12 @@ const loop = async () => {
     }, config().PROXY_RECYCLE_INTERVAL_SEC * 1000);
 
     try {
-        updateStatus(LoopStatus.ACTIVE);
+        core.setLoopStatus(io, LoopStatus.ACTIVE);
         const startTime = performance.now();
         await rotate();
         logger.info('Started proxy rotation.');
         const endTime = performance.now();
-        updateStatus(LoopStatus.FINISHED);
+        core.setLoopStatus(io, LoopStatus.FINISHED);
 
         logger.info(
             `Proxy rotation finished in ${
@@ -116,19 +116,6 @@ const loop = async () => {
         );
     } catch (err) {
         await core.exit(`Loop failure: ${err}`);
-    }
-};
-
-const updateStatus = (loopStatus: LoopStatus) => {
-    models.updateConfig({...config(), LOOP_STATUS: loopStatus});
-    io.emit('event', config().LOOP_STATUS);
-};
-
-const heartbeat = async () => {
-    const hasHeartbeat = await integrations.kv.cloudflare.heartbeat();
-    if (!hasHeartbeat) {
-        const isLooped = config().LOOP_STATUS == LoopStatus.FINISHED;
-        isLooped && await core.exit('Heartbeat failure');
     }
 };
 
@@ -233,10 +220,7 @@ const rotate = async () => {
     }
 
     !initialProxy && await connect(activeProxies[0]);
-
-    await core.cleanup(
-        activeProxies.map(proxy => proxy.instanceId)
-    );
+    await core.cleanup(activeProxies.map(proxy => proxy.instanceId));
 };
 
 models.updateConfig({
