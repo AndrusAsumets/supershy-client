@@ -11,11 +11,6 @@ const $providersSection = document.getElementsByClassName('section-content provi
 const $countriesSection = document.getElementsByClassName('section-content countries')[0];
 const $configSection = document.getElementsByClassName('section-content config')[0];
 const $logSection = document.getElementsByClassName('section-content log')[0];
-const visiblePluginKeys = {
-    'http-proxy': { editable: 'boolean' },
-    'socks5-proxy': { editable: 'boolean' },
-    'sshuttle-vpn': { editable: 'boolean' },
-};
 const visibleActionKeys = {
     'CONNECTION_KILLSWITCH': { editable: 'boolean' },
 };
@@ -367,6 +362,13 @@ const updateConfig = () => {
         });
 };
 
+const updateAll = () => {
+    updatePlugins();
+    updateStatus();
+    updateActions();
+    updateConfig();
+};
+
 socket
     .on('/started', (_isProxyEnabled) => {
         isProxyEnabled = _isProxyEnabled;
@@ -378,10 +380,7 @@ socket
     })
     .on('/config', (_config) => {
         config = _config;
-        updatePlugins();
-        updateStatus();
-        updateActions();
-        updateConfig();
+        updateAll();
     })
     .on('/proxy', (_proxy) => {
         proxy = _proxy;
@@ -398,6 +397,15 @@ socket
     .on('disconnect', () => {
         appendLogMessage(createLogMessage('Disconnected from WebSocket.'), 'Info');
         changeFavicon(faviconStatus.disconnected);
+        isProxyEnabled = false;
+        $enablementToggle.innerText = '';
+        $restartToggle.innerText = '';
+        $statusSection.innerText = '';
+        $pluginsSection.innerText = '';
+        $actionsSection.innerText = '';
+        $providersSection.innerText = '';
+        $countriesSection.innerText = '';
+        $configSection.innerText = '';
     });
 
 $enablementToggle

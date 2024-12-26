@@ -68,7 +68,7 @@ const DIGITAL_OCEAN_REGIONS: Record<string, string> = {
     syd: 'AU',
 };
 const PLUGINS: Plugin[] = [];
-const PLUGINS_ENABLED: Plugin[] = [Plugin.HTTP_PROXY];
+const PLUGINS_ENABLED: Plugin[] = [Plugin.SSHUTTLE_VPN];
 const INSTANCE_COUNTRIES: string[] = [];
 const INSTANCE_COUNTRIES_DISABLED: string[] = [];
 
