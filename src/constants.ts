@@ -1,6 +1,6 @@
 import { homedir } from 'node:os';
 import * as path from 'https://deno.land/std@0.224.0/path/mod.ts';
-import { ProxyType, Config, InstanceProvider, LoopStatus, ConnectionStatus } from './types.ts';
+import { ProxyType, Config, InstanceProvider, LoopStatus, ConnectionStatus, Plugin } from './types.ts';
 
 const APP_ID = 'supershy-client';
 const ENV = 'dev';
@@ -65,6 +65,8 @@ const DIGITAL_OCEAN_REGIONS: Record<string, string> = {
     blr: 'IN',
     syd: 'AU',
 };
+const PLUGINS: Plugin[] = [];
+const PLUGINS_ENABLED: Plugin[] = [Plugin.HTTP_PROXY];
 const INSTANCE_COUNTRIES: string[] = [];
 const INSTANCE_COUNTRIES_DISABLED: string[] = [];
 
@@ -121,6 +123,8 @@ export const config: Config = {
     SSH_USER,
     PROXY_TYPES,
     DIGITAL_OCEAN_REGIONS,
+    PLUGINS,
+    PLUGINS_ENABLED,
     INSTANCE_COUNTRIES,
     INSTANCE_COUNTRIES_DISABLED,
 };

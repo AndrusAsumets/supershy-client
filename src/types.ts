@@ -88,6 +88,42 @@ export interface CreateVultrInstance {
 
 export type InstancePayload = CreateDigitalOceanInstance & CreateHetznerInstance & CreateVultrInstance
 
+export enum Plugin {
+	HTTP_PROXY = 'http-proxy',
+	SOCKS5_PROXY = 'socks5-proxy',
+	SSHUTTLE_VPN = 'sshuttle-vpn',
+}
+
+export enum Side {
+	CLIENT = 'client',
+	SERVER = 'server',
+}
+
+export enum Platform {
+	LINUX = 'linux',
+	DARWIN = 'darwin',
+}
+
+export enum Action {
+	MAIN = 'main',
+	KILLSWITCH = 'killswitch',
+}
+
+export enum Function {
+	ENABLE = 'enable',
+	DISABLE = 'disable',
+}
+
+export type Functions = Record<string, string>
+
+export type Actions = Record<string, Functions>
+
+export type Platforms = Record<string, Actions>
+
+export type Sides = Record<string, Platforms>
+
+export type Plugins = Record<string, Sides>
+
 export interface Config {
 	APP_ID: string
 	ENV: string
@@ -139,6 +175,8 @@ export interface Config {
 	WEB_SOCKET_PORT: number
 	PROXY_ENABLED: boolean
 	DIGITAL_OCEAN_REGIONS: Record<string, string>
+	PLUGINS: Plugin[]
+	PLUGINS_ENABLED: Plugin[]
 	INSTANCE_PROVIDERS: InstanceProvider[]
 	INSTANCE_PROVIDERS_DISABLED: InstanceProvider[]
 	INSTANCE_COUNTRIES: string[]
@@ -151,44 +189,6 @@ export type DatabaseData = Record<DatabaseKey, Proxies | Config>
 
 export enum ClientScriptFileName {
 	GENERATE_SSH_KEY_FILE_NAME = 'generate-ssh-key.sh',
-	CONNECT_SSH_TUNNEL_FILE_NAME = 'connect-ssh-tunnel.sh',
-	ENABLE_CONNECTION_KILLSWITCH_FILE_NAME = 'enable-connection-killswitch.sh',
-	DISABLE_CONNECTION_KILLSWITCH_FILE_NAME = 'disable-connection-killswitch.sh',
 }
 
 export type Scripts = Record<ClientScriptFileName, string>
-
-export enum Plugin {
-	HTTP_PROXY = 'http-proxy',
-	SOCKS_PROXY = 'socks-proxy',
-}
-
-export enum Platform {
-	CLIENT = 'client',
-	SERVER = 'server',
-}
-
-export enum OperatingSystem {
-	LINUX = 'linux',
-	MACOS = 'macos',
-}
-
-export enum Action {
-	MAIN = 'main',
-	KILLSWITCH = 'killswitch',
-}
-
-export enum Function {
-	ENABLE = 'enable',
-	DISABLE = 'disable',
-}
-
-export type Functions = Record<string, string>
-
-export type Actions = Record<string, Functions>
-
-export type OperatingSystems = Record<string, Actions>
-
-export type Platforms = Record<string, OperatingSystems>
-
-export type Plugins = Record<string, Platforms>

@@ -1,14 +1,58 @@
 // deno-lint-ignore-file no-explicit-any
 
+import { platform as getPlatform } from 'node:os';
 import { Server } from 'https://deno.land/x/socket_io@0.2.0/mod.ts';
 import { logger as _logger } from './logger.ts';
 import * as models from './models.ts';
-import { Config, Proxy, InstanceProvider, ClientScriptFileName, LoopStatus } from './types.ts';
+import { Config, Proxy, InstanceProvider, ClientScriptFileName, LoopStatus, Side, Plugin } from './types.ts';
 import * as lib from './lib.ts';
 import * as integrations from './integrations.ts';
+import { plugins } from './plugins.ts';
 
 const { config } = models;
 const logger = _logger.get();
+
+export const getAvailableScripts = (): string[][] => {
+    const escapeDollarSignOperator = ['\${', '${'];
+
+    return Object
+        .keys(plugins)
+        .map((pluginKey: string) => {
+            const sideKey = Side.CLIENT;
+            const platformKey = getPlatform();
+            const sides = plugins[pluginKey];
+            const platforms = sides[sideKey];
+            const actions = platforms[platformKey];
+
+            return Object
+                .keys(actions)
+                .map((actionKey: string) => {
+                    const action = actions[actionKey];
+
+                    return Object
+                        .keys(action)
+                        .map((functionKey: string) => {
+                            const fileName = `${pluginKey}--${sideKey}--${platformKey}--${actionKey}--${functionKey}`;
+                            const file = action[functionKey]
+                                .replace(escapeDollarSignOperator[0], escapeDollarSignOperator[1]);
+                            return [fileName, file];
+                        });
+                });
+        })
+        .flat()
+        .flat();
+};
+
+export const getAvailablePlugins = (): Plugin[] => {
+    return Object
+        .keys(plugins)
+        .filter((pluginKey: string) => {
+            const sides = plugins[pluginKey];
+            const platforms = sides[Side.CLIENT];
+            const actions = platforms[getPlatform()];
+            return actions;
+        }) as Plugin[];
+};
 
 export const setInstanceProviders = (
     config: Config
@@ -73,8 +117,10 @@ export const getConnectionString = (
         sshKeyPath,
         sshLogPath,
     } = proxy;
+    /*
     proxy.connectionString = `${config().SCRIPT_PATH}/${ClientScriptFileName.CONNECT_SSH_TUNNEL_FILE_NAME} ${instanceIp} ${config().SSH_USER} ${sshPort} ${sshKeyPath} ${sshLogPath} ${config().SSHUTTLE_PID_FILE_PATH}`
         .replace('\n', '');
+    */
     return proxy;
 };
 
@@ -88,11 +134,11 @@ export const enableConnectionKillSwitch = () => {
         .keys(proxies)
         .map((key: string) => `${proxies[key].instanceIp}:${proxies[key].sshPort}`)
         .join(',');
-    integrations.shell.command(`bash ${config().SCRIPT_PATH}/${ClientScriptFileName.ENABLE_CONNECTION_KILLSWITCH_FILE_NAME} ${hosts}`);
+    //integrations.shell.command(`bash ${config().SCRIPT_PATH}/${ClientScriptFileName.ENABLE_CONNECTION_KILLSWITCH_FILE_NAME} ${hosts}`);
 };
 
 export const disableConnectionKillSwitch = () => {
-    integrations.shell.command(`bash ${config().SCRIPT_PATH}/${ClientScriptFileName.DISABLE_CONNECTION_KILLSWITCH_FILE_NAME}`);
+    //integrations.shell.command(`bash ${config().SCRIPT_PATH}/${ClientScriptFileName.DISABLE_CONNECTION_KILLSWITCH_FILE_NAME}`);
 };
 
 export const heartbeat = async () => {

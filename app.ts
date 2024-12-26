@@ -38,13 +38,15 @@ const init = () => {
 
     !existsSync(config().SSH_KNOWN_HOSTS_PATH) && Deno.writeTextFileSync(config().SSH_KNOWN_HOSTS_PATH, '');
 
-    Object.keys(clientScripts).forEach((fileName: string) => {
-        const escapeDollarSignOperator = ['\${', '${'];
-        const file = clientScripts[fileName as ClientScriptFileName].replace(escapeDollarSignOperator[0], escapeDollarSignOperator[1]);
+    const scripts: string[][] = core.getAvailableScripts();
+    scripts.forEach((script: string[]) => {
+        const [fileName, file] = script;
         Deno.writeTextFileSync(`${config().SCRIPT_PATH}/${fileName}`, file);
         new Deno.Command('chmod', { args: ['+x', fileName] });
         Deno.chmodSync(`${config().SCRIPT_PATH}/${fileName}`, 0o700);
     });
+
+    return;
 
     loop();
     core.heartbeat();
@@ -223,7 +225,8 @@ const rotate = async () => {
 models.updateConfig({
     ...config(),
     LOOP_STATUS: LoopStatus.INACTIVE,
-    CONNECTION_STATUS: ConnectionStatus.DISCONNECTED
+    CONNECTION_STATUS: ConnectionStatus.DISCONNECTED,
+    PLUGINS: core.getAvailablePlugins()
 });
 webserver.start();
 websocket.start(io);

@@ -5,11 +5,17 @@ const socket = io('ws://localhost:8880', {
 const $enablementToggle = document.getElementsByClassName('enablement-toggle')[0];
 const $restartToggle = document.getElementsByClassName('restart-toggle')[0];
 const $statusSection = document.getElementsByClassName('section-content status')[0];
+const $pluginsSection = document.getElementsByClassName('section-content plugins')[0];
 const $actionsSection = document.getElementsByClassName('section-content actions')[0];
 const $providersSection = document.getElementsByClassName('section-content providers')[0];
 const $countriesSection = document.getElementsByClassName('section-content countries')[0];
 const $configSection = document.getElementsByClassName('section-content config')[0];
 const $logSection = document.getElementsByClassName('section-content log')[0];
+const visiblePluginKeys = {
+    'http-proxy': { editable: 'boolean' },
+    'socks5-proxy': { editable: 'boolean' },
+    'sshuttle-vpn': { editable: 'boolean' },
+};
 const visibleActionKeys = {
     'CONNECTION_KILLSWITCH': { editable: 'boolean' },
 };
@@ -139,11 +145,12 @@ const constructGenericLine = (
     key,
     value,
     option,
-    emitPath
+    emitPath,
+    selectMultiple = true,
 ) => {
     const $key = document.createElement('div');
     $key.className = 'line-key';
-    $key.innerText = convertSnakeCaseToPascalCase(key);
+    $key.innerText = key;
 
     if (COUNTRY_CODES[$key.innerText]) {
         $key.innerText = COUNTRY_CODES[$key.innerText];
@@ -158,6 +165,10 @@ const constructGenericLine = (
     $value.spellcheck = false;
 
     emitPath && setClickListener($value, () => {
+        if (!selectMultiple) {
+            config[option] = [];
+        }
+
         !config[option].includes(key)
             ? config[option].push(key)
             : config[option] = config[option]
@@ -265,6 +276,26 @@ const updateStatus = () => {
     changeFavicon(faviconStatus[config.CONNECTION_STATUS]);
 };
 
+const updatePlugins = () => {
+    $pluginsSection.innerText = '';
+
+    config.PLUGINS
+        .sort((a, b) => a.localeCompare(b))
+        .forEach((key) => {
+            $pluginsSection.append(
+                constructGenericLine(
+                    key,
+                    config['PLUGINS_ENABLED'].includes(key)
+                        ? 'Enabled'
+                        : 'Disabled',
+                    'PLUGINS_ENABLED',
+                    '/config/save',
+                    false,
+                )
+            );
+        });
+};
+
 const updateActions = () => {
     $actionsSection.innerText = '';
 
@@ -347,6 +378,7 @@ socket
     })
     .on('/config', (_config) => {
         config = _config;
+        updatePlugins();
         updateStatus();
         updateActions();
         updateConfig();
