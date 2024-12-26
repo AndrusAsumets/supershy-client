@@ -18,7 +18,7 @@ key_path=$4
 output_path=$5
 sshuttle_pid_file_path=$6
 
-sshuttle --daemon --dns --disable-ipv6 --no-latency-control -r $ssh_user@$ssh_host:$ssh_port 0.0.0.0/0 -x $ssh_host:$ssh_port --pidfile=$sshuttle_pid_file_path -e "ssh -v -i $key_path -o StrictHostKeyChecking=yes -E $output_path"
+sshuttle --daemon --dns --disable-ipv6 -r $ssh_user@$ssh_host:$ssh_port 0.0.0.0/0 -x $ssh_host:$ssh_port --pidfile=$sshuttle_pid_file_path -e "ssh -v -i $key_path -o StrictHostKeyChecking=yes -E $output_path"
 `;
 
 const ENABLE_CONNECTION_KILLSWITCH_FILE = `#!/bin/bash
