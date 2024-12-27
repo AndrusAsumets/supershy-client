@@ -100,6 +100,87 @@ sudo ufw disable || true
 sudo ufw --force reset || true
 `;
 
+const ENABLE_DARWIN_KILLSWITCH = () => `
+	daemon_dir=/Library/LaunchDaemons/org.supershy.firewall.plist
+	firewall_dir=/usr/local/bin/supershy.firewall.sh
+	rules_dir=/etc/pf.anchors/supershy.firewall.rules
+	log_dir=~/.supershy-data/logs
+
+	sudo rm -rf $daemon_dir
+	sudo rm -rf $firewall_dir
+	sudo rm -rf $rules_dir
+
+	# daemon file
+	echo '<?xml version="1.0" encoding="UTF-8" ?>' | sudo tee -a $daemon_dir
+	echo '<!DOCTYPE plist PUBLIC "-//Apple Computer/DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' | sudo tee -a $daemon_dir
+	echo '<plist version="1.0">' | sudo tee -a $daemon_dir
+	echo "<dict>" | sudo tee -a $daemon_dir
+	echo "<key>Label</key>" | sudo tee -a $daemon_dir
+	echo "<string>org.supershy.firewall.plist</string>" | sudo tee -a $daemon_dir
+	echo "<key>Program</key>" | sudo tee -a $daemon_dir
+	echo "<string>$\{firewall_dir}</string>" | sudo tee -a $daemon_dir
+	echo "<key>RunAtLoad</key>" | sudo tee -a $daemon_dir
+	echo "<true/>" | sudo tee -a $daemon_dir
+	echo "<key>KeepAlive</key>" | sudo tee -a $daemon_dir
+	echo "<true/>" | sudo tee -a $daemon_dir
+	echo "<key>StandardOutPath</key>" | sudo tee -a $daemon_dir
+	echo "<string>$\{log_dir}/supershy.firewall.log</string>" | sudo tee -a $daemon_dir
+	echo "<key>StandardErrorPath</key>" | sudo tee -a $daemon_dir
+	echo "<string>$\{log_dir}/supershy.firewall.err</string>" | sudo tee -a $daemon_dir
+	echo "</dict>" | sudo tee -a $daemon_dir
+	echo "</plist>" | sudo tee -a $daemon_dir
+
+	# firewall file
+	echo "#!/bin/bash" | sudo tee -a $firewall_dir
+	echo "sleep 5" | sudo tee -a $firewall_dir
+	echo "/usr/sbin/ipconfig waitall" | sudo tee -a $firewall_dir
+	echo "/sbin/pfctl -E -f $\{rules_dir}" | sudo tee -a $firewall_dir
+
+	# rules file
+	echo "set skip on lo0" | sudo tee -a $rules_dir
+	echo "block in all" | sudo tee -a $rules_dir
+	echo "block out all" | sudo tee -a $rules_dir
+	echo "pass out to 127.0.0.1/24" | sudo tee -a $rules_dir
+	echo "pass out to 0.0.0.0/24" | sudo tee -a $rules_dir
+
+	if [ "$proxy_host1" ]; then
+		proxy1="pass out proto tcp to $proxy_host1 port $proxy_port1"
+		echo "$\{proxy1}" | sudo tee -a $rules_dir || true
+	fi
+	if [ "$proxy_host2" ]; then
+		proxy2="pass out proto tcp to $proxy_host2 port $proxy_port2"
+		echo "$\{proxy2}" | sudo tee -a $rules_dir || true
+	fi
+	if [ "$proxy_host3" ]; then
+		proxy3="pass out proto tcp to $proxy_host3 port $proxy_port3"
+		echo "$\{proxy3}" | sudo tee -a $rules_dir || true
+	fi
+
+	# permissions
+	sudo chmod +x $firewall_dir
+
+	# enable
+	sudo launchctl remove $daemon_dir || true
+	sudo launchctl unload $daemon_dir || true
+	sudo launchctl load $daemon_dir || true
+	sudo launchctl start $daemon_dir || true
+`;
+
+const DISABLE_DARWIN_KILLSWITCH = () => `
+	daemon_dir=/Library/LaunchDaemons/org.supershy.firewall.plist
+	firewall_dir=/usr/local/bin/supershy.firewall.sh
+	rules_dir=/etc/pf.anchors/supershy.firewall.rules
+
+	sudo rm -rf $daemon_dir
+	sudo rm -rf $firewall_dir
+	sudo rm -rf $rules_dir
+
+	sudo launchctl stop $daemon_dir &>/dev/null || true
+	sudo launchctl remove $daemon_dir || true
+	sudo launchctl unload $daemon_dir || true
+	sudo pfctl -d || true
+`;
+
 export const plugins: Plugins = {
 	[Plugin.SSHUTTLE_VPN]: {
 		[Side.CLIENT]: {
@@ -111,7 +192,16 @@ export const plugins: Plugins = {
 					[Function.ENABLE]: () => ENABLE_LINUX_KILLSWITCH(),
 					[Function.DISABLE]: () => DISABLE_LINUX_KILLSWITCH(),
 				}
-			}
+			},
+			[Platform.DARWIN]: {
+				[Action.MAIN]: {
+					[Function.ENABLE]: () => ENABLE_SSHUTTLE()
+				},
+				[Action.KILLSWITCH]: {
+					[Function.ENABLE]: () => ENABLE_DARWIN_KILLSWITCH(),
+					[Function.DISABLE]: () => DISABLE_DARWIN_KILLSWITCH(),
+				}
+			},
 		},
 		[Side.SERVER]: {
 			[Platform.LINUX]: {
@@ -131,7 +221,16 @@ export const plugins: Plugins = {
 					[Function.ENABLE]: () => ENABLE_LINUX_KILLSWITCH(),
 					[Function.DISABLE]: () => DISABLE_LINUX_KILLSWITCH(),
 				}
-			}
+			},
+			[Platform.DARWIN]: {
+				[Action.MAIN]: {
+					[Function.ENABLE]: () => ENABLE_SSH()
+				},
+				[Action.KILLSWITCH]: {
+					[Function.ENABLE]: () => ENABLE_DARWIN_KILLSWITCH(),
+					[Function.DISABLE]: () => DISABLE_DARWIN_KILLSWITCH(),
+				}
+			},
 		},
 		[Side.SERVER]: {
 			[Platform.LINUX]: {
@@ -156,7 +255,16 @@ export const plugins: Plugins = {
 					[Function.ENABLE]: () => ENABLE_LINUX_KILLSWITCH(),
 					[Function.DISABLE]: () => DISABLE_LINUX_KILLSWITCH(),
 				}
-			}
+			},
+			[Platform.DARWIN]: {
+				[Action.MAIN]: {
+					[Function.ENABLE]: () => ENABLE_SSH()
+				},
+				[Action.KILLSWITCH]: {
+					[Function.ENABLE]: () => ENABLE_DARWIN_KILLSWITCH(),
+					[Function.DISABLE]: () => DISABLE_DARWIN_KILLSWITCH(),
+				}
+			},
 		},
 		[Side.SERVER]: {
 			[Platform.LINUX]: {
