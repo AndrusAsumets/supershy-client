@@ -36,7 +36,7 @@ const faviconStatus = {
     'connecting': ['❊', 'blue'],
     'disconnected': ['❊', 'red'],
 };
-let isNodeEnabled = false;
+let isAppEnabled = false;
 let config = {};
 let node = {};
 
@@ -174,20 +174,20 @@ const constructGenericLine = (
 };
 
 const start = () => {
-    isNodeEnabled = true;
+    isAppEnabled = true;
     updateEnablementToggle('Enabling ...');
     socket.emit('/node/enable');
 };
 
 const stop = () => {
-    isNodeEnabled = false
+    isAppEnabled = false
     updateEnablementToggle('Disabling ...');
     socket.emit('/node/disable');
 };
 
 const interact = () => {
     socket.emit('/config/save', config);
-    !isNodeEnabled
+    !isAppEnabled
         ? start()
         : stop();
 };
@@ -240,13 +240,13 @@ const updateStatus = () => {
         capitalize(config.CONNECTION_STATUS)
     ],
     [
-        'Node',
-        isNodeEnabled
+        'Application',
+        isAppEnabled
             ? 'Enabled'
             : 'Disabled'
     ]];
 
-    if (isNodeEnabled && node && Object.keys(node).length && config.CONNECTION_STATUS == 'connected') {
+    if (isAppEnabled && node && Object.keys(node).length && config.CONNECTION_STATUS == 'connected') {
         status.push(['IPv4', node.instanceIp]);
         status.push(['Country', COUNTRY_CODES[node.instanceCountry]]);
         status.push(['VPS', node.instanceProvider.toUpperCase()]);
@@ -365,10 +365,10 @@ const updateAll = () => {
 };
 
 socket
-    .on('/started', (_isNodeEnabled) => {
-        isNodeEnabled = _isNodeEnabled;
+    .on('/started', (_isAppEnabled) => {
+        isAppEnabled = _isAppEnabled;
         updateEnablementToggle(
-            isNodeEnabled
+            isAppEnabled
                 ? 'Disable'
                 : 'Enable'
         );
@@ -396,7 +396,7 @@ socket
 
         $statusSection.append(
             constructGenericLine(
-                'Node',
+                'Application',
                 'Reconnecting',
             )
         );
