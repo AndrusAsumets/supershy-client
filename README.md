@@ -6,7 +6,7 @@ Supershy is a DIY VPN with a rotating exit node.
 
 During its initiation, the client creates two new VPS instances (let's call them
 First Node and Second Node) inside Digital Ocean, Hetzner and/or Vultr containing
-nothing else but a SSH server. Next up, it creates a sshuttle
+nothing else but a SSH server. Next up, it creates a SSH
 connection from your machine to the First Node. All of your local TCP (HTTP etc.) 
 traffic will be routed through the instance via sshuttle as though you had been
 connected to a VPN.
@@ -54,10 +54,14 @@ made through the VPN to succeed. (Actions -> CONNECTION_KILLSWITCH -> Enabled).
 * Uses sshuttle underneath to VPN all your system-wide TCP traffic through VPS.
 It appears to be leaking IPv6 requests though, so make sure to have connection 
 killswitch enabled at all times.
-* Runs as a daemon process in background, keeps supershy running even after reboot.
+* Also has support for creating HTTP and SOCKS5 proxies.
+* Runs as a daemon process in background, which keeps supershy running even after reboot.
 * All application's own requests (i.e, towards VPS providers and CloudFlare) will be
 redirected through SSH tunnels made by the application itself.
 * Has a web-based UI.
+* Has an option to create n number of reserve nodes for making sure you do not
+connect to the same node twice, therefore reducing the risc of a possible MITM attack 
+happening even more so.
 
 ### Changelog
 * Upgrading from v0.2.30 to >= v1.0.0 introduces some breaking changes, namely:
@@ -66,6 +70,7 @@ need to manually configure proxy on your browser anymore as all TCP requests
 will be routed automatically to the VPS. If you previously had your browser 
 manually configured to use the proxy, then please reset your proxy settings back 
 to default.
+* Features a connecting killswitch.
 
 
 ### Supported VPS
@@ -190,10 +195,11 @@ cd supershy-client
 
 ```
 # Linux
-sudo apt install git unzip ufw build-essential sshuttle -y
+sudo apt install git unzip ufw build-essential screen sshuttle -y
 
 # Mac
 brew install sshuttle
+brew install screen
 ```
 
 ```
