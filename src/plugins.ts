@@ -5,7 +5,7 @@ import {
 	Side,
     Platform,
     Action,
-    Function,
+    Script,
 } from './types.ts';
 import * as models from './models.ts';
 
@@ -186,27 +186,27 @@ export const plugins: Plugins = {
 		[Side.CLIENT]: {
 			[Platform.LINUX]: {
 				[Action.MAIN]: {
-					[Function.ENABLE]: () => ENABLE_SSHUTTLE()
+					[Script.ENABLE]: () => ENABLE_SSHUTTLE()
 				},
 				[Action.KILLSWITCH]: {
-					[Function.ENABLE]: () => ENABLE_LINUX_KILLSWITCH(),
-					[Function.DISABLE]: () => DISABLE_LINUX_KILLSWITCH(),
+					[Script.ENABLE]: () => ENABLE_LINUX_KILLSWITCH(),
+					[Script.DISABLE]: () => DISABLE_LINUX_KILLSWITCH(),
 				}
 			},
 			[Platform.DARWIN]: {
 				[Action.MAIN]: {
-					[Function.ENABLE]: () => ENABLE_SSHUTTLE()
+					[Script.ENABLE]: () => ENABLE_SSHUTTLE()
 				},
 				[Action.KILLSWITCH]: {
-					[Function.ENABLE]: () => ENABLE_DARWIN_KILLSWITCH(),
-					[Function.DISABLE]: () => DISABLE_DARWIN_KILLSWITCH(),
+					[Script.ENABLE]: () => ENABLE_DARWIN_KILLSWITCH(),
+					[Script.DISABLE]: () => DISABLE_DARWIN_KILLSWITCH(),
 				}
 			},
 		},
 		[Side.SERVER]: {
 			[Platform.LINUX]: {
 				[Action.MAIN]: {
-					[Function.ENABLE]: (proxy?: Proxy) => ENABLE_LINUX_MAIN(proxy!)
+					[Script.ENABLE]: (proxy?: Proxy) => ENABLE_LINUX_MAIN(proxy!)
 				}
 			}
 		},
@@ -215,27 +215,27 @@ export const plugins: Plugins = {
 		[Side.CLIENT]: {
 			[Platform.LINUX]: {
 				[Action.MAIN]: {
-					[Function.ENABLE]: () => ENABLE_SSH()
+					[Script.ENABLE]: () => ENABLE_SSH()
 				},
 				[Action.KILLSWITCH]: {
-					[Function.ENABLE]: () => ENABLE_LINUX_KILLSWITCH(),
-					[Function.DISABLE]: () => DISABLE_LINUX_KILLSWITCH(),
+					[Script.ENABLE]: () => ENABLE_LINUX_KILLSWITCH(),
+					[Script.DISABLE]: () => DISABLE_LINUX_KILLSWITCH(),
 				}
 			},
 			[Platform.DARWIN]: {
 				[Action.MAIN]: {
-					[Function.ENABLE]: () => ENABLE_SSH()
+					[Script.ENABLE]: () => ENABLE_SSH()
 				},
 				[Action.KILLSWITCH]: {
-					[Function.ENABLE]: () => ENABLE_DARWIN_KILLSWITCH(),
-					[Function.DISABLE]: () => DISABLE_DARWIN_KILLSWITCH(),
+					[Script.ENABLE]: () => ENABLE_DARWIN_KILLSWITCH(),
+					[Script.DISABLE]: () => DISABLE_DARWIN_KILLSWITCH(),
 				}
 			},
 		},
 		[Side.SERVER]: {
 			[Platform.LINUX]: {
 				[Action.MAIN]: {
-					[Function.ENABLE]: (proxy?: Proxy) =>
+					[Script.ENABLE]: (proxy?: Proxy) =>
 						`
 							${ENABLE_HTTP_PROXY(proxy!)}
 							${ENABLE_LINUX_MAIN(proxy!)}
@@ -249,27 +249,27 @@ export const plugins: Plugins = {
 		[Side.CLIENT]: {
 			[Platform.LINUX]: {
 				[Action.MAIN]: {
-					[Function.ENABLE]: () => ENABLE_SSH()
+					[Script.ENABLE]: () => ENABLE_SSH()
 				},
 				[Action.KILLSWITCH]: {
-					[Function.ENABLE]: () => ENABLE_LINUX_KILLSWITCH(),
-					[Function.DISABLE]: () => DISABLE_LINUX_KILLSWITCH(),
+					[Script.ENABLE]: () => ENABLE_LINUX_KILLSWITCH(),
+					[Script.DISABLE]: () => DISABLE_LINUX_KILLSWITCH(),
 				}
 			},
 			[Platform.DARWIN]: {
 				[Action.MAIN]: {
-					[Function.ENABLE]: () => ENABLE_SSH()
+					[Script.ENABLE]: () => ENABLE_SSH()
 				},
 				[Action.KILLSWITCH]: {
-					[Function.ENABLE]: () => ENABLE_DARWIN_KILLSWITCH(),
-					[Function.DISABLE]: () => DISABLE_DARWIN_KILLSWITCH(),
+					[Script.ENABLE]: () => ENABLE_DARWIN_KILLSWITCH(),
+					[Script.DISABLE]: () => DISABLE_DARWIN_KILLSWITCH(),
 				}
 			},
 		},
 		[Side.SERVER]: {
 			[Platform.LINUX]: {
 				[Action.MAIN]: {
-					[Function.ENABLE]: (proxy?: Proxy) =>
+					[Script.ENABLE]: (proxy?: Proxy) =>
 						`
 							${ENABLE_SOCKS5_PROXY(proxy!)}
 							${ENABLE_LINUX_MAIN(proxy!)}

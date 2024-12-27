@@ -15,7 +15,7 @@ import {
     InstancePayload,
     Action,
     Side,
-    Function,
+    Script,
 } from './src/types.ts';
 import * as core from './src/core.ts';
 import * as models from './src/models.ts';
@@ -57,7 +57,7 @@ const connect = async (
     proxy: Proxy,
 ) => {
     const initialProxy = models.getInitialProxy();
-    const mainEnableFileName = core.getScriptFileName(proxy.pluginsEnabled[0], Side.CLIENT, Action.MAIN, Function.ENABLE);
+    const mainEnableFileName = core.getScriptFileName(proxy.pluginsEnabled[0], Side.CLIENT, Action.MAIN, Script.ENABLE);
     proxy = core.getConnectionString(proxy, mainEnableFileName);
     integrations.fs.hostKey.save(proxy);
     existsSync(proxy.sshLogPath) && Deno.removeSync(proxy.sshLogPath);
@@ -198,7 +198,7 @@ const rotate = async () => {
             modifiedTime: null,
             deletedTime: null,
         };
-        const script = plugins[enabledPluginKey][Side.SERVER][getPlatform()][Action.MAIN][Function.ENABLE](proxy);
+        const script = plugins[enabledPluginKey][Side.SERVER][getPlatform()][Action.MAIN][Script.ENABLE](proxy);
         const userData = core.prepareCloudConfig(script);
         const formattedUserData = integrations.compute[instanceProvider].userData.format(userData);
         const instancePayload: InstancePayload = {

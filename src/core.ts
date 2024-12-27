@@ -5,7 +5,7 @@ import { Server } from 'https://deno.land/x/socket_io@0.2.0/mod.ts';
 import { existsSync } from 'https://deno.land/std@0.224.0/fs/mod.ts';
 import { logger as _logger } from './logger.ts';
 import * as models from './models.ts';
-import { Config, Proxy, InstanceProvider, LoopStatus, Plugin, Side, Action, Function } from './types.ts';
+import { Config, Proxy, InstanceProvider, LoopStatus, Plugin, Side, Action, Script } from './types.ts';
 import * as lib from './lib.ts';
 import * as integrations from './integrations.ts';
 import { plugins } from './plugins.ts';
@@ -49,9 +49,9 @@ export const getScriptFileName = (
     pluginKey: string,
     side: Side,
     action: Action,
-    _function: Function,
+    script: Script,
 ): string => {
-    return `${pluginKey}--${side}--${getPlatform()}--${action}--${_function}`;
+    return `${pluginKey}--${side}--${getPlatform()}--${action}--${script}`;
 };
 
 export const getAvailablePlugins = (): Plugin[] => {
@@ -165,7 +165,7 @@ export const enableConnectionKillSwitch = () => {
     const pluginKey = getEnabledPluginKey();
     if (!pluginKey) return;
 
-    const fileName = getScriptFileName(pluginKey, Side.CLIENT, Action.KILLSWITCH, Function.ENABLE);
+    const fileName = getScriptFileName(pluginKey, Side.CLIENT, Action.KILLSWITCH, Script.ENABLE);
     const filePath = `${config().SCRIPT_PATH}/${fileName}`;
     const hasFile = existsSync(filePath);
     if (!hasFile) return;
@@ -184,7 +184,7 @@ export const disableConnectionKillSwitch = () => {
     const pluginKey = getEnabledPluginKey();
     if (!pluginKey) return;
 
-    const fileName = getScriptFileName(pluginKey, Side.CLIENT, Action.KILLSWITCH, Function.DISABLE);
+    const fileName = getScriptFileName(pluginKey, Side.CLIENT, Action.KILLSWITCH, Script.DISABLE);
     const filePath = `${config().SCRIPT_PATH}/${fileName}`;
     const hasFile = existsSync(filePath);
     if (!hasFile) return;

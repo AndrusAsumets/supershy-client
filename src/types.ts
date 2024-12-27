@@ -114,14 +114,14 @@ export enum Action {
 	KILLSWITCH = 'killswitch',
 }
 
-export enum Function {
+export enum Script {
 	ENABLE = 'enable',
 	DISABLE = 'disable',
 }
 
-export type Functions = Record<string, (() => string) | ((proxy: Proxy | null) => string)>
+export type Scripts = Record<string, (() => string) | ((proxy: Proxy | null) => string)>
 
-export type Actions = Record<string, Functions>
+export type Actions = Record<string, Scripts>
 
 export type Platforms = Record<string, Actions>
 
@@ -197,5 +197,3 @@ export type DatabaseData = Record<DatabaseKey, Proxies | Config>
 export enum ClientScriptFileName {
 	GENERATE_SSH_KEY_FILE_NAME = 'generate-ssh-key.sh',
 }
-
-export type Scripts = Record<ClientScriptFileName, string>
