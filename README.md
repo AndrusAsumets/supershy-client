@@ -87,9 +87,9 @@ curl -fsSL https://install.supershy.org | sudo bash -s $(whoami)
 
 ```
 # Update Config through the supershy's UI.
-PROXY_RECYCLE_INTERVAL_SEC=How often you would like to recycle the exit nodes in seconds, defaults to 1800.
+NODE_RECYCLE_INTERVAL_SEC=How often you would like to recycle the exit nodes in seconds, defaults to 1800.
 
-PROXY_RESERVE_COUNT=The number of fresh VPS nodes you like to have for backup, defaults to 1.
+NODE_RESERVE_COUNT=The number of fresh VPS nodes you like to have for backup, defaults to 1.
 You can disable the whole rotation progress by setting this value to 0 (and always keep connecting to the same 
 original node), however that would kind of defeat the whole purpose of this project.
 
@@ -157,8 +157,8 @@ to have both Nodes prepared, so please be patient.
 ```
 
 ```
-# Optional if you had selected SSHUTTLE_VPN plugin. However, if you had selected either HTTP_PROXY or 
-SOCKS5_PROXY from the plugins, then also update your browser's proxy url:
+# If you selected HTTP_PROXY or SOCKS5_PROXY from the plugins,
+then also update your browser's proxy url:
 Firefox with HTTP_PROXY:
  -> Open https://support.mozilla.org/en-US/kb/connection-settings-firefox
  -> Check Manual proxy configuration. 

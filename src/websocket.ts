@@ -8,20 +8,20 @@ const { config } = models;
 
 export const start = (io: Server) => {
     io.on('connection', (socket) => {
-        io.emit('/started', config().PROXY_ENABLED);
+        io.emit('/started', config().NODE_ENABLED);
         io.emit('/config', config());
-        io.emit('/proxy', models.getLastConnectedProxy());
+        io.emit('/node', models.getLastConnectedNode());
 
-        socket.on('/proxy/enable', () => {
-            models.updateConfig({...config(), 'PROXY_ENABLED': true, CONNECTION_STATUS: ConnectionStatus.DISCONNECTED});
+        socket.on('/node/enable', () => {
+            models.updateConfig({...config(), 'NODE_ENABLED': true, CONNECTION_STATUS: ConnectionStatus.DISCONNECTED});
             io.emit('/config', config());
-            core.exit('/proxy/enable', true);
+            core.exit('/node/enable', true);
         });
 
-        socket.on('/proxy/disable', () => {
-            models.updateConfig({...config(), 'PROXY_ENABLED': false, CONNECTION_STATUS: ConnectionStatus.DISCONNECTED});
+        socket.on('/node/disable', () => {
+            models.updateConfig({...config(), 'NODE_ENABLED': false, CONNECTION_STATUS: ConnectionStatus.DISCONNECTED});
             io.emit('/config', config());
-            core.exit('/proxy/disable', true);
+            core.exit('/node/disable', true);
         });
 
         socket.on('/config/save', async (newConfig: Config) => {
@@ -35,7 +35,7 @@ export const start = (io: Server) => {
 
             (isInstanceProvidersDiff || isInstanceProvidersDisabledDiff) && models.updateConfig(await core.setInstanceCountries(config()));
             isPluginsEnabledDiff && core.disableConnectionKillSwitch();
-            (isConnectionKillswitchDiff && config().CONNECTION_KILLSWITCH == true && models.getInitialProxy()) && core.enableConnectionKillSwitch();
+            (isConnectionKillswitchDiff && config().CONNECTION_KILLSWITCH == true && models.getInitialNode()) && core.enableConnectionKillSwitch();
             (isConnectionKillswitchDiff && config().CONNECTION_KILLSWITCH == false) && core.disableConnectionKillSwitch();
 
             io.emit('/config', config());

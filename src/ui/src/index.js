@@ -15,8 +15,8 @@ const visibleActionKeys = {
     CONNECTION_KILLSWITCH: { editable: 'boolean' },
 };
 const visibleConfigKeys = {
-    PROXY_RECYCLE_INTERVAL_SEC: { editable: 'number' },
-    PROXY_RESERVE_COUNT: { editable: 'number' },
+    NODE_RECYCLE_INTERVAL_SEC: { editable: 'number' },
+    NODE_RESERVE_COUNT: { editable: 'number' },
     SSH_PORT_RANGE: { editable: 'string' },
     SSH_KEY_ALGORITHM: { editable: 'string' },
     SSH_KEY_LENGTH: { editable: 'number' },
@@ -36,19 +36,13 @@ const faviconStatus = {
     'connecting': ['❊', 'blue'],
     'disconnected': ['❊', 'red'],
 };
-let isProxyEnabled = false;
+let isNodeEnabled = false;
 let config = {};
-let proxy = {};
+let node = {};
 
 const capitalize = s => s && String(s[0]).toUpperCase() + String(s).slice(1);
 
 const updateEnablementToggle = (label) => $enablementToggle.innerText = label;
-
-const convertSnakeCaseToPascalCase = (str) =>
-    str
-        .split('_')
-        .map((element) => element.slice(0, 1).toUpperCase() + element.slice(1))
-        .join('');
 
 const setChangeListener = (div, listener) => {
     div.addEventListener('focusout', listener);
@@ -180,20 +174,20 @@ const constructGenericLine = (
 };
 
 const start = () => {
-    isProxyEnabled = true;
+    isNodeEnabled = true;
     updateEnablementToggle('Enabling ...');
-    socket.emit('/proxy/enable');
+    socket.emit('/node/enable');
 };
 
 const stop = () => {
-    isProxyEnabled = false
+    isNodeEnabled = false
     updateEnablementToggle('Disabling ...');
-    socket.emit('/proxy/disable');
+    socket.emit('/node/disable');
 };
 
 const interact = () => {
     socket.emit('/config/save', config);
-    !isProxyEnabled
+    !isNodeEnabled
         ? start()
         : stop();
 };
@@ -246,18 +240,18 @@ const updateStatus = () => {
         capitalize(config.CONNECTION_STATUS)
     ],
     [
-        'Proxy',
-        isProxyEnabled
+        'Node',
+        isNodeEnabled
             ? 'Enabled'
             : 'Disabled'
     ]];
 
-    if (isProxyEnabled && proxy && Object.keys(proxy).length && config.CONNECTION_STATUS == 'connected') {
-        status.push(['IPv4', proxy.instanceIp]);
-        status.push(['Country', COUNTRY_CODES[proxy.instanceCountry]]);
-        status.push(['VPS', proxy.instanceProvider.toUpperCase()]);
-        status.push(['Plugin', proxy.pluginsEnabled[0].toUpperCase()]);
-        status.push(['Proxies in reserve', `${config.PROXY_CURRENT_RESERVE_COUNT} / ${config.PROXY_RESERVE_COUNT}`]);
+    if (isNodeEnabled && node && Object.keys(node).length && config.CONNECTION_STATUS == 'connected') {
+        status.push(['IPv4', node.instanceIp]);
+        status.push(['Country', COUNTRY_CODES[node.instanceCountry]]);
+        status.push(['VPS', node.instanceProvider.toUpperCase()]);
+        status.push(['Plugin', node.pluginsEnabled[0].toUpperCase()]);
+        status.push(['Nodes in reserve', `${config.NODE_CURRENT_RESERVE_COUNT} / ${config.NODE_RESERVE_COUNT}`]);
     }
 
     status.forEach((list) => {
@@ -371,10 +365,10 @@ const updateAll = () => {
 };
 
 socket
-    .on('/started', (_isProxyEnabled) => {
-        isProxyEnabled = _isProxyEnabled;
+    .on('/started', (_isNodeEnabled) => {
+        isNodeEnabled = _isNodeEnabled;
         updateEnablementToggle(
-            isProxyEnabled
+            isNodeEnabled
                 ? 'Disable'
                 : 'Enable'
         );
@@ -383,8 +377,8 @@ socket
         config = _config;
         updateAll();
     })
-    .on('/proxy', (_proxy) => {
-        proxy = _proxy;
+    .on('/node', (_node) => {
+        node = _node;
         updateStatus();
     })
     .on('/log', (message) => {
@@ -402,7 +396,7 @@ socket
 
         $statusSection.append(
             constructGenericLine(
-                'Proxy',
+                'Node',
                 'Reconnecting',
             )
         );

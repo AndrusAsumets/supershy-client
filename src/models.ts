@@ -1,8 +1,8 @@
 import { db } from './db.ts';
 import * as lib from './lib.ts';
 import {
-    Proxies,
-    Proxy,
+    Nodes,
+    Node,
     DatabaseKey,
     Config
 } from './types.ts';
@@ -11,54 +11,54 @@ export const config = (): Config => {
     return db.data[DatabaseKey.CONFIG] as Config;
 };
 
-export const proxies = (): Proxies => {
-    return db.data[DatabaseKey.PROXIES] as Proxies;
+export const nodes = (): Nodes => {
+    return db.data[DatabaseKey.NODES] as Nodes;
 };
 
-export const updateProxy = (
-    proxy: Proxy
+export const updateNode = (
+    node: Node
 ) => {
-    const proxies = db.data[DatabaseKey.PROXIES] as Proxies;
-    proxies[proxy.proxyUuid] = proxy;
+    const nodies = db.data[DatabaseKey.NODES] as Nodes;
+    nodies[node.nodeUuid] = node;
     db.write();
 };
 
-export const getInitialProxy = () => {
-    let proxy = Object
-        .keys(proxies())
+export const getInitialNode = () => {
+    let node = Object
+        .keys(nodes())
         .sort()
-        .map((proxyUuid: string) => proxies()[proxyUuid])
-        .filter((proxy: Proxy) => !proxy.connectionString)
-        .filter((proxy: Proxy) => !proxy.isDeleted)[0];
+        .map((nodeUuid: string) => nodes()[nodeUuid])
+        .filter((node: Node) => !node.connectionString)
+        .filter((node: Node) => !node.isDeleted)[0];
 
     // Reuse, but only when fresh ones are out.
-    if (!proxy && Object.values(proxies())[0]) {
+    if (!node && Object.values(nodes())[0]) {
         // If one might become unresponsive, then also keep trying the rest.
-        const randomProxyIndex = lib.randomNumberFromRange([0, Object.values(proxies()).length - 1]);
-        proxy = Object.values(proxies())[randomProxyIndex];
+        const randomNodeIndex = lib.randomNumberFromRange([0, Object.values(nodes()).length - 1]);
+        node = Object.values(nodes())[randomNodeIndex];
     }
-    return proxy;
+    return node;
 };
 
-export const getLastConnectedProxy = () => {
+export const getLastConnectedNode = () => {
     return Object
-        .keys(proxies())
-        .map((proxyUuid: string) => proxies()[proxyUuid])
-        .filter((proxy: Proxy) => !proxy.isDeleted)
-        .filter((proxy: Proxy) => proxy.connectedTime)
+        .keys(nodes())
+        .map((nodeUuid: string) => nodes()[nodeUuid])
+        .filter((node: Node) => !node.isDeleted)
+        .filter((node: Node) => node.connectedTime)
         .sort((a, b) => b.connectedTime!.localeCompare(a.connectedTime!))[0];
 };
 
-export const removeUsedProxies = (
+export const removeUsedNodes = (
     instanceIdsToKeep: string[]
 ) => {
-    const result: Proxies = {};
+    const result: Nodes = {};
     Object
-        .keys(proxies())
-        .map((proxyUuid: string) => proxies()[proxyUuid])
-        .filter((proxy: Proxy) => instanceIdsToKeep.includes(proxy.instanceId))
-        .forEach((proxy: Proxy) => result[proxy.proxyUuid] = proxy);
-    db.data[DatabaseKey.PROXIES] = result;
+        .keys(nodes())
+        .map((nodeUuid: string) => nodes()[nodeUuid])
+        .filter((node: Node) => instanceIdsToKeep.includes(node.instanceId))
+        .forEach((node: Node) => result[node.nodeUuid] = node);
+    db.data[DatabaseKey.NODES] = result;
     db.write();
 };
 

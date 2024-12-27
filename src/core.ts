@@ -5,7 +5,7 @@ import { Server } from 'https://deno.land/x/socket_io@0.2.0/mod.ts';
 import { existsSync } from 'https://deno.land/std@0.224.0/fs/mod.ts';
 import { logger as _logger } from './logger.ts';
 import * as models from './models.ts';
-import { Config, Proxy, InstanceProvider, LoopStatus, Plugin, Side, Action, Script } from './types.ts';
+import { Config, Node, InstanceProvider, LoopStatus, Plugin, Side, Action, Script } from './types.ts';
 import * as lib from './lib.ts';
 import * as integrations from './integrations.ts';
 import { plugins } from './plugins.ts';
@@ -34,7 +34,7 @@ export const getAvailableScripts = (): string[][] => {
                         .keys(action)
                         .map((functionKey: string) => {
                             const fileName = `${pluginKey}--${sideKey}--${platformKey}--${actionKey}--${functionKey}`;
-                            const file = action[functionKey](models.getInitialProxy())
+                            const file = action[functionKey](models.getInitialNode())
                                 .replaceAll(escapeDollarSignOperator[0], escapeDollarSignOperator[1])
                                 .replaceAll('\t', '');
                             return [fileName, file];
@@ -105,8 +105,8 @@ export const setInstanceCountries = async (
 };
 
 export const getEnabledPluginKey = (): Plugin | undefined => {
-    const connectedProxy = models.getLastConnectedProxy();
-    return connectedProxy.pluginsEnabled[0];
+    const connectedNode = models.getLastConnectedNode();
+    return connectedNode.pluginsEnabled[0];
 };
 
 export const prepareCloudConfig = (
@@ -126,9 +126,9 @@ ${body}`;
 };
 
 export const getConnectionString = (
-    proxy: Proxy,
+    node: Node,
     scriptFileName: string,
-): Proxy => {
+): Node => {
     const {
         instanceIp,
         sshPort,
@@ -136,26 +136,26 @@ export const getConnectionString = (
         sshLogPath,
         proxyLocalPort,
         proxyRemotePort,
-    } = proxy;
-    proxy.connectionString = `bash ${config().SCRIPT_PATH}/${scriptFileName} ${instanceIp} ${config().SSH_USER} ${sshPort} ${sshKeyPath} ${sshLogPath} ${config().SSHUTTLE_PID_FILE_PATH} ${proxyLocalPort} ${proxyRemotePort}`
+    } = node;
+    node.connectionString = `bash ${config().SCRIPT_PATH}/${scriptFileName} ${instanceIp} ${config().SSH_USER} ${sshPort} ${sshKeyPath} ${sshLogPath} ${config().SSHUTTLE_PID_FILE_PATH} ${proxyLocalPort} ${proxyRemotePort}`
         .replace('\n', '');
-    return proxy;
+    return node;
 };
 
 export const getSshLogPath = (
-    proxyUuid: string
-): string =>`${config().LOG_PATH}/${proxyUuid}${config().SSH_LOG_EXTENSION}`;
+    nodeUuid: string
+): string =>`${config().LOG_PATH}/${nodeUuid}${config().SSH_LOG_EXTENSION}`;
 
 export const useProxy = (options: any) => {
-    const connectedProxy = models.getLastConnectedProxy();
-    if (!connectedProxy) return options;
+    const connectedNode = models.getLastConnectedNode();
+    if (!connectedNode) return options;
 
-    const pluginKey = connectedProxy.pluginsEnabled[0];
-    const hasProxyProtocol = pluginKey.includes('proxy');
-    if (!hasProxyProtocol) return options;
+    const pluginKey = connectedNode.pluginsEnabled[0];
+    const hasNodeProtocol = pluginKey.includes('proxy');
+    if (!hasNodeProtocol) return options;
 
     const protocol = pluginKey.split('_')[0];
-    const url = `${protocol}://0.0.0.0:${connectedProxy.proxyLocalPort}`;
+    const url = `${protocol}://0.0.0.0:${connectedNode.proxyLocalPort}`;
     options.client = Deno.createHttpClient({ proxy: { url } });
 
     return options;
@@ -171,10 +171,10 @@ export const enableConnectionKillSwitch = () => {
     if (!hasFile) return;
 
     logger.info(`Enabling connection killswitch.`);
-    const proxies = models.proxies();
+    const nodes = models.nodes();
     const hosts = Object
-        .keys(proxies)
-        .map((key: string) => `${proxies[key].instanceIp}:${proxies[key].sshPort}`)
+        .keys(nodes)
+        .map((key: string) => `${nodes[key].instanceIp}:${nodes[key].sshPort}`)
         .join(',');
     integrations.shell.command(`bash ${filePath} ${hosts}`);
     logger.info(`Enabled connection killswitch.`);
@@ -192,7 +192,6 @@ export const disableConnectionKillSwitch = () => {
     logger.info(`Disabling connection killswitch.`);
     integrations.shell.command(`bash ${filePath}`);
     logger.info(`Disabled connection killswitch.`);
-
 };
 
 export const heartbeat = async () => {
@@ -208,16 +207,16 @@ export const setLoopStatus = (io: Server, loopStatus: LoopStatus) => {
     io.emit('event', config().LOOP_STATUS);
 };
 
-export const getCurrentProxyReserve = (): string[] => {
-    const currentlyReservedProxies = Object
-        .keys(models.proxies())
-        // Ignore used proxies.
-        .filter((proxyUuid: string) => !models.proxies()[proxyUuid].connectionString);
-    return currentlyReservedProxies
+export const getCurrentNodeReserve = (): string[] => {
+    const currentlyReservedNodes = Object
+        .keys(models.nodes())
+        // Ignore used nodes.
+        .filter((nodeUuid: string) => !models.nodes()[nodeUuid].connectionString);
+    return currentlyReservedNodes;
 };
 
-export const setCurrentProxyReserve = (io: Server) => {
-    models.updateConfig({...config(), PROXY_CURRENT_RESERVE_COUNT: getCurrentProxyReserve().length });
+export const setCurrentNodeReserve = (io: Server) => {
+    models.updateConfig({...config(), NODE_CURRENT_RESERVE_COUNT: getCurrentNodeReserve().length });
     io.emit('/config', config());
 };
 
@@ -255,18 +254,18 @@ export const cleanup = async (
         index = index + 1;
     }
 
-    models.removeUsedProxies(instanceIdsToKeep);
+    models.removeUsedNodes(instanceIdsToKeep);
 };
 
 export const exit = async (
     message: string,
     onPurpose = false
 ) => {
-    const proxies = models.proxies();
+    const nodes = models.nodes();
     !onPurpose && logger.error(message);
-    const hasProxies = Object.keys(proxies).length > 0;
-    onPurpose && hasProxies && await integrations.shell.pkill(`${config().APP_ID}-${config().ENV}`);
-    onPurpose && Object.keys(proxies).forEach(async (proxyUuid: string) => await integrations.shell.pkill(proxyUuid));
+    const hasNodes = Object.keys(nodes).length > 0;
+    onPurpose && hasNodes && await integrations.shell.pkill(`${config().APP_ID}-${config().ENV}`);
+    onPurpose && Object.keys(nodes).forEach(async (nodeUuid: string) => await integrations.shell.pkill(nodeUuid));
     // Give a little time to kill the process.
     onPurpose && await lib.sleep(1000);
     throw new Error();

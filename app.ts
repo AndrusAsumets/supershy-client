@@ -9,8 +9,8 @@ import { platform as getPlatform } from 'node:os';
 import {
     LoopStatus,
     ConnectionStatus,
-    ProxyType,
-    Proxy,
+    NodeType,
+    Node,
     InstanceProvider,
     InstancePayload,
     Action,
@@ -54,16 +54,16 @@ const init = () => {
 };
 
 const connect = async (
-    proxy: Proxy,
+    node: Node,
 ) => {
-    const initialProxy = models.getInitialProxy();
-    const mainEnableFileName = core.getScriptFileName(proxy.pluginsEnabled[0], Side.CLIENT, Action.MAIN, Script.ENABLE);
-    proxy = core.getConnectionString(proxy, mainEnableFileName);
-    integrations.fs.hostKey.save(proxy);
-    existsSync(proxy.sshLogPath) && Deno.removeSync(proxy.sshLogPath);
-    (config().CONNECTION_KILLSWITCH && initialProxy) && core.enableConnectionKillSwitch();
+    const initialNode = models.getInitialNode();
+    const mainEnableFileName = core.getScriptFileName(node.pluginsEnabled[0], Side.CLIENT, Action.MAIN, Script.ENABLE);
+    node = core.getConnectionString(node, mainEnableFileName);
+    integrations.fs.hostKey.save(node);
+    existsSync(node.sshLogPath) && Deno.removeSync(node.sshLogPath);
+    (config().CONNECTION_KILLSWITCH && initialNode) && core.enableConnectionKillSwitch();
 
-    logger.info(`Connecting SSH tunnel proxy to ${proxy.instanceIp}:${proxy.sshPort}.`);
+    logger.info(`Connecting SSH tunnel node to ${node.instanceIp}:${node.sshPort}.`);
     models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTING});
     io.emit('/config', config());
 
@@ -71,48 +71,48 @@ const connect = async (
         await integrations.shell.pkill(`${config().PROXY_LOCAL_PORT}:0.0.0.0`);
         await integrations.shell.pkill('0.0.0.0/0');
         await lib.sleep(1000);
-        integrations.shell.command(proxy.connectionString);
+        integrations.shell.command(node.connectionString);
         await lib.sleep(config().SSH_CONNECTION_TIMEOUT_SEC * 1000);
 
         try {
-            const output = Deno.readTextFileSync(proxy.sshLogPath);
+            const output = Deno.readTextFileSync(node.sshLogPath);
             const hasNetwork = output.includes('pledge: network');
 
             if (hasNetwork) {
-                logger.info(`Connected SSH tunnel to ${proxy.instanceIp}:${proxy.sshPort}.`);
-                proxy.connectedTime = new Date().toISOString();
-                models.updateProxy(proxy);
+                logger.info(`Connected SSH tunnel to ${node.instanceIp}:${node.sshPort}.`);
+                node.connectedTime = new Date().toISOString();
+                models.updateNode(node);
                 models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTED});
                 io.emit('/config', config());
             }
         }
         catch(err) {
-            logger.warn({ message: `Restarting connecting of SSH tunnel to ${proxy.instanceIp}:${proxy.sshPort}.`, err });
+            logger.warn({ message: `Restarting connecting of SSH tunnel to ${node.instanceIp}:${node.sshPort}.`, err });
         }
     }
 
     // If we started from scratch, then enable it for that too.
-    (config().CONNECTION_KILLSWITCH && !initialProxy) && core.enableConnectionKillSwitch();
+    (config().CONNECTION_KILLSWITCH && !initialNode) && core.enableConnectionKillSwitch();
 };
 
 const loop = async () => {
     setTimeout(async () => {
         const isStillWorking = config().LOOP_STATUS == LoopStatus.ACTIVE;
         isStillWorking
-            ? await core.exit(`Timeout after passing ${config().PROXY_RECYCLE_INTERVAL_SEC} seconds.`)
+            ? await core.exit(`Timeout after passing ${config().NODE_RECYCLE_INTERVAL_SEC} seconds.`)
             : await loop();
-    }, config().PROXY_RECYCLE_INTERVAL_SEC * 1000);
+    }, config().NODE_RECYCLE_INTERVAL_SEC * 1000);
 
     try {
         core.setLoopStatus(io, LoopStatus.ACTIVE);
         const startTime = performance.now();
         await rotate();
-        logger.info('Started proxy rotation.');
+        logger.info('Started node rotation.');
         const endTime = performance.now();
         core.setLoopStatus(io, LoopStatus.FINISHED);
 
         logger.info(
-            `Proxy rotation finished in ${
+            `Node rotation finished in ${
                 Number((endTime - startTime) / 1000).toFixed(0)
             } seconds.`,
         );
@@ -122,42 +122,42 @@ const loop = async () => {
 };
 
 const rotate = async () => {
-    const activeProxies: Proxy[] = [];
-    const initialProxy = models.getInitialProxy();
-    const proxyTypes: ProxyType[] = !initialProxy
-        ? config().PROXY_TYPES
+    const activeNodes: Node[] = [];
+    const initialNode = models.getInitialNode();
+    const nodeTypes: NodeType[] = !initialNode
+        ? config().NODE_TYPES
         : [];
 
-    if (initialProxy) {
-        await connect(initialProxy);
-        io.emit('/proxy', initialProxy);
-        activeProxies.push(initialProxy);
-        const proxyCurrentReserveCount = core.getCurrentProxyReserve().length;
-         // Cant reserve negative proxies.
-        const proxiesToReserve = config().PROXY_RESERVE_COUNT - proxyCurrentReserveCount >= 0
-            ? config().PROXY_RESERVE_COUNT - proxyCurrentReserveCount
+    if (initialNode) {
+        await connect(initialNode);
+        io.emit('/node', initialNode);
+        activeNodes.push(initialNode);
+        const nodeCurrentReserveCount = core.getCurrentNodeReserve().length;
+         // Cant reserve negative nodes.
+        const nodesToReserve = config().NODE_RESERVE_COUNT - nodeCurrentReserveCount >= 0
+            ? config().NODE_RESERVE_COUNT - nodeCurrentReserveCount
             : 0;
-        // Prepare enough proxies for the reserve.
-        [...Array(proxiesToReserve).keys()].map(() => proxyTypes.push(ProxyType.A));
-        // Mark down active proxies, so we would know which ones to keep from being deleted.
-        core.getCurrentProxyReserve().map(
-            (proxyUuid: string) => activeProxies.push(models.proxies()[proxyUuid]
+        // Prepare enough nodes for the reserve.
+        [...Array(nodesToReserve).keys()].map(() => nodeTypes.push(NodeType.A));
+        // Mark down active nodes, so we would know which ones to keep from being deleted.
+        core.getCurrentNodeReserve().map(
+            (nodeUuid: string) => activeNodes.push(models.nodes()[nodeUuid]
         ));
-        core.setCurrentProxyReserve(io);
+        core.setCurrentNodeReserve(io);
     }
 
-    let proxyIndex = 0;
-    while (proxyIndex < proxyTypes.length) {
+    let nodeIndex = 0;
+    while (nodeIndex < nodeTypes.length) {
         const instanceProviders = config().INSTANCE_PROVIDERS
             .filter((instanceProvider: InstanceProvider) => !config().INSTANCE_PROVIDERS_DISABLED.includes(instanceProvider));
         !instanceProviders.length && logger.warn('None of the VPS providers are enabled.');
         const instanceProvider: InstanceProvider = lib.shuffle(instanceProviders)[0];
-        const proxyUuid = uuidv7();
-        const proxyType = proxyTypes[proxyIndex];
+        const nodeUuid = uuidv7();
+        const nodeType = nodeTypes[nodeIndex];
         const instanceLocationsList = await integrations.compute[instanceProvider].regions.parse();
         !instanceLocationsList.length && logger.info('No locations were found. Are any of the countries enabled for the VPS?');
         const [instanceRegion, instanceCountry]: string[] = lib.shuffle(instanceLocationsList)[0];
-        const instanceName = `${config().APP_ID}-${config().ENV}-${proxyType}-${proxyUuid}`;
+        const instanceName = `${config().APP_ID}-${config().ENV}-${nodeType}-${nodeUuid}`;
         const { instanceSize, instanceImage } = integrations.compute[instanceProvider];
         const sshKeyPath = `${config().SSH_KEY_PATH}/${instanceName}`;
         const publicKey = await integrations.shell.privateKey.create(sshKeyPath);
@@ -167,8 +167,8 @@ const rotate = async () => {
         const sshPort = lib.randomNumberFromRange(sshPortRange);
         const enabledPluginKey = config().PLUGINS_ENABLED[0];
         !enabledPluginKey && logger.info(`No enabled plugins found.`);
-        let proxy: Proxy = {
-            proxyUuid,
+        let node: Node = {
+            nodeUuid,
             proxyLocalPort: config().PROXY_LOCAL_PORT,
             proxyRemotePort: config().PROXY_REMOTE_PORT,
             appId: config().APP_ID,
@@ -182,7 +182,7 @@ const rotate = async () => {
             instanceSize,
             instanceImage,
             instancePublicKeyId,
-            proxyType,
+            nodeType,
             sshUser: config().SSH_USER,
             sshHostKey: '',
             sshKeyAlgorithm: config().SSH_KEY_ALGORITHM,
@@ -190,7 +190,7 @@ const rotate = async () => {
             sshKeyPath,
             sshPort,
             jwtSecret,
-            sshLogPath: core.getSshLogPath(proxyUuid),
+            sshLogPath: core.getSshLogPath(nodeUuid),
             connectionString: '',
             isDeleted: false,
             connectedTime: null,
@@ -198,7 +198,7 @@ const rotate = async () => {
             modifiedTime: null,
             deletedTime: null,
         };
-        const script = plugins[enabledPluginKey][Side.SERVER][getPlatform()][Action.MAIN][Script.ENABLE](proxy);
+        const script = plugins[enabledPluginKey][Side.SERVER][getPlatform()][Action.MAIN][Script.ENABLE](node);
         const userData = core.prepareCloudConfig(script);
         const formattedUserData = integrations.compute[instanceProvider].userData.format(userData);
         const instancePayload: InstancePayload = {
@@ -217,22 +217,22 @@ const rotate = async () => {
             backups: 'disabled',
         };
         const { instanceId, instanceIp } = await integrations.compute[instanceProvider].instances.create(instancePayload);
-        proxy.instanceId = instanceId;
-        proxy.instanceIp = instanceIp;
+        node.instanceId = instanceId;
+        node.instanceIp = instanceIp;
 
         logger.info(`Created ${instanceProvider} instance.`);
         logger.info(instancePayload);
         logger.info(`Found network at ${instanceIp}.`);
 
-        proxy = await integrations.kv.cloudflare.hostKey.get(proxy, jwtSecret);
-        models.updateProxy(proxy);
-        activeProxies.push(proxy);
-        core.setCurrentProxyReserve(io);
-        proxyIndex = proxyIndex + 1;
+        node = await integrations.kv.cloudflare.hostKey.get(node, jwtSecret);
+        models.updateNode(node);
+        activeNodes.push(node);
+        core.setCurrentNodeReserve(io);
+        nodeIndex = nodeIndex + 1;
     }
 
-    !initialProxy && await connect(activeProxies[0]);
-    await core.cleanup(activeProxies.map(proxy => proxy.instanceId));
+    !initialNode && await connect(activeNodes[0]);
+    await core.cleanup(activeNodes.map(node => node.instanceId));
 };
 
 models.updateConfig({
@@ -245,4 +245,4 @@ webserver.start();
 websocket.start(io);
 config().AUTO_LAUNCH_WEB && open(config().WEB_URL);
 config().AUTO_LAUNCH_WEB && models.updateConfig({...config(), AUTO_LAUNCH_WEB: false});
-config().PROXY_ENABLED && init();
+config().NODE_ENABLED && init();

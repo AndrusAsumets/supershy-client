@@ -1,15 +1,14 @@
 import { homedir } from 'node:os';
 import * as path from 'https://deno.land/std@0.224.0/path/mod.ts';
-import { ProxyType, Config, InstanceProvider, LoopStatus, ConnectionStatus, Plugin } from './types.ts';
+import { NodeType, Config, InstanceProvider, LoopStatus, ConnectionStatus, Plugin } from './types.ts';
 
 const APP_ID = 'supershy-client';
 const ENV = 'dev';
-const PROXY_RECYCLE_INTERVAL_SEC = 1800;
-const PROXY_RESERVE_COUNT = 1;
-const PROXY_CURRENT_RESERVE_COUNT = 0;
+const NODE_RECYCLE_INTERVAL_SEC = 1800;
+const NODE_RESERVE_COUNT = 1;
+const NODE_CURRENT_RESERVE_COUNT = 0;
 const LOOP_STATUS = LoopStatus.INACTIVE;
 const CONNECTION_STATUS = ConnectionStatus.DISCONNECTED;
-const PROXY_SYSTEM_WIDE = false;
 const CONNECTION_KILLSWITCH = false;
 const AUTO_LAUNCH_WEB = true;
 const PROXY_LOCAL_PORT = 8888;
@@ -42,7 +41,7 @@ const SSH_LOG_EXTENSION = '.ssh.log';
 const SSH_USER = 'root';
 const SSH_CONNECTION_TIMEOUT_SEC = 5;
 const SSHUTTLE_PID_FILE_PATH = `${DATA_PATH}/sshuttle.pid`;
-const PROXY_TYPES = [...Array(PROXY_RESERVE_COUNT + 1).keys().map(() => ProxyType.A)];
+const NODE_TYPES = [...Array(NODE_RESERVE_COUNT + 1).keys().map(() => NodeType.A)];
 const DIGITAL_OCEAN_INSTANCE_SIZE = 's-1vcpu-512mb-10gb';
 const HETZNER_SERVER_TYPE = 'cx22';
 const VULTR_INSTANCE_PLAN = 'vc2-1c-1gb';
@@ -55,7 +54,7 @@ const HEARTBEAT_INTERVAL_SEC = 10 * 1000;
 const WEB_SERVER_PORT = 8080;
 const WEB_URL = `http://localhost:${WEB_SERVER_PORT}`;
 const WEB_SOCKET_PORT = 8880;
-const PROXY_ENABLED = false;
+const NODE_ENABLED = false;
 const DIGITAL_OCEAN_REGIONS: Record<string, string> = {
     nyc: 'US',
     ams: 'NL',
@@ -74,12 +73,11 @@ const INSTANCE_COUNTRIES_DISABLED: string[] = [];
 
 export const config: Config = {
     CONNECTION_KILLSWITCH,
-    PROXY_SYSTEM_WIDE,
     LOOP_STATUS,
     CONNECTION_STATUS,
-    PROXY_RECYCLE_INTERVAL_SEC,
-    PROXY_RESERVE_COUNT,
-    PROXY_CURRENT_RESERVE_COUNT,
+    NODE_RECYCLE_INTERVAL_SEC,
+    NODE_RESERVE_COUNT,
+    NODE_CURRENT_RESERVE_COUNT,
     PROXY_LOCAL_PORT,
     PROXY_REMOTE_PORT,
     DIGITAL_OCEAN_API_KEY,
@@ -94,7 +92,7 @@ export const config: Config = {
     DIGITAL_OCEAN_INSTANCE_IMAGE,
     HETZNER_INSTANCE_IMAGE,
     VULTR_INSTANCE_IMAGE,
-    PROXY_ENABLED,
+    NODE_ENABLED,
     AUTO_LAUNCH_WEB,
     APP_ID,
     ENV,
@@ -125,7 +123,7 @@ export const config: Config = {
     LOG_PATH,
     SSH_LOG_EXTENSION,
     SSH_USER,
-    PROXY_TYPES,
+    NODE_TYPES,
     DIGITAL_OCEAN_REGIONS,
     PLUGINS,
     PLUGINS_ENABLED,

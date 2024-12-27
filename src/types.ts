@@ -5,7 +5,7 @@ export interface Provider {
 
 export type Providers = Record<string, Provider>
 
-export enum ProxyType {
+export enum NodeType {
 	A = 'a'
 }
 
@@ -27,9 +27,9 @@ export enum InstanceProvider {
 	VULTR = 'vultr',
 }
 
-export interface Proxy {
-	proxyUuid: string
-	proxyType: ProxyType
+export interface Node {
+	nodeUuid: string
+	nodeType: NodeType
 	proxyLocalPort: number
 	proxyRemotePort: number
 	pluginsEnabled: Plugin[]
@@ -60,7 +60,7 @@ export interface Proxy {
 }
 
 export enum DatabaseKey {
-	PROXIES = 'proxies',
+	NODES = 'nodes',
 	CONFIG = 'config'
 }
 
@@ -119,7 +119,7 @@ export enum Script {
 	DISABLE = 'disable',
 }
 
-export type Scripts = Record<string, (() => string) | ((proxy: Proxy | null) => string)>
+export type Scripts = Record<string, (() => string) | ((node: Node | null) => string)>
 
 export type Actions = Record<string, Scripts>
 
@@ -134,10 +134,9 @@ export interface Config {
 	ENV: string
 	LOOP_STATUS: LoopStatus
 	CONNECTION_STATUS: ConnectionStatus
-	PROXY_RECYCLE_INTERVAL_SEC: number
-	PROXY_RESERVE_COUNT: number;
-	PROXY_CURRENT_RESERVE_COUNT: number
-	PROXY_SYSTEM_WIDE: boolean
+	NODE_RECYCLE_INTERVAL_SEC: number
+	NODE_RESERVE_COUNT: number;
+	NODE_CURRENT_RESERVE_COUNT: number
 	CONNECTION_KILLSWITCH: boolean
 	AUTO_LAUNCH_WEB: boolean
 	PROXY_LOCAL_PORT: number
@@ -169,7 +168,7 @@ export interface Config {
 	SSH_USER: string
 	SSH_CONNECTION_TIMEOUT_SEC: number
 	SSHUTTLE_PID_FILE_PATH: string
-	PROXY_TYPES: ProxyType[]
+	NODE_TYPES: NodeType[]
 	DIGITAL_OCEAN_INSTANCE_SIZE: string
 	HETZNER_SERVER_TYPE: string
 	VULTR_INSTANCE_PLAN: string
@@ -180,7 +179,7 @@ export interface Config {
 	WEB_SERVER_PORT: number
 	WEB_URL: string
 	WEB_SOCKET_PORT: number
-	PROXY_ENABLED: boolean
+	NODE_ENABLED: boolean
 	DIGITAL_OCEAN_REGIONS: Record<string, string>
 	PLUGINS: Plugin[]
 	PLUGINS_ENABLED: Plugin[]
@@ -190,9 +189,9 @@ export interface Config {
 	INSTANCE_COUNTRIES_DISABLED: string[]
 }
 
-export type Proxies = Record<string, Proxy>
+export type Nodes = Record<string, Node>
 
-export type DatabaseData = Record<DatabaseKey, Proxies | Config>
+export type DatabaseData = Record<DatabaseKey, Nodes | Config>
 
 export enum ClientScriptFileName {
 	GENERATE_SSH_KEY_FILE_NAME = 'generate-ssh-key.sh',
