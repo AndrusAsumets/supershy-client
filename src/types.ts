@@ -53,6 +53,7 @@ export interface Proxy {
 	sshLogPath: string
 	jwtSecret: string
 	isDeleted: false
+	connectedTime: string | null
 	createdTime: string
 	modifiedTime: string | null
 	deletedTime: string | null

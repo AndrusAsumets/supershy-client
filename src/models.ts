@@ -40,6 +40,15 @@ export const getInitialProxy = () => {
     return proxy;
 };
 
+export const getLastConnectedProxy = () => {
+    return Object
+        .keys(proxies())
+        .map((proxyUuid: string) => proxies()[proxyUuid])
+        .filter((proxy: Proxy) => !proxy.isDeleted)
+        .filter((proxy: Proxy) => proxy.connectedTime)
+        .sort((a, b) => b.connectedTime!.localeCompare(a.connectedTime!))[0];
+};
+
 export const removeUsedProxies = (
     instanceIdsToKeep: string[]
 ) => {

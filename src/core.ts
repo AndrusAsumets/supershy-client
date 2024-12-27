@@ -104,8 +104,9 @@ export const setInstanceCountries = async (
     return config;
 };
 
-export const getEnabledPluginKey = () => {
-    return config().PLUGINS_ENABLED[0];
+export const getEnabledPluginKey = (): Plugin | undefined => {
+    const connectedProxy = models.getLastConnectedProxy();
+    return connectedProxy.pluginsEnabled[0];
 };
 
 export const prepareCloudConfig = (
@@ -145,33 +146,53 @@ export const getSshLogPath = (
     proxyUuid: string
 ): string =>`${config().LOG_PATH}/${proxyUuid}${config().SSH_LOG_EXTENSION}`;
 
+export const useProxy = (options: any) => {
+    const connectedProxy = models.getLastConnectedProxy();
+    if (!connectedProxy) return options;
+
+    const pluginKey = connectedProxy.pluginsEnabled[0];
+    const hasProxyProtocol = pluginKey.includes('proxy');
+    if (!hasProxyProtocol) return options;
+
+    const protocol = pluginKey.split('_')[0];
+    const url = `${protocol}://0.0.0.0:${connectedProxy.proxyLocalPort}`;
+    options.client = Deno.createHttpClient({ proxy: { url } });
+
+    return options;
+};
+
 export const enableConnectionKillSwitch = () => {
     const pluginKey = getEnabledPluginKey();
+    if (!pluginKey) return;
+
     const fileName = getScriptFileName(pluginKey, Side.CLIENT, Action.KILLSWITCH, Function.ENABLE);
     const filePath = `${config().SCRIPT_PATH}/${fileName}`;
+    const hasFile = existsSync(filePath);
+    if (!hasFile) return;
 
-    if (existsSync(filePath)) {
-        logger.info(`Enabling connection killswitch.`);
-        const proxies = models.proxies();
-        const hosts = Object
-            .keys(proxies)
-            .map((key: string) => `${proxies[key].instanceIp}:${proxies[key].sshPort}`)
-            .join(',');
-        integrations.shell.command(`bash ${filePath} ${hosts}`);
-        logger.info(`Enabled connection killswitch.`);
-    }
+    logger.info(`Enabling connection killswitch.`);
+    const proxies = models.proxies();
+    const hosts = Object
+        .keys(proxies)
+        .map((key: string) => `${proxies[key].instanceIp}:${proxies[key].sshPort}`)
+        .join(',');
+    integrations.shell.command(`bash ${filePath} ${hosts}`);
+    logger.info(`Enabled connection killswitch.`);
 };
 
 export const disableConnectionKillSwitch = () => {
     const pluginKey = getEnabledPluginKey();
+    if (!pluginKey) return;
+
     const fileName = getScriptFileName(pluginKey, Side.CLIENT, Action.KILLSWITCH, Function.DISABLE);
     const filePath = `${config().SCRIPT_PATH}/${fileName}`;
+    const hasFile = existsSync(filePath);
+    if (!hasFile) return;
 
-    if (existsSync(filePath)) {
-        logger.info(`Disabling connection killswitch.`);
-        integrations.shell.command(`bash ${filePath}`);
-        logger.info(`Disabled connection killswitch.`);
-    }
+    logger.info(`Disabling connection killswitch.`);
+    integrations.shell.command(`bash ${filePath}`);
+    logger.info(`Disabled connection killswitch.`);
+
 };
 
 export const heartbeat = async () => {

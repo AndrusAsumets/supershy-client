@@ -3,6 +3,7 @@
 import jwt from 'npm:jsonwebtoken';
 import { encodeBase64 } from 'jsr:@std/encoding/base64';
 import { existsSync } from 'https://deno.land/std@0.224.0/fs/mod.ts';
+import * as core from './core.ts';
 import * as lib from './lib.ts';
 import * as models from './models.ts';
 import * as integrations from './integrations.ts';
@@ -89,7 +90,7 @@ export const kv = {
                     method: 'GET',
                     signal: AbortSignal.timeout(config().HEARTBEAT_INTERVAL_SEC),
                 };
-                const res = await fetch(config().CLOUDFLARE_BASE_URL, options);
+                const res = await fetch(config().CLOUDFLARE_BASE_URL, core.useProxy(options));
                 await res.json();
                 logger.info('Heartbeat.');
                 return true;
@@ -111,7 +112,7 @@ export const kv = {
                         const options = { method: 'GET', headers };
                         const url =
                             `${config().CLOUDFLARE_BASE_URL}/accounts/${config().CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${config().CLOUDFLARE_KV_NAMESPACE}/values/${proxy.proxyUuid}`;
-                        const res = await fetch(url, options);
+                        const res = await fetch(url, core.useProxy(options));
                         const text = await res.text();
                         text.includes('errors') && !text.includes('key not found') && logger.error({ message: 'kv.cloudflare.hostKey.get error', text });
                         const decoded = jwt.verify(text, jwtSecret);
@@ -143,7 +144,7 @@ export const compute = {
                     Authorization: `Bearer ${config().DIGITAL_OCEAN_API_KEY}`,
                 };
                 const options = { method: 'GET', headers };
-                const res = await fetch(`${config().DIGITAL_OCEAN_BASE_URL}/regions`, options);
+                const res = await fetch(`${config().DIGITAL_OCEAN_BASE_URL}/regions`, core.useProxy(options));
                 const json = await res.json();
                 const regions = json.regions;
                 !regions && logger.error({ message: 'digital_ocean.regions.list error', json });
@@ -180,7 +181,7 @@ export const compute = {
                     headers,
                     body: JSON.stringify(args),
                 };
-                const res = await fetch(`${config().DIGITAL_OCEAN_BASE_URL}/droplets`, options);
+                const res = await fetch(`${config().DIGITAL_OCEAN_BASE_URL}/droplets`, core.useProxy(options));
                 const json = await res.json();
                 !json.droplet && logger.error({ message: 'compute.digital_ocean.instances.create error', json });
                 const instanceIp = await compute.digital_ocean.ip.get(json.droplet.id);
@@ -194,7 +195,7 @@ export const compute = {
                     Authorization: `Bearer ${config().DIGITAL_OCEAN_API_KEY}`,
                 };
                 const options = { method: 'GET', headers };
-                const res = await fetch(`${config().DIGITAL_OCEAN_BASE_URL}/droplets/${dropletId}`, options);
+                const res = await fetch(`${config().DIGITAL_OCEAN_BASE_URL}/droplets/${dropletId}`, core.useProxy(options));
                 const json = await res.json();
                 return json.droplet;
             },
@@ -203,7 +204,7 @@ export const compute = {
                     Authorization: `Bearer ${config().DIGITAL_OCEAN_API_KEY}`,
                 };
                 const options = { method: 'GET', headers };
-                const res = await fetch(`${config().DIGITAL_OCEAN_BASE_URL}/droplets`, options);
+                const res = await fetch(`${config().DIGITAL_OCEAN_BASE_URL}/droplets`, core.useProxy(options));
                 const json = await res.json();
                 return json.droplets;
             },
@@ -220,7 +221,7 @@ export const compute = {
                         method: 'DELETE',
                         headers,
                     };
-                    await fetch(`${config().DIGITAL_OCEAN_BASE_URL}/droplets/${id}`, options);
+                    await fetch(`${config().DIGITAL_OCEAN_BASE_URL}/droplets/${id}`, core.useProxy(options));
                     logger.info(`Deleted Digital Ocean instance: ${id}.`);
                     index = index + 1;
                 }
@@ -244,7 +245,7 @@ export const compute = {
                     headers,
                     body: JSON.stringify(body),
                 };
-                const res = await fetch(`${config().DIGITAL_OCEAN_BASE_URL}/account/keys`, options);
+                const res = await fetch(`${config().DIGITAL_OCEAN_BASE_URL}/account/keys`, core.useProxy(options));
                 const json = await res.json();
                 !json['ssh_key'] && logger.error({message: 'digital__ocean.keys.add error', json });
                 return json['ssh_key']['id'];
@@ -257,7 +258,7 @@ export const compute = {
                     method: 'GET',
                     headers,
                 };
-                const res = await fetch(`${config().DIGITAL_OCEAN_BASE_URL}/account/keys`, options);
+                const res = await fetch(`${config().DIGITAL_OCEAN_BASE_URL}/account/keys`, core.useProxy(options));
                 const json = await res.json();
                 return json['ssh_keys'];
             },
@@ -274,7 +275,7 @@ export const compute = {
                         method: 'DELETE',
                         headers,
                     };
-                    await fetch(`${config().DIGITAL_OCEAN_BASE_URL}/account/keys/${id}`, options);
+                    await fetch(`${config().DIGITAL_OCEAN_BASE_URL}/account/keys/${id}`, core.useProxy(options));
                     logger.info(`Deleted Digital Ocean ssh_key: ${id}.`);
                     index = index + 1;
                 }
@@ -312,7 +313,7 @@ export const compute = {
                     Authorization: `Bearer ${config().HETZNER_API_KEY}`
                 };
                 const options = { method: 'GET', headers };
-                const res = await fetch(`${config().HETZNER_BASE_URL}/datacenters`, options);
+                const res = await fetch(`${config().HETZNER_BASE_URL}/datacenters`, core.useProxy(options));
                 const json = await res.json();
                 const serverTypeId = await compute.hetzner.serverTypes.getId(compute.hetzner.instanceSize);
                 const regions = json
@@ -343,7 +344,7 @@ export const compute = {
                     Authorization: `Bearer ${config().HETZNER_API_KEY}`
                 };
                 const options = { method: 'GET', headers };
-                const res = await fetch(`${config().HETZNER_BASE_URL}/server_types?per_page=50`, options);
+                const res = await fetch(`${config().HETZNER_BASE_URL}/server_types?per_page=50`, core.useProxy(options));
                 const json = await res.json();
                 const serverTypes = json.server_types;
                 !serverTypes && logger.error({ message: 'hetzner.serverTypes.getId error', json });
@@ -364,7 +365,7 @@ export const compute = {
                     headers,
                     body: JSON.stringify(args),
                 };
-                const res = await fetch(`${config().HETZNER_BASE_URL}/servers`, options);
+                const res = await fetch(`${config().HETZNER_BASE_URL}/servers`, core.useProxy(options));
                 const json = await res.json();
                 !json.server && logger.error({ message: 'compute.hetzner.instances.create error', json });
                 return {
@@ -378,7 +379,7 @@ export const compute = {
                     Authorization: `Bearer ${config().HETZNER_API_KEY}`
                 };
                 const options = { method: 'GET', headers };
-                const res = await fetch(`${config().HETZNER_BASE_URL}/servers`, options);
+                const res = await fetch(`${config().HETZNER_BASE_URL}/servers`, core.useProxy(options));
                 const json = await res.json();
                 return json.servers;
             },
@@ -395,7 +396,7 @@ export const compute = {
                         method: 'DELETE',
                         headers,
                     };
-                    await fetch(`${config().HETZNER_BASE_URL}/servers/${id}`, options);
+                    await fetch(`${config().HETZNER_BASE_URL}/servers/${id}`, core.useProxy(options));
                     logger.info(`Deleted Hetzner instance: ${id}.`);
                     index = index + 1;
                 }
@@ -419,7 +420,7 @@ export const compute = {
                     headers,
                     body: JSON.stringify(body),
                 };
-                const res = await fetch(`${config().HETZNER_BASE_URL}/ssh_keys`, options);
+                const res = await fetch(`${config().HETZNER_BASE_URL}/ssh_keys`, core.useProxy(options));
                 const json = await res.json();
                 return json['ssh_key']['id'];
             },
@@ -432,7 +433,7 @@ export const compute = {
                     method: 'GET',
                     headers,
                 };
-                const res = await fetch(`${config().HETZNER_BASE_URL}/ssh_keys`, options);
+                const res = await fetch(`${config().HETZNER_BASE_URL}/ssh_keys`, core.useProxy(options));
                 const json = await res.json();
                 return json['ssh_keys'];
             },
@@ -449,7 +450,7 @@ export const compute = {
                         method: 'DELETE',
                         headers,
                     };
-                    await fetch(`${config().HETZNER_BASE_URL}/ssh_keys/${id}`, options);
+                    await fetch(`${config().HETZNER_BASE_URL}/ssh_keys/${id}`, core.useProxy(options));
                     logger.info(`Deleted Hetzner ssh_key: ${id}.`);
                     index = index + 1;
                 }
@@ -471,7 +472,7 @@ export const compute = {
                     Authorization: `Bearer ${config().VULTR_API_KEY}`
                 };
                 const options = { method: 'GET', headers };
-                const res = await fetch(`${config().VULTR_BASE_URL}/regions/${regionId}/availability`, options);
+                const res = await fetch(`${config().VULTR_BASE_URL}/regions/${regionId}/availability`, core.useProxy(options));
                 const json = await res.json();
                 const availablePlans = json.available_plans;
                 return availablePlans;
@@ -482,7 +483,7 @@ export const compute = {
                     Authorization: `Bearer ${config().VULTR_API_KEY}`
                 };
                 const options = { method: 'GET', headers };
-                const res = await fetch(`${config().VULTR_BASE_URL}/regions`, options);
+                const res = await fetch(`${config().VULTR_BASE_URL}/regions`, core.useProxy(options));
                 const json = await res.json();
                 return json.regions;
             },
@@ -523,7 +524,7 @@ export const compute = {
                         url = `${url}&cursor=${cursor}`;
                     }
 
-                    const res = await fetch(url, options);
+                    const res = await fetch(url, core.useProxy(options));
                     const json = await res.json();
 
                     results = results.concat(json.os);
@@ -549,7 +550,7 @@ export const compute = {
                     headers,
                     body: JSON.stringify(args),
                 };
-                const res = await fetch(`${config().VULTR_BASE_URL}/instances`, options);
+                const res = await fetch(`${config().VULTR_BASE_URL}/instances`, core.useProxy(options));
                 const json = await res.json();
                 !json.instance && logger.error({ message: 'compute.vultr.instances.create error', json });
                 const instanceIp = await compute.vultr.ip.get(json.instance.id);
@@ -564,7 +565,7 @@ export const compute = {
                     Authorization: `Bearer ${config().VULTR_API_KEY}`
                 };
                 const options = { method: 'GET', headers };
-                const res = await fetch(`${config().VULTR_BASE_URL}/instances/${instanceId}`, options);
+                const res = await fetch(`${config().VULTR_BASE_URL}/instances/${instanceId}`, core.useProxy(options));
                 const json = await res.json();
                 return json.instance;
             },
@@ -574,7 +575,7 @@ export const compute = {
                     Authorization: `Bearer ${config().VULTR_API_KEY}`
                 };
                 const options = { method: 'GET', headers };
-                const res = await fetch(`${config().VULTR_BASE_URL}/instances`, options);
+                const res = await fetch(`${config().VULTR_BASE_URL}/instances`, core.useProxy(options));
                 const json = await res.json();
                 return json.instances;
             },
@@ -591,7 +592,7 @@ export const compute = {
                         method: 'DELETE',
                         headers,
                     };
-                    await fetch(`${config().VULTR_BASE_URL}/instances/${id}`, options);
+                    await fetch(`${config().VULTR_BASE_URL}/instances/${id}`, core.useProxy(options));
                     logger.info(`Deleted Vultr instance: ${id}.`);
                     index = index + 1;
                 }
@@ -615,7 +616,7 @@ export const compute = {
                     headers,
                     body: JSON.stringify(body),
                 };
-                const res = await fetch(`${config().VULTR_BASE_URL}/ssh-keys`, options);
+                const res = await fetch(`${config().VULTR_BASE_URL}/ssh-keys`, core.useProxy(options));
                 const json = await res.json();
                 !json['ssh_key'] && logger.error({ message: 'vultr.keys.add error', json });
                 return json['ssh_key']['id'];
@@ -629,7 +630,7 @@ export const compute = {
                     method: 'GET',
                     headers,
                 };
-                const res = await fetch(`${config().VULTR_BASE_URL}/ssh-keys`, options);
+                const res = await fetch(`${config().VULTR_BASE_URL}/ssh-keys`, core.useProxy(options));
                 const json = await res.json();
                 return json['ssh_keys'];
             },
@@ -646,7 +647,7 @@ export const compute = {
                         method: 'DELETE',
                         headers,
                     };
-                    await fetch(`${config().VULTR_BASE_URL}/ssh-keys/${id}`, options);
+                    await fetch(`${config().VULTR_BASE_URL}/ssh-keys/${id}`, core.useProxy(options));
                     logger.info(`Deleted Vultr ssh_key: ${id}.`);
                     index = index + 1;
                 }

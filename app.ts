@@ -81,6 +81,7 @@ const connect = async (
 
             if (hasNetwork) {
                 logger.info(`Connected SSH tunnel to ${proxy.instanceIp}:${proxy.sshPort}.`);
+                proxy.connectedTime = new Date().toISOString();
                 models.updateProxy(proxy);
                 models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTED});
                 io.emit('/config', config());
@@ -165,7 +166,7 @@ const rotate = async () => {
         const jwtSecret = crypto.randomBytes(64).toString('hex');
         const sshPortRange: number[] = config().SSH_PORT_RANGE.split(':').map((item: string) => Number(item));
         const sshPort = lib.randomNumberFromRange(sshPortRange);
-        const enabledPluginKey = core.getEnabledPluginKey();
+        const enabledPluginKey = config().PLUGINS_ENABLED[0];
         !enabledPluginKey && logger.info(`No enabled plugins found.`);
         let proxy: Proxy = {
             proxyUuid,
@@ -193,6 +194,7 @@ const rotate = async () => {
             sshLogPath: core.getSshLogPath(proxyUuid),
             connectionString: '',
             isDeleted: false,
+            connectedTime: null,
             createdTime: new Date().toISOString(),
             modifiedTime: null,
             deletedTime: null,
