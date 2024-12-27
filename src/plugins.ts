@@ -11,7 +11,57 @@ import * as models from './models.ts';
 
 const { config } = models;
 
-const ENABLE_LINUX_KILLSWITCH = `#!/bin/bash
+const ENABLE_LINUX_MAIN = (proxy: Proxy) => `
+echo 'PasswordAuthentication no' >> /etc/ssh/sshd_config
+echo 'Port ${proxy.sshPort}' >> /etc/ssh/sshd_config
+sudo systemctl restart ssh
+
+HOST_KEY=$(cat /etc/ssh/ssh_host_ed25519_key.pub | cut -d ' ' -f 2)
+ENCODED_HOST_KEY=$(python3 -c 'import sys;import jwt;payload={};payload[\"sshHostKey\"]=sys.argv[1];print(jwt.encode(payload, sys.argv[2], algorithm=\"HS256\"))' $HOST_KEY ${proxy.jwtSecret})
+curl --request PUT -H 'Content-Type=*\/*' --data $ENCODED_HOST_KEY --url ${config().CLOUDFLARE_BASE_URL}/accounts/${config().CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${config().CLOUDFLARE_KV_NAMESPACE}/values/${proxy.proxyUuid} --oauth2-bearer ${config().CLOUDFLARE_API_KEY}
+
+iptables -A INPUT -p tcp --dport ${proxy.sshPort} -j ACCEPT
+`;
+
+const ENABLE_SSHUTTLE = () => `
+ssh_host=$1
+ssh_user=$2
+ssh_port=$3
+key_path=$4
+output_path=$5
+pid_file_path=$6
+proxy_local_port=$7
+proxy_remote_port=$8
+
+ssh -v $ssh_user@$ssh_host -f -N -L $proxy_local_port:0.0.0.0:$proxy_remote_port -p $ssh_port -i $key_path -o StrictHostKeyChecking=yes -E $output_path
+`;
+
+const ENABLE_SSH = () => `
+ssh_host=$1
+ssh_user=$2
+ssh_port=$3
+key_path=$4
+output_path=$5
+pid_file_path=$6
+proxy_local_port=$7
+proxy_remote_port=$8
+
+ssh -v $ssh_user@$ssh_host -f -N -L $proxy_local_port:0.0.0.0:$proxy_remote_port -p $ssh_port -i $key_path -o StrictHostKeyChecking=yes -E $output_path
+`;
+
+const ENABLE_TINYPROXY = (proxy: Proxy) =>
+`
+sudo apt update
+sudo apt dist-upgrade -y
+sudo apt install tinyproxy -y
+echo 'Port ${proxy.proxyRemotePort}' >> tinyproxy.conf
+echo 'Listen 0.0.0.0' >> tinyproxy.conf
+echo 'Timeout 600' >> tinyproxy.conf
+echo 'Allow 0.0.0.0' >> tinyproxy.conf
+tinyproxy -d -c tinyproxy.conf
+`;
+
+const ENABLE_LINUX_KILLSWITCH = () => `
 
 raw_hosts=$1
 IFS=',' read -r -a hosts <<< $raw_hosts
@@ -38,7 +88,7 @@ done
 sudo ufw reload
 `;
 
-const DISABLE_LINUX_KILLSWITCH = `#!/bin/bash
+const DISABLE_LINUX_KILLSWITCH = () => `
 
 sudo sysctl -w net.ipv6.conf.all.disable_ipv6=0 || true
 sudo sysctl -w net.ipv6.conf.default.disable_ipv6=0 || true
@@ -51,40 +101,18 @@ export const plugins: Plugins = {
 		[Side.CLIENT]: {
 			[Platform.LINUX]: {
 				[Action.MAIN]: {
-					[Function.ENABLE]: () =>
-						`#!/bin/bash
-
-						ssh_host=$1
-						ssh_user=$2
-						ssh_port=$3
-						key_path=$4
-						output_path=$5
-						sshuttle_pid_file_path=$6
-
-						sshuttle --daemon --dns --disable-ipv6 -r $ssh_user@$ssh_host:$ssh_port 0.0.0.0/0 -x $ssh_host:$ssh_port --pidfile=$sshuttle_pid_file_path -e "ssh -v -i $key_path -o StrictHostKeyChecking=yes -E $output_path"
-						`
+					[Function.ENABLE]: () => ENABLE_SSHUTTLE()
 				},
 				[Action.KILLSWITCH]: {
-					[Function.ENABLE]: () => ENABLE_LINUX_KILLSWITCH,
-					[Function.DISABLE]: () => DISABLE_LINUX_KILLSWITCH,
+					[Function.ENABLE]: () => ENABLE_LINUX_KILLSWITCH(),
+					[Function.DISABLE]: () => DISABLE_LINUX_KILLSWITCH(),
 				}
 			}
 		},
 		[Side.SERVER]: {
 			[Platform.LINUX]: {
 				[Action.MAIN]: {
-					[Function.ENABLE]: (proxy?: Proxy) =>
-						`
-							echo 'PasswordAuthentication no' >> /etc/ssh/sshd_config
-							echo 'Port ${proxy!.sshPort}' >> /etc/ssh/sshd_config
-							sudo systemctl restart ssh
-
-							HOST_KEY=$(cat /etc/ssh/ssh_host_ed25519_key.pub | cut -d ' ' -f 2)
-							ENCODED_HOST_KEY=$(python3 -c 'import sys;import jwt;payload={};payload[\"sshHostKey\"]=sys.argv[1];print(jwt.encode(payload, sys.argv[2], algorithm=\"HS256\"))' $HOST_KEY ${proxy!.jwtSecret})
-							curl --request PUT -H 'Content-Type=*\/*' --data $ENCODED_HOST_KEY --url ${config().CLOUDFLARE_BASE_URL}/accounts/${config().CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${config().CLOUDFLARE_KV_NAMESPACE}/values/${proxy!.proxyUuid} --oauth2-bearer ${config().CLOUDFLARE_API_KEY}
-
-							iptables -A INPUT -p tcp --dport ${proxy!.sshPort} -j ACCEPT
-						`
+					[Function.ENABLE]: (proxy?: Proxy) => ENABLE_LINUX_MAIN(proxy!)
 				}
 			}
 		},
@@ -93,20 +121,7 @@ export const plugins: Plugins = {
 		[Side.CLIENT]: {
 			[Platform.LINUX]: {
 				[Action.MAIN]: {
-					[Function.ENABLE]: () =>
-						`#!/bin/bash
-
-						ssh_host=$1
-						ssh_user=$2
-						ssh_port=$3
-						key_path=$4
-						output_path=$5
-						pid_file_path=$6
-						proxy_local_port=$7
-						proxy_remote_port=$8
-
-						ssh -v $ssh_user@$ssh_host -f -N -L $proxy_local_port:0.0.0.0:$proxy_remote_port -p $ssh_port -i $key_path -o StrictHostKeyChecking=yes -E $output_path
-					`
+					[Function.ENABLE]: () => ENABLE_SSH()
 				}
 			}
 		},
@@ -115,30 +130,14 @@ export const plugins: Plugins = {
 				[Action.MAIN]: {
 					[Function.ENABLE]: (proxy?: Proxy) =>
 						`
-							echo 'PasswordAuthentication no' >> /etc/ssh/sshd_config
-							echo 'Port ${proxy!.sshPort}' >> /etc/ssh/sshd_config
-							sudo systemctl restart ssh
-
-							sudo apt update
-							sudo apt dist-upgrade -y
-							sudo apt install tinyproxy -y
-							echo 'Port ${proxy!.proxyRemotePort}' >> tinyproxy.conf
-							echo 'Listen 0.0.0.0' >> tinyproxy.conf
-							echo 'Timeout 600' >> tinyproxy.conf
-							echo 'Allow 0.0.0.0' >> tinyproxy.conf
-							tinyproxy -d -c tinyproxy.conf
-
-							HOST_KEY=$(cat /etc/ssh/ssh_host_ed25519_key.pub | cut -d ' ' -f 2)
-							ENCODED_HOST_KEY=$(python3 -c 'import sys;import jwt;payload={};payload[\"sshHostKey\"]=sys.argv[1];print(jwt.encode(payload, sys.argv[2], algorithm=\"HS256\"))' $HOST_KEY ${proxy!.jwtSecret})
-							curl --request PUT -H 'Content-Type=*\/*' --data $ENCODED_HOST_KEY --url ${config().CLOUDFLARE_BASE_URL}/accounts/${config().CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${config().CLOUDFLARE_KV_NAMESPACE}/values/${proxy!.proxyUuid} --oauth2-bearer ${config().CLOUDFLARE_API_KEY}
-
-							iptables -A INPUT -p tcp --dport ${proxy!.sshPort} -j ACCEPT
+							${ENABLE_TINYPROXY(proxy!)}
+							${ENABLE_LINUX_MAIN(proxy!)}
 						`
 					,
 				},
 				[Action.KILLSWITCH]: {
-					[Function.ENABLE]: () => ENABLE_LINUX_KILLSWITCH,
-					[Function.DISABLE]: () => DISABLE_LINUX_KILLSWITCH,
+					[Function.ENABLE]: () => ENABLE_LINUX_KILLSWITCH(),
+					[Function.DISABLE]: () => DISABLE_LINUX_KILLSWITCH(),
 				}
 			}
 		},

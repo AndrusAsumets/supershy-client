@@ -35,7 +35,6 @@ export const start = (io: Server) => {
 
             (isInstanceProvidersDiff || isInstanceProvidersDisabledDiff) && models.updateConfig(await core.setInstanceCountries(config()));
             isPluginsEnabledDiff && core.disableConnectionKillSwitch();
-            isPluginsEnabledDiff && core.exit('/proxy/disable');
             (isConnectionKillswitchDiff && config().CONNECTION_KILLSWITCH == true && models.getInitialProxy()) && core.enableConnectionKillSwitch();
             (isConnectionKillswitchDiff && config().CONNECTION_KILLSWITCH == false) && core.disableConnectionKillSwitch();
 

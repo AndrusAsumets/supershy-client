@@ -253,10 +253,10 @@ const updateStatus = () => {
     ]];
 
     if (isProxyEnabled && proxy && Object.keys(proxy).length && config.CONNECTION_STATUS == 'connected') {
+        status.push(['IPv4', proxy.instanceIp]);
+        status.push(['Country', COUNTRY_CODES[proxy.instanceCountry]]);
         status.push(['VPS', proxy.instanceProvider.toUpperCase()]);
         status.push(['Plugin', proxy.pluginsEnabled[0].toUpperCase()]);
-        status.push(['Country', COUNTRY_CODES[proxy.instanceCountry]]);
-        status.push(['IPv4', proxy.instanceIp]);
         status.push(['Proxies in reserve', `${config.PROXY_CURRENT_RESERVE_COUNT} / ${config.PROXY_RESERVE_COUNT}`]);
     }
 
