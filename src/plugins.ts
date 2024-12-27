@@ -128,6 +128,10 @@ export const plugins: Plugins = {
 			[Platform.LINUX]: {
 				[Action.MAIN]: {
 					[Function.ENABLE]: () => ENABLE_SSH()
+				},
+				[Action.KILLSWITCH]: {
+					[Function.ENABLE]: () => ENABLE_LINUX_KILLSWITCH(),
+					[Function.DISABLE]: () => DISABLE_LINUX_KILLSWITCH(),
 				}
 			}
 		},
@@ -140,10 +144,6 @@ export const plugins: Plugins = {
 							${ENABLE_LINUX_MAIN(proxy!)}
 						`
 					,
-				},
-				[Action.KILLSWITCH]: {
-					[Function.ENABLE]: () => ENABLE_LINUX_KILLSWITCH(),
-					[Function.DISABLE]: () => DISABLE_LINUX_KILLSWITCH(),
 				}
 			}
 		},
@@ -153,6 +153,10 @@ export const plugins: Plugins = {
 			[Platform.LINUX]: {
 				[Action.MAIN]: {
 					[Function.ENABLE]: () => ENABLE_SSH()
+				},
+				[Action.KILLSWITCH]: {
+					[Function.ENABLE]: () => ENABLE_LINUX_KILLSWITCH(),
+					[Function.DISABLE]: () => DISABLE_LINUX_KILLSWITCH(),
 				}
 			}
 		},
@@ -165,10 +169,6 @@ export const plugins: Plugins = {
 							${ENABLE_LINUX_MAIN(proxy!)}
 						`
 					,
-				},
-				[Action.KILLSWITCH]: {
-					[Function.ENABLE]: () => ENABLE_LINUX_KILLSWITCH(),
-					[Function.DISABLE]: () => DISABLE_LINUX_KILLSWITCH(),
 				}
 			}
 		},
