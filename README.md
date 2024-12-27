@@ -157,6 +157,24 @@ to have both Nodes prepared, so please be patient.
 ```
 
 ```
+# Optional if you had selected SSHUTTLE_VPN plugin. However, if you had selected either HTTP_PROXY or 
+SOCKS5_PROXY from the plugins, then also update your browser's proxy url:
+Firefox with HTTP_PROXY:
+ -> Open https://support.mozilla.org/en-US/kb/connection-settings-firefox
+ -> Check Manual proxy configuration. 
+ -> Enter "localhost" for the HTTP field and "8888" for the Port field.
+ -> Check "Also use this proxy for HTTPS".
+ -> Ok.
+
+ Firefox with SOCKS5_PROXY:
+ -> Open https://support.mozilla.org/en-US/kb/connection-settings-firefox
+ -> Check Manual proxy configuration. 
+ -> Enter "localhost" for the SOCKS Host field and "8888" for the Port field.
+ -> Check "SOCKS v5".
+ -> Ok.
+```
+
+```
 # Test that it's all working
  -> Open https://ipleak.net
  -> Make sure its IP matches with the IP found inside Status tab on supershy's UI.

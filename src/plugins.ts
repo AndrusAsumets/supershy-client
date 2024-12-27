@@ -49,7 +49,7 @@ proxy_remote_port=$8
 ssh -v $ssh_user@$ssh_host -f -N -L $proxy_local_port:0.0.0.0:$proxy_remote_port -p $ssh_port -i $key_path -o StrictHostKeyChecking=yes -E $output_path
 `;
 
-const ENABLE_TINYPROXY = (proxy: Proxy) =>
+const ENABLE_HTTP_PROXY = (proxy: Proxy) =>
 `
 sudo apt update
 sudo apt dist-upgrade -y
@@ -59,6 +59,12 @@ echo 'Listen 0.0.0.0' >> tinyproxy.conf
 echo 'Timeout 600' >> tinyproxy.conf
 echo 'Allow 0.0.0.0' >> tinyproxy.conf
 tinyproxy -d -c tinyproxy.conf
+`;
+
+const ENABLE_SOCKS5_PROXY = (proxy: Proxy) =>
+`
+sudo apt install microsocks screen -y
+screen -dm microsocks -p ${proxy.proxyRemotePort}
 `;
 
 const ENABLE_LINUX_KILLSWITCH = () => `
@@ -130,7 +136,32 @@ export const plugins: Plugins = {
 				[Action.MAIN]: {
 					[Function.ENABLE]: (proxy?: Proxy) =>
 						`
-							${ENABLE_TINYPROXY(proxy!)}
+							${ENABLE_HTTP_PROXY(proxy!)}
+							${ENABLE_LINUX_MAIN(proxy!)}
+						`
+					,
+				},
+				[Action.KILLSWITCH]: {
+					[Function.ENABLE]: () => ENABLE_LINUX_KILLSWITCH(),
+					[Function.DISABLE]: () => DISABLE_LINUX_KILLSWITCH(),
+				}
+			}
+		},
+	},
+	[Plugin.SOCKS5_PROXY]: {
+		[Side.CLIENT]: {
+			[Platform.LINUX]: {
+				[Action.MAIN]: {
+					[Function.ENABLE]: () => ENABLE_SSH()
+				}
+			}
+		},
+		[Side.SERVER]: {
+			[Platform.LINUX]: {
+				[Action.MAIN]: {
+					[Function.ENABLE]: (proxy?: Proxy) =>
+						`
+							${ENABLE_SOCKS5_PROXY(proxy!)}
 							${ENABLE_LINUX_MAIN(proxy!)}
 						`
 					,
