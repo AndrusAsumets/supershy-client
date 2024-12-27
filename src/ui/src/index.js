@@ -12,23 +12,23 @@ const $countriesSection = document.getElementsByClassName('section-content count
 const $configSection = document.getElementsByClassName('section-content config')[0];
 const $logSection = document.getElementsByClassName('section-content log')[0];
 const visibleActionKeys = {
-    'CONNECTION_KILLSWITCH': { editable: 'boolean' },
+    CONNECTION_KILLSWITCH: { editable: 'boolean' },
 };
 const visibleConfigKeys = {
-    'PROXY_RECYCLE_INTERVAL_SEC': { editable: 'number' },
-    'PROXY_RESERVE_COUNT': { editable: 'number' },
-    'SSH_PORT_RANGE': { editable: 'string' },
-    'SSH_KEY_ALGORITHM': { editable: 'string' },
-    'SSH_KEY_LENGTH': { editable: 'number' },
-    'DIGITAL_OCEAN_API_KEY': { editable: 'password' },
-    'HETZNER_API_KEY': { editable: 'password' },
-    'VULTR_API_KEY': { editable: 'password' },
-    'CLOUDFLARE_ACCOUNT_ID': { editable: 'password' },
-    'CLOUDFLARE_API_KEY': { editable: 'password' },
-    'CLOUDFLARE_KV_NAMESPACE': { editable: 'password' },
-    'WEB_SERVER_PORT': { editable: 'number' },
-    'LOG_PATH': { editable: false },
-    'DB_FILE_PATH': { editable: false },
+    PROXY_RECYCLE_INTERVAL_SEC: { editable: 'number' },
+    PROXY_RESERVE_COUNT: { editable: 'number' },
+    SSH_PORT_RANGE: { editable: 'string' },
+    SSH_KEY_ALGORITHM: { editable: 'string' },
+    SSH_KEY_LENGTH: { editable: 'number' },
+    DIGITAL_OCEAN_API_KEY: { editable: 'password' },
+    HETZNER_API_KEY: { editable: 'password' },
+    VULTR_API_KEY: { editable: 'password' },
+    CLOUDFLARE_ACCOUNT_ID: { editable: 'password' },
+    CLOUDFLARE_API_KEY: { editable: 'password' },
+    CLOUDFLARE_KV_NAMESPACE: { editable: 'password' },
+    WEB_SERVER_PORT: { editable: 'number' },
+    LOG_PATH: { editable: false },
+    DB_FILE_PATH: { editable: false },
 };
 const apiKeys = ['DIGITAL_OCEAN_API_KEY', 'HETZNER_API_KEY', 'VULTR_API_KEY'];
 const faviconStatus = {
@@ -48,7 +48,7 @@ const convertSnakeCaseToPascalCase = (str) =>
     str
         .split('_')
         .map((element) => element.slice(0, 1).toUpperCase() + element.slice(1))
-        .join(' ');
+        .join('');
 
 const setChangeListener = (div, listener) => {
     div.addEventListener('focusout', listener);
@@ -145,7 +145,7 @@ const constructGenericLine = (
 ) => {
     const $key = document.createElement('div');
     $key.className = 'line-key';
-    $key.innerText = convertSnakeCaseToPascalCase(key);
+    $key.innerText = key.toUpperCase();
 
     if (COUNTRY_CODES[$key.innerText]) {
         $key.innerText = COUNTRY_CODES[$key.innerText];
@@ -253,7 +253,8 @@ const updateStatus = () => {
     ]];
 
     if (isProxyEnabled && proxy && Object.keys(proxy).length && config.CONNECTION_STATUS == 'connected') {
-        status.push(['VPS', convertSnakeCaseToPascalCase(proxy.instanceProvider)]);
+        status.push(['VPS', proxy.instanceProvider.toUpperCase()]);
+        status.push(['Plugin', proxy.pluginsEnabled[0].toUpperCase()]);
         status.push(['Country', COUNTRY_CODES[proxy.instanceCountry]]);
         status.push(['IPv4', proxy.instanceIp]);
         status.push(['Proxies in reserve', `${config.PROXY_CURRENT_RESERVE_COUNT} / ${config.PROXY_RESERVE_COUNT}`]);
@@ -275,7 +276,6 @@ const updatePlugins = () => {
     $pluginsSection.innerText = '';
 
     config.PLUGINS
-        .sort((a, b) => a.localeCompare(b))
         .forEach((key) => {
             $pluginsSection.append(
                 constructGenericLine(
@@ -295,6 +295,7 @@ const updateActions = () => {
     $actionsSection.innerText = '';
 
     Object.keys(config)
+        .sort((a, b) => a.localeCompare(b))
         .forEach((key) => {
             visibleActionKeys[key] && $actionsSection.append(
                 constructConfigLine(
@@ -397,15 +398,14 @@ socket
     .on('disconnect', () => {
         appendLogMessage(createLogMessage('Disconnected from WebSocket.'), 'Info');
         changeFavicon(faviconStatus.disconnected);
-        isProxyEnabled = false;
-        $enablementToggle.innerText = '';
-        $restartToggle.innerText = '';
         $statusSection.innerText = '';
-        $pluginsSection.innerText = '';
-        $actionsSection.innerText = '';
-        $providersSection.innerText = '';
-        $countriesSection.innerText = '';
-        $configSection.innerText = '';
+
+        $statusSection.append(
+            constructGenericLine(
+                'Proxy',
+                'Reconnecting',
+            )
+        );
     });
 
 $enablementToggle

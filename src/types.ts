@@ -93,9 +93,9 @@ export interface CreateVultrInstance {
 export type InstancePayload = CreateDigitalOceanInstance & CreateHetznerInstance & CreateVultrInstance
 
 export enum Plugin {
+	SSHUTTLE_VPN = 'sshuttle_vpn',
 	HTTP_PROXY = 'http_proxy',
 	SOCKS5_PROXY = 'socks5_proxy',
-	SSHUTTLE_VPN = 'sshuttle_vpn',
 }
 
 export enum Side {
