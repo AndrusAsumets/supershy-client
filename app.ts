@@ -63,7 +63,7 @@ const connect = async (
     existsSync(node.sshLogPath) && Deno.removeSync(node.sshLogPath);
     (config().CONNECTION_KILLSWITCH && initialNode) && core.enableConnectionKillSwitch();
 
-    logger.info(`Connecting SSH tunnel node to ${node.instanceIp}:${node.sshPort}.`);
+    logger.info(`Connecting SSH to ${node.instanceIp}:${node.sshPort}.`);
     models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTING});
     io.emit('/config', config());
 
@@ -79,7 +79,7 @@ const connect = async (
             const hasNetwork = output.includes('pledge: network');
 
             if (hasNetwork) {
-                logger.info(`Connected SSH tunnel to ${node.instanceIp}:${node.sshPort}.`);
+                logger.info(`Connected SSH to ${node.instanceIp}:${node.sshPort}.`);
                 node.connectedTime = new Date().toISOString();
                 models.updateNode(node);
                 models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTED});
@@ -87,7 +87,7 @@ const connect = async (
             }
         }
         catch(err) {
-            logger.warn({ message: `Restarting connecting of SSH tunnel to ${node.instanceIp}:${node.sshPort}.`, err });
+            logger.warn({ message: `Restarting SSH connect to ${node.instanceIp}:${node.sshPort}.`, err });
         }
     }
 
