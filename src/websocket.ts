@@ -4,13 +4,13 @@ import { Config, ConnectionStatus } from './types.ts';
 import * as core from './core.ts';
 import * as models from './models.ts';
 
-const { config, proxies } = models;
+const { config } = models;
 
 export const start = (io: Server) => {
     io.on('connection', (socket) => {
         io.emit('/started', config().PROXY_ENABLED);
         io.emit('/config', config());
-        io.emit('/proxy', proxies()[Object.keys(proxies())[0]]);
+        io.emit('/proxy', models.getLastConnectedProxy());
 
         socket.on('/proxy/enable', () => {
             models.updateConfig({...config(), 'PROXY_ENABLED': true, CONNECTION_STATUS: ConnectionStatus.DISCONNECTED});

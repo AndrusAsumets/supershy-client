@@ -15,7 +15,6 @@ import {
     InstancePayload,
     Action,
     Side,
-    Platform,
     Function,
 } from './src/types.ts';
 import * as core from './src/core.ts';

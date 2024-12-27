@@ -29,11 +29,9 @@ ssh_user=$2
 ssh_port=$3
 key_path=$4
 output_path=$5
-pid_file_path=$6
-proxy_local_port=$7
-proxy_remote_port=$8
+sshuttle_pid_file_path=$6
 
-ssh -v $ssh_user@$ssh_host -f -N -L $proxy_local_port:0.0.0.0:$proxy_remote_port -p $ssh_port -i $key_path -o StrictHostKeyChecking=yes -E $output_path
+sshuttle --daemon --dns --disable-ipv6 -r $ssh_user@$ssh_host:$ssh_port 0.0.0.0/0 -x $ssh_host:$ssh_port --pidfile=$sshuttle_pid_file_path -e "ssh -v -i $key_path -o StrictHostKeyChecking=yes -E $output_path"
 `;
 
 const ENABLE_SSH = () => `
