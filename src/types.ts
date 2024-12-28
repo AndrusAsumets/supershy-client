@@ -41,7 +41,7 @@ export interface Node {
 	instanceCountry: string
 	instanceSize: string
 	instanceImage: string
-	instancePublicKeyId: number
+	instancePublicKeyId: string
 	sshUser: string
 	sshKeyAlgorithm: string
 	sshKeyLength: number;
@@ -115,6 +115,7 @@ export enum Action {
 }
 
 export enum Script {
+	PREPARE = 'prepare',
 	ENABLE = 'enable',
 	DISABLE = 'disable',
 }
@@ -156,7 +157,6 @@ export interface Config {
 	CLOUDFLARE_BASE_URL: string
 	HOME_PATH: string
 	DATA_PATH: string
-	BACKUP_PATH: string
 	SCRIPT_PATH: string
 	SSH_KEY_PATH: string
 	UI_PATH: string
@@ -192,7 +192,3 @@ export interface Config {
 export type Nodes = Record<string, Node>
 
 export type DatabaseData = Record<DatabaseKey, Nodes | Config>
-
-export enum ClientScriptFileName {
-	GENERATE_SSH_KEY_FILE_NAME = 'generate-ssh-key.sh',
-}

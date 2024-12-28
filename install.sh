@@ -1,7 +1,7 @@
-# Set current user
+# Set current user.
 user=$1
 
-# install dependencies
+# install dependencies.
 if [[ ! -z $(type -p yum) ]]; then
     sudo yum install unzip ufw sshuttle -y
 elif [[ ! -z $(type -p dnf) ]]; then
@@ -15,7 +15,7 @@ else
     echo "Warning: Can't install packages as no package manager was found."
 fi
 
-# Set platform target
+# Set platform target.
 case $(uname -sm) in
 	"Darwin x86_64")
         supershy_target="macos-x86_64"
@@ -46,35 +46,43 @@ if [[ $supershy_target == *"macos"* ]]; then
     daemon="${launch_agents_dir}/${app_id}.plist"
     data_dir="/Users/${user}/.supershy-data"
 fi
+script_dir="${data_dir}/scripts"
 sudo mkdir -p $data_dir
 tmp_dir="/tmp"
 
-# File paths
+# File paths.
 supershy_zip="$tmp_dir/supershy.zip"
 supershy_tmp_exe="$tmp_dir/supershyd"
 supershy_exe="$data_dir/supershyd"
 
-# Download
+# Download.
 curl --fail --location --progress-bar --output $supershy_zip $supershy_uri
 
-# Unzip
+# Unzip.
 unzip -d $tmp_dir -o $supershy_zip
 
-# Move to binaries
+# Move to binaries.
 sudo mv $supershy_tmp_exe $supershy_exe
 
-# Make user the owner of the binaries
+# Make user the owner of the binaries.
 sudo chown -R $user $supershy_exe
 
-# Link to system binaries
+# Link to system binaries.
 supershy_link=$usr_bin/supershyd
 sudo rm -f supershy_link
 sudo ln -sf $supershy_exe $supershy_link
 
-# Remove old daemon service
+# Remove old daemon service.
 rm -f $daemon
 
-# Create daemon servicea
+# Since deno can not run sudo, yet connection killswitch needs it, hence work around.
+sudoer_dir=/etc/sudoers
+permission="${user} ALL=(ALL:ALL) NOPASSWD: ${script_dir}"
+if ! sudo grep -q "$permission" $sudoer_dir; then
+    echo -e $permission | sudo tee -a $sudoer_dir
+fi
+
+# Create daemon service.
 case $supershy_target in
     *"linux"*)
         sudo echo '[Unit]' >> $daemon
@@ -87,7 +95,7 @@ case $supershy_target in
         sudo echo '[Install]' >> $daemon
         sudo echo 'WantedBy=default.target' >> $daemon
 
-        # Run supershy daemon in background
+        # Run supershy daemon in background.
         sudo -u $user XDG_RUNTIME_DIR="/run/user/$(id -u $user)" systemctl --user daemon-reload || true
         sudo -u $user XDG_RUNTIME_DIR="/run/user/$(id -u $user)" systemctl --user enable supershy-daemon.service || true
         sudo -u $user XDG_RUNTIME_DIR="/run/user/$(id -u $user)" systemctl --user restart supershy-daemon.service || true
@@ -110,7 +118,7 @@ case $supershy_target in
         sudo echo '</dict>' >> $daemon
         sudo echo '</plist>' >> $daemon
 
-        # Run supershy daemon in background
+        # Run supershy daemon in background.
         sudo -u $user launchctl unload $daemon &>/dev/null || true
         sudo -u $user launchctl load $daemon || true
     ;;

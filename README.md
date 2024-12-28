@@ -208,6 +208,13 @@ curl -fsSL https://deno.land/install.sh | sh
 ```
 
 ```
+# Sudo workaround for toggling connection killswitch as Deno can not run sudo directly.
+Not the prettiest solution, open to suggestions.
+permission="$(whoami) ALL=(ALL:ALL) NOPASSWD: $(getent passwd $(whoami) | cut -d: -f6)/.supershy-data/scripts"
+echo -e $permission | sudo tee -a /etc/sudoers
+```
+
+```
 deno task start
 ```
 

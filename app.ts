@@ -32,7 +32,6 @@ const logger = _logger.get(io);
 
 const init = () => {
     integrations.fs.ensureFolder(config().DATA_PATH);
-    integrations.fs.ensureFolder(config().BACKUP_PATH);
     integrations.fs.ensureFolder(config().SCRIPT_PATH);
     integrations.fs.ensureFolder(config().SSH_PATH);
     integrations.fs.ensureFolder(config().SSH_KEY_PATH);
@@ -152,6 +151,8 @@ const rotate = async () => {
             .filter((instanceProvider: InstanceProvider) => !config().INSTANCE_PROVIDERS_DISABLED.includes(instanceProvider));
         !instanceProviders.length && logger.warn('None of the VPS providers are enabled.');
         const instanceProvider: InstanceProvider = lib.shuffle(instanceProviders)[0];
+        const enabledPluginKey = config().PLUGINS_ENABLED[0];
+        !enabledPluginKey && logger.info(`No enabled plugins found.`);
         const nodeUuid = uuidv7();
         const nodeType = nodeTypes[nodeIndex];
         const instanceLocationsList = await integrations.compute[instanceProvider].regions.parse();
@@ -160,13 +161,9 @@ const rotate = async () => {
         const instanceName = `${config().APP_ID}-${config().ENV}-${nodeType}-${nodeUuid}`;
         const { instanceSize, instanceImage } = integrations.compute[instanceProvider];
         const sshKeyPath = `${config().SSH_KEY_PATH}/${instanceName}`;
-        const publicKey = await integrations.shell.privateKey.create(sshKeyPath);
-        const instancePublicKeyId = await integrations.compute[instanceProvider].keys.add(publicKey, instanceName);
-        const jwtSecret = crypto.randomBytes(64).toString('hex');
         const sshPortRange: number[] = config().SSH_PORT_RANGE.split(':').map((item: string) => Number(item));
         const sshPort = lib.randomNumberFromRange(sshPortRange);
-        const enabledPluginKey = config().PLUGINS_ENABLED[0];
-        !enabledPluginKey && logger.info(`No enabled plugins found.`);
+        const jwtSecret = crypto.randomBytes(64).toString('hex');
         let node: Node = {
             nodeUuid,
             proxyLocalPort: config().PROXY_LOCAL_PORT,
@@ -181,7 +178,7 @@ const rotate = async () => {
             instanceCountry,
             instanceSize,
             instanceImage,
-            instancePublicKeyId,
+            instancePublicKeyId: '',
             nodeType,
             sshUser: config().SSH_USER,
             sshHostKey: '',
@@ -198,6 +195,8 @@ const rotate = async () => {
             modifiedTime: null,
             deletedTime: null,
         };
+        const publicKey = await integrations.shell.privateKey.create(node);
+        node.instancePublicKeyId = await integrations.compute[instanceProvider].keys.add(publicKey, instanceName);
         const script = plugins[enabledPluginKey][Side.SERVER][getPlatform()][Action.MAIN][Script.ENABLE](node);
         const userData = core.prepareCloudConfig(script);
         const formattedUserData = integrations.compute[instanceProvider].userData.format(userData);
@@ -211,8 +210,8 @@ const rotate = async () => {
             size: instanceSize,
             plan: instanceSize,
             server_type: instanceSize,
-            ssh_keys: [instancePublicKeyId],
-            sshkey_id: [instancePublicKeyId],
+            ssh_keys: [node.instancePublicKeyId],
+            sshkey_id: [node.instancePublicKeyId],
             user_data: formattedUserData,
             backups: 'disabled',
         };

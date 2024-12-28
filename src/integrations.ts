@@ -17,17 +17,20 @@ import {
     CreateDigitalOceanInstance,
     CreateHetznerInstance,
     CreateVultrInstance,
-    ClientScriptFileName
+    Action,
+    Side,
+    Script,
 } from './types.ts';
 
 export const shell = {
 	privateKey: {
 		create: async (
-            keyPath: string,
+            node: Node,
         ) => {
-            const cmd = `${config().SCRIPT_PATH}/${ClientScriptFileName.GENERATE_SSH_KEY_FILE_NAME} ${keyPath} ${config().SSH_KEY_ALGORITHM} ${config().SSH_KEY_LENGTH}`;
+            const mainPrepareFileName = core.getScriptFileName(node.pluginsEnabled[0], Side.CLIENT, Action.MAIN, Script.PREPARE);
+            const cmd = `${config().SCRIPT_PATH}/${mainPrepareFileName} ${node.sshKeyPath} ${config().SSH_KEY_ALGORITHM} ${config().SSH_KEY_LENGTH}`;
             integrations.shell.command(cmd);
-            const publicKeyPath = `${keyPath}.pub`;
+            const publicKeyPath = `${node.sshKeyPath}.pub`;
 
             while (true) {
                 try {

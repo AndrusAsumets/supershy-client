@@ -11,6 +11,14 @@ import * as models from './models.ts';
 
 const { config } = models;
 
+const PREPARE_SSH = () => `
+key_path=$1
+key_algorithm=$2
+key_length=$3
+
+ssh-keygen -t $key_algorithm -b $key_length -f $key_path -q -N ""
+`;
+
 const ENABLE_LINUX_MAIN = (node: Node) => `
 echo 'PasswordAuthentication no' >> /etc/ssh/sshd_config
 echo 'Port ${node.sshPort}' >> /etc/ssh/sshd_config
@@ -177,6 +185,7 @@ export const plugins: Plugins = {
 		[Side.CLIENT]: {
 			[Platform.LINUX]: {
 				[Action.MAIN]: {
+					[Script.PREPARE]: () => PREPARE_SSH(),
 					[Script.ENABLE]: () => ENABLE_SSHUTTLE()
 				},
 				[Action.KILLSWITCH]: {
@@ -186,6 +195,7 @@ export const plugins: Plugins = {
 			},
 			[Platform.DARWIN]: {
 				[Action.MAIN]: {
+					[Script.PREPARE]: () => PREPARE_SSH(),
 					[Script.ENABLE]: () => ENABLE_SSHUTTLE()
 				},
 				[Action.KILLSWITCH]: {
@@ -206,6 +216,7 @@ export const plugins: Plugins = {
 		[Side.CLIENT]: {
 			[Platform.LINUX]: {
 				[Action.MAIN]: {
+					[Script.PREPARE]: () => PREPARE_SSH(),
 					[Script.ENABLE]: () => ENABLE_SSH()
 				},
 				[Action.KILLSWITCH]: {
@@ -215,6 +226,7 @@ export const plugins: Plugins = {
 			},
 			[Platform.DARWIN]: {
 				[Action.MAIN]: {
+					[Script.PREPARE]: () => PREPARE_SSH(),
 					[Script.ENABLE]: () => ENABLE_SSH()
 				},
 				[Action.KILLSWITCH]: {
@@ -240,6 +252,7 @@ export const plugins: Plugins = {
 		[Side.CLIENT]: {
 			[Platform.LINUX]: {
 				[Action.MAIN]: {
+					[Script.PREPARE]: () => PREPARE_SSH(),
 					[Script.ENABLE]: () => ENABLE_SSH()
 				},
 				[Action.KILLSWITCH]: {
@@ -249,6 +262,7 @@ export const plugins: Plugins = {
 			},
 			[Platform.DARWIN]: {
 				[Action.MAIN]: {
+					[Script.PREPARE]: () => PREPARE_SSH(),
 					[Script.ENABLE]: () => ENABLE_SSH()
 				},
 				[Action.KILLSWITCH]: {
