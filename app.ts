@@ -88,9 +88,6 @@ const connect = async (
             logger.warn({ message: `Restarting SSH connect to ${node.instanceIp}:${node.sshPort}.`, err });
         }
     }
-
-    // If we started from scratch, then enable it for that too.
-    config().CONNECTION_KILLSWITCH && core.enableConnectionKillSwitch();
 };
 
 const loop = async () => {
