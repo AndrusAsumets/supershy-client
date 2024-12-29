@@ -91,7 +91,7 @@ const connect = async (
 };
 
 const loop = async () => {
-    setTimeout(async () => {s
+    setTimeout(async () => {
         const isStillWorking = config().LOOP_STATUS == LoopStatus.ACTIVE;
         isStillWorking
             ? await core.exit(`Timeout after passing ${config().NODE_RECYCLE_INTERVAL_SEC} seconds.`)
