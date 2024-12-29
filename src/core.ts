@@ -106,7 +106,9 @@ export const setInstanceCountries = async (
 
 export const getEnabledPluginKey = (): Plugin | undefined => {
     const connectedNode = models.getLastConnectedNode();
-    return connectedNode.pluginsEnabled[0];
+    if (connectedNode.pluginsEnabled.length) {
+        return connectedNode.pluginsEnabled[0];
+    }
 };
 
 export const prepareCloudConfig = (

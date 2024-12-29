@@ -55,12 +55,11 @@ const init = () => {
 const connect = async (
     node: Node,
 ) => {
-    const initialNode = models.getInitialNode();
-    const mainEnableFileName = core.getScriptFileName(initialNode.pluginsEnabled[0], Side.CLIENT, Action.MAIN, Script.ENABLE);
+    const mainEnableFileName = core.getScriptFileName(node.pluginsEnabled[0], Side.CLIENT, Action.MAIN, Script.ENABLE);
     node = core.getConnectionString(node, mainEnableFileName);
     integrations.fs.hostKey.save(node);
     existsSync(node.sshLogPath) && Deno.removeSync(node.sshLogPath);
-    (config().CONNECTION_KILLSWITCH && initialNode) && core.enableConnectionKillSwitch();
+    config().CONNECTION_KILLSWITCH && core.enableConnectionKillSwitch();
 
     logger.info(`Connecting SSH to ${node.instanceIp}:${node.sshPort}.`);
     models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTING});
@@ -91,11 +90,11 @@ const connect = async (
     }
 
     // If we started from scratch, then enable it for that too.
-    (config().CONNECTION_KILLSWITCH && !initialNode) && core.enableConnectionKillSwitch();
+    config().CONNECTION_KILLSWITCH && core.enableConnectionKillSwitch();
 };
 
 const loop = async () => {
-    setTimeout(async () => {
+    setTimeout(async () => {s
         const isStillWorking = config().LOOP_STATUS == LoopStatus.ACTIVE;
         isStillWorking
             ? await core.exit(`Timeout after passing ${config().NODE_RECYCLE_INTERVAL_SEC} seconds.`)
@@ -116,7 +115,8 @@ const loop = async () => {
             } seconds.`,
         );
     } catch (err) {
-        await core.exit(`Loop failure: ${err}`);
+        logger.error(err);
+        await core.exit('Loop failure.');
     }
 };
 
