@@ -77,7 +77,7 @@ rm -f $daemon
 
 # Since deno can not run sudo, yet connection killswitch needs it, hence work around.
 sudoer_dir=/etc/sudoers
-permission="${user} ALL=(ALL:ALL) NOPASSWD: ${script_dir}"
+permission="${user} ALL=(ALL:ALL) NOPASSWD: ${script_dir}/"
 if ! sudo grep -q "$permission" $sudoer_dir; then
     echo -e $permission | sudo tee -a $sudoer_dir
 fi
