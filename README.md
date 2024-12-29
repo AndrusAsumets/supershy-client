@@ -195,22 +195,26 @@ cd supershy-client
 
 ```
 # Linux
-sudo apt install git unzip ufw build-essential screen sshuttle -y
+sudo apt install git unzip ufw build-essential sshuttle -y
 
 # Mac
 brew install sshuttle
-brew install screen
 ```
 
 ```
 # Deno
 curl -fsSL https://deno.land/install.sh | sh
-```
+```s
 
 ```
 # Sudo workaround for toggling connection killswitch as Deno can not run sudo directly.
 Not the prettiest solution, open to suggestions.
-permission="$(whoami) ALL=(ALL:ALL) NOPASSWD: $(getent passwd $(whoami) | cut -d: -f6)/.supershy-data/scripts"
+#Linux:
+permission="$(whoami) ALL=(ALL:ALL) NOPASSWD: /home/$(whoami)/.supershy-data/scripts/"
+echo -e $permission | sudo tee -a /etc/sudoers
+
+#MacOS:
+permission="$(whoami) ALL=(ALL:ALL) NOPASSWD: /Users/$(whoami)/.supershy-data/scripts/"
 echo -e $permission | sudo tee -a /etc/sudoers
 ```
 

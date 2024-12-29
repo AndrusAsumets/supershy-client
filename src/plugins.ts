@@ -1,11 +1,11 @@
 import {
 	Node,
-    Plugins,
-    Plugin,
+	Plugins,
+	Plugin,
 	Side,
-    Platform,
-    Action,
-    Script,
+	Platform,
+	Action,
+	Script,
 } from './types.ts';
 import * as models from './models.ts';
 
@@ -88,9 +88,8 @@ sudo ufw default deny outgoing
 sudo ufw allow out from any to 127.0.0.1/24
 sudo ufw allow out from any to 0.0.0.0/24
 
-for raw_host in $\{hosts[@]}; do
-	IFS=':' read -r -a host <<< $raw_host
-	eval "sudo ufw allow out from any to $\{host[0]} port $\{host[1]}"
+for host in $\{hosts[@]}; do
+	eval "sudo ufw allow out from any to $\{host/:/ port }"
 done
 
 sudo ufw reload
@@ -108,13 +107,17 @@ raw_hosts=$1
 IFS=',' read -r -a hosts <<< $raw_hosts
 
 daemon_dir=/Library/LaunchDaemons/org.supershy.firewall.plist
-firewall_dir=/usr/local/bin/supershy.firewall.sh
+firewall_dir=/usr/local/supershy.firewall.sh
 rules_dir=/etc/pf.anchors/supershy.firewall.rules
 log_dir=~/.supershy-data/logs
 
 sudo rm -rf $daemon_dir
 sudo rm -rf $firewall_dir
 sudo rm -rf $rules_dir
+
+sudo ifconfig utun0 down || true
+sudo networksetup -setv6off Wi-Fi || true
+sudo networksetup -setv6off Ethernet || true
 
 # daemon file
 echo '<?xml version="1.0" encoding="UTF-8" ?>' | sudo tee -a $daemon_dir
@@ -139,24 +142,24 @@ echo "</plist>" | sudo tee -a $daemon_dir
 # firewall file
 echo "#!/bin/bash" | sudo tee -a $firewall_dir
 echo "sleep 5" | sudo tee -a $firewall_dir
-echo "/usr/sbin/ipconfig waitall" | sudo tee -a $firewall_dir
-echo "/sbin/pfctl -E -f $\{rules_dir}" | sudo tee -a $firewall_dir
+echo "sudo /usr/sbin/ipconfig waitall" | sudo tee -a $firewall_dir
+echo "sudo /sbin/pfctl -E -f $\{rules_dir}" | sudo tee -a $firewall_dir
 
 # rules file
-echo "set skip on lo0" | sudo tee -a $rules_dir
-echo "block in all" | sudo tee -a $rules_dir
-echo "block out all" | sudo tee -a $rules_dir
+echo "block drop all" | sudo tee -a $rules_dir
+echo "pass on lo0" | sudo tee -a $rules_dir
+echo "pass on utun0" | sudo tee -a $rules_dir
+echo "pass out to 10.0.0.0/24 | sudo tee -a $rules_dir
 echo "pass out to 127.0.0.1/24" | sudo tee -a $rules_dir
-echo "pass out to 0.0.0.0/24" | sudo tee -a $rules_dir
+echo "pass out to 198.18.0.0/24" | sudo tee -a $rules_dir
 
-for raw_host in $\{hosts[@]}; do
-	IFS=':' read -r -a host <<< $raw_host
-	rule="pass out proto tcp to \{host[0]} port $\{host[1]}"
-	echo "$\{rule}" | sudo tee -a $rules_dir || true
+for host in $\{hosts[@]}; do
+	echo "pass out proto {udp, tcp} to $\{host/:/ port }" | sudo tee -a $rules_dir || true
 done
 
 # permissions
 sudo chmod +x $firewall_dir
+sudo chmod +x $rules_dir
 
 # enable
 sudo launchctl remove $daemon_dir || true
@@ -167,17 +170,21 @@ sudo launchctl start $daemon_dir || true
 
 const DISABLE_DARWIN_KILLSWITCH = () => `
 daemon_dir=/Library/LaunchDaemons/org.supershy.firewall.plist
-firewall_dir=/usr/local/bin/supershy.firewall.sh
+firewall_dir=/usr/local/supershy.firewall.sh
 rules_dir=/etc/pf.anchors/supershy.firewall.rules
 
 sudo rm -rf $daemon_dir
 sudo rm -rf $firewall_dir
 sudo rm -rf $rules_dir
 
+sudo networksetup -setv6automatic Wi-Fi || true
+sudo networksetup -setv6automatic Ethernet || true
+
 sudo launchctl stop $daemon_dir &>/dev/null || true
 sudo launchctl remove $daemon_dir || true
 sudo launchctl unload $daemon_dir || true
 sudo pfctl -d || true
+sudo ifconfig utun0 down || true
 `;
 
 export const plugins: Plugins = {

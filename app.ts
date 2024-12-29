@@ -5,7 +5,6 @@ import { v7 as uuidv7 } from 'npm:uuid';
 import { Server } from 'https://deno.land/x/socket_io@0.2.0/mod.ts';
 import { open } from 'https://deno.land/x/open@v1.0.0/index.ts';
 import { existsSync } from 'https://deno.land/std@0.224.0/fs/mod.ts';
-import { platform as getPlatform } from 'node:os';
 import {
     LoopStatus,
     ConnectionStatus,
@@ -15,6 +14,7 @@ import {
     InstancePayload,
     Action,
     Side,
+    Platform,
     Script,
 } from './src/types.ts';
 import * as core from './src/core.ts';
@@ -197,7 +197,7 @@ const rotate = async () => {
         };
         const publicKey = await integrations.shell.privateKey.create(node);
         node.instancePublicKeyId = await integrations.compute[instanceProvider].keys.add(publicKey, instanceName);
-        const script = plugins[enabledPluginKey][Side.SERVER][getPlatform()][Action.MAIN][Script.ENABLE](node);
+        const script = plugins[enabledPluginKey][Side.SERVER][Platform.LINUX][Action.MAIN][Script.ENABLE](node);
         const userData = core.prepareCloudConfig(script);
         const formattedUserData = integrations.compute[instanceProvider].userData.format(userData);
         const instancePayload: InstancePayload = {
