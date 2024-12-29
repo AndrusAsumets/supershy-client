@@ -52,6 +52,8 @@ pid_file_path=$6
 proxy_local_port=$7
 proxy_remote_port=$8
 
+sudo ifconfig utun0 down || true
+
 ssh -v $ssh_user@$ssh_host -f -N -L $proxy_local_port:0.0.0.0:$proxy_remote_port -p $ssh_port -i $key_path -o StrictHostKeyChecking=yes -E $output_path
 `;
 
@@ -115,7 +117,6 @@ sudo rm -rf $daemon_dir
 sudo rm -rf $firewall_dir
 sudo rm -rf $rules_dir
 
-sudo ifconfig utun0 down || true
 sudo networksetup -setv6off Wi-Fi || true
 sudo networksetup -setv6off Ethernet || true
 
