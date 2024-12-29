@@ -195,10 +195,11 @@ cd supershy-client
 
 ```
 # Linux
-sudo apt install git unzip ufw build-essential sshuttle -y
+sudo apt install git unzip ufw build-essential sshuttle screen -y
 
 # Mac
 brew install sshuttle
+brew install screen
 ```
 
 ```
