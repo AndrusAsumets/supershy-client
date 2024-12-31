@@ -5,6 +5,7 @@ import { v7 as uuidv7 } from 'npm:uuid';
 import { Server } from 'https://deno.land/x/socket_io@0.2.0/mod.ts';
 import { open } from 'https://deno.land/x/open@v1.0.0/index.ts';
 import { existsSync } from 'https://deno.land/std@0.224.0/fs/mod.ts';
+import { platform as getPlatform } from 'node:os';
 import {
     LoopStatus,
     ConnectionStatus,
@@ -24,7 +25,7 @@ import * as websocket from './src/websocket.ts';
 import { logger as _logger } from './src/logger.ts';
 import * as lib from './src/lib.ts';
 import * as integrations from './src/integrations.ts';
-import { plugins } from "./src/plugins.ts";
+import { plugins } from './src/plugins.ts';
 
 const { config } = models;
 const io = new Server({ cors: { origin: '*' }});
@@ -32,21 +33,10 @@ const logger = _logger.get(io);
 
 const init = () => {
     integrations.fs.ensureFolder(config().DATA_PATH);
-    integrations.fs.ensureFolder(config().SCRIPT_PATH);
     integrations.fs.ensureFolder(config().SSH_PATH);
     integrations.fs.ensureFolder(config().SSH_KEY_PATH);
     integrations.fs.ensureFolder(config().LOG_PATH);
-
     !existsSync(config().SSH_KNOWN_HOSTS_PATH) && Deno.writeTextFileSync(config().SSH_KNOWN_HOSTS_PATH, '');
-
-    const scripts: string[][] = core.getAvailableScripts();
-    scripts.forEach((script: string[]) => {
-        const [fileName, file] = script;
-        Deno.writeTextFileSync(`${config().SCRIPT_PATH}/${fileName}`, file);
-        new Deno.Command('chmod', { args: ['+x', fileName] });
-        Deno.chmodSync(`${config().SCRIPT_PATH}/${fileName}`, 0o700);
-    });
-
     loop();
     core.heartbeat();
     setInterval(() => core.heartbeat(), config().HEARTBEAT_INTERVAL_SEC);
@@ -55,11 +45,12 @@ const init = () => {
 const connect = async (
     node: Node,
 ) => {
-    const mainEnableFileName = core.getScriptFileName(node.pluginsEnabled[0], Side.CLIENT, Action.MAIN, Script.ENABLE);
-    node = core.getConnectionString(node, mainEnableFileName);
+    const platformKey = getPlatform() as Platform;
+    const script = core.parseScript(node, node.pluginsEnabled[0], Side.CLIENT, platformKey, Action.MAIN, Script.ENABLE);
+    node = core.getConnectionString(node);
     integrations.fs.hostKey.save(node);
     existsSync(node.sshLogPath) && Deno.removeSync(node.sshLogPath);
-    config().CONNECTION_KILLSWITCH && core.enableConnectionKillSwitch();
+    config().CONNECTION_KILLSWITCH && core.enableConnectionKillSwitch(node);
 
     logger.info(`Connecting SSH to ${node.instanceIp}:${node.sshPort}.`);
     models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTING});
@@ -69,7 +60,7 @@ const connect = async (
         await integrations.shell.pkill(`${config().PROXY_LOCAL_PORT}:0.0.0.0`);
         await integrations.shell.pkill('0.0.0.0/0');
         await lib.sleep(1000);
-        integrations.shell.command(node.connectionString);
+        await integrations.shell.command(script, node.connectionString);
         await lib.sleep(config().SSH_CONNECTION_TIMEOUT_SEC * 1000);
 
         try {

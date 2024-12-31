@@ -1,8 +1,10 @@
 // deno-lint-ignore-file no-explicit-any
 
 import jwt from 'npm:jsonwebtoken';
+import { platform as getPlatform } from 'node:os';
 import { encodeBase64 } from 'jsr:@std/encoding/base64';
 import { existsSync } from 'https://deno.land/std@0.224.0/fs/mod.ts';
+import { bash } from 'https://deno.land/x/bash/mod.ts';
 import * as core from './core.ts';
 import * as lib from './lib.ts';
 import * as models from './models.ts';
@@ -19,6 +21,7 @@ import {
     CreateVultrInstance,
     Action,
     Side,
+    Platform,
     Script,
 } from './types.ts';
 
@@ -27,9 +30,10 @@ export const shell = {
 		create: async (
             node: Node,
         ) => {
-            const mainPrepareFileName = core.getScriptFileName(node.pluginsEnabled[0], Side.CLIENT, Action.MAIN, Script.PREPARE);
-            const cmd = `${config().SCRIPT_PATH}/${mainPrepareFileName} ${node.sshKeyPath} ${config().SSH_KEY_ALGORITHM} ${config().SSH_KEY_LENGTH}`;
-            integrations.shell.command(cmd);
+            const platformKey = getPlatform() as Platform;
+            const script = core.parseScript(node, node.pluginsEnabled[0], Side.CLIENT, platformKey, Action.MAIN, Script.PREPARE);
+            const args = `${node.sshKeyPath} ${config().SSH_KEY_ALGORITHM} ${config().SSH_KEY_LENGTH}`;
+            await integrations.shell.command(script, args);
             const publicKeyPath = `${node.sshKeyPath}.pub`;
 
             while (true) {
@@ -52,17 +56,10 @@ export const shell = {
         const command = new Deno.Command(cmd, { args });
         await command.output();
     },
-    command: (input: string) => {
-        const args = input.split(' ');
-        const cmd = args[0];
-        args.shift();
-        const response = new Deno.Command(cmd, { args });
-        const output = response.outputSync()
-        const textDecoder = new TextDecoder();
-        return [{
-            stdout: textDecoder.decode(output.stdout),
-            stderr: textDecoder.decode(output.stderr)
-        }];
+    command: async (cmd: string, args: string = '') => {
+        const nullArg = 'null_argument';
+        const output = await bash(`bash -c '${cmd}' ${nullArg} ${args}`);
+        return output;
     }
 };
 

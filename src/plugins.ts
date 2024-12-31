@@ -31,6 +31,7 @@ curl --request PUT -H 'Content-Type=*\/*' --data $ENCODED_HOST_KEY --url ${confi
 iptables -A INPUT -p tcp --dport ${node.sshPort} -j ACCEPT
 `;
 
+
 const ENABLE_SSHUTTLE = () => `
 ssh_host=$1
 ssh_user=$2
@@ -81,7 +82,7 @@ sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1 || true
 sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1 || true
 
 sudo ufw enable
-for num in $(sudo ufw status numbered | grep "ALLOW" | awk -F"[][]" '{print $2}' | tr --delete [:blank:] | sort -rn); do
+for num in $(sudo ufw status numbered | grep "ALLOW" | awk -F"[][]" "{print $2}" | tr --delete [:blank:] | sort -rn); do
 	yes | sudo ufw delete $num
 done
 

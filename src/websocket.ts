@@ -34,9 +34,9 @@ export const start = (io: Server) => {
             const isConnectionKillswitchDiff = prevConfig.CONNECTION_KILLSWITCH != config().CONNECTION_KILLSWITCH;
 
             (isInstanceProvidersDiff || isInstanceProvidersDisabledDiff) && models.updateConfig(await core.setInstanceCountries(config()));
-            isPluginsEnabledDiff && core.disableConnectionKillSwitch();
-            (isConnectionKillswitchDiff && config().CONNECTION_KILLSWITCH == true && models.getInitialNode()) && core.enableConnectionKillSwitch();
-            (isConnectionKillswitchDiff && config().CONNECTION_KILLSWITCH == false) && core.disableConnectionKillSwitch();
+            isPluginsEnabledDiff && core.disableConnectionKillSwitch(models.getInitialNode());
+            (isConnectionKillswitchDiff && config().CONNECTION_KILLSWITCH == true && models.getInitialNode()) && core.enableConnectionKillSwitch(models.getInitialNode());
+            (isConnectionKillswitchDiff && config().CONNECTION_KILLSWITCH == false) && core.disableConnectionKillSwitch(models.getInitialNode());
 
             io.emit('/config', config());
         });

@@ -2,10 +2,9 @@
 
 import { platform as getPlatform } from 'node:os';
 import { Server } from 'https://deno.land/x/socket_io@0.2.0/mod.ts';
-import { existsSync } from 'https://deno.land/std@0.224.0/fs/mod.ts';
 import { logger as _logger } from './logger.ts';
 import * as models from './models.ts';
-import { Config, Node, InstanceProvider, LoopStatus, Plugin, Side, Action, Script } from './types.ts';
+import { Config, Node, InstanceProvider, LoopStatus, Plugin, Side, Platform, Action, Script } from './types.ts';
 import * as lib from './lib.ts';
 import * as integrations from './integrations.ts';
 import { plugins } from './plugins.ts';
@@ -13,45 +12,18 @@ import { plugins } from './plugins.ts';
 const { config } = models;
 const logger = _logger.get();
 
-export const getAvailableScripts = (): string[][] => {
-    const escapeDollarSignOperator = ['\${', '${'];
-
-    return Object
-        .keys(plugins)
-        .map((pluginKey: string) => {
-            const sideKey = Side.CLIENT;
-            const platformKey = getPlatform();
-            const sides = plugins[pluginKey];
-            const platforms = sides[sideKey];
-            const actions = platforms[platformKey];
-
-            return Object
-                .keys(actions)
-                .map((actionKey: string) => {
-                    const action = actions[actionKey];
-
-                    return Object
-                        .keys(action)
-                        .map((functionKey: string) => {
-                            const fileName = `${pluginKey}--${sideKey}--${platformKey}--${actionKey}--${functionKey}`;
-                            const file = action[functionKey](models.getInitialNode())
-                                .replaceAll(escapeDollarSignOperator[0], escapeDollarSignOperator[1])
-                                .replaceAll('\t', '');
-                            return [fileName, file];
-                        });
-                });
-        })
-        .flat()
-        .flat();
-};
-
-export const getScriptFileName = (
-    pluginKey: string,
-    side: Side,
-    action: Action,
-    script: Script,
+export const parseScript = (
+    node: Node,
+    pluginKey: Plugin,
+    sideKey: Side,
+    platformKey: Platform,
+    actionKey: Action,
+    scriptKey: Script
 ): string => {
-    return `${pluginKey}--${side}--${getPlatform()}--${action}--${script}`;
+    const escapeDollarSignOperator = ['\${', '${'];
+    return plugins[pluginKey][sideKey][platformKey][actionKey][scriptKey](node)
+        .replaceAll(escapeDollarSignOperator[0], escapeDollarSignOperator[1])
+        .replaceAll('\t', '');
 };
 
 export const getAvailablePlugins = (): Plugin[] => {
@@ -129,7 +101,6 @@ ${body}`;
 
 export const getConnectionString = (
     node: Node,
-    scriptFileName: string,
 ): Node => {
     const {
         instanceIp,
@@ -139,8 +110,7 @@ export const getConnectionString = (
         proxyLocalPort,
         proxyRemotePort,
     } = node;
-    node.connectionString = `bash ${config().SCRIPT_PATH}/${scriptFileName} ${instanceIp} ${config().SSH_USER} ${sshPort} ${sshKeyPath} ${sshLogPath} ${config().SSHUTTLE_PID_FILE_PATH} ${proxyLocalPort} ${proxyRemotePort}`
-        .replace('\n', '');
+    node.connectionString = `${instanceIp} ${config().SSH_USER} ${sshPort} ${sshKeyPath} ${sshLogPath} ${config().SSHUTTLE_PID_FILE_PATH} ${proxyLocalPort} ${proxyRemotePort}`
     return node;
 };
 
@@ -163,36 +133,32 @@ export const useProxy = (options: any) => {
     return options;
 };
 
-export const enableConnectionKillSwitch = () => {
+export const enableConnectionKillSwitch = (node: Node) => {
     const pluginKey = getEnabledPluginKey();
     if (!pluginKey) return;
 
-    const fileName = getScriptFileName(pluginKey, Side.CLIENT, Action.KILLSWITCH, Script.ENABLE);
-    const filePath = `${config().SCRIPT_PATH}/${fileName}`;
-    const hasFile = existsSync(filePath);
-    if (!hasFile) return;
+    const platformKey = getPlatform() as Platform;
+    const script = parseScript(node, pluginKey, Side.CLIENT, platformKey, Action.KILLSWITCH, Script.ENABLE);
 
     logger.info(`Enabling connection killswitch.`);
     const nodes = models.nodes();
-    const hosts = Object
+    const args = Object
         .keys(nodes)
         .map((key: string) => `${nodes[key].instanceIp}:${nodes[key].sshPort}`)
         .join(',');
-    integrations.shell.command(`bash ${filePath} ${hosts}`);
+    integrations.shell.command(script, args);
     logger.info(`Enabled connection killswitch.`);
 };
 
-export const disableConnectionKillSwitch = () => {
+export const disableConnectionKillSwitch = (node: Node) => {
     const pluginKey = getEnabledPluginKey();
     if (!pluginKey) return;
 
-    const fileName = getScriptFileName(pluginKey, Side.CLIENT, Action.KILLSWITCH, Script.DISABLE);
-    const filePath = `${config().SCRIPT_PATH}/${fileName}`;
-    const hasFile = existsSync(filePath);
-    if (!hasFile) return;
+    const platformKey = getPlatform() as Platform;
+    const script = parseScript(node, pluginKey, Side.CLIENT, platformKey, Action.KILLSWITCH, Script.DISABLE);
 
     logger.info(`Disabling connection killswitch.`);
-    integrations.shell.command(`bash ${filePath}`);
+    integrations.shell.command(script);
     logger.info(`Disabled connection killswitch.`);
 };
 
