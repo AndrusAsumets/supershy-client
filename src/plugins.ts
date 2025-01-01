@@ -31,7 +31,6 @@ curl --request PUT -H 'Content-Type=*\/*' --data $ENCODED_HOST_KEY --url ${confi
 iptables -A INPUT -p tcp --dport ${node.sshPort} -j ACCEPT
 `;
 
-
 const ENABLE_SSHUTTLE = () => `
 ssh_host=$1
 ssh_user=$2
@@ -82,13 +81,15 @@ sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1 || true
 sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1 || true
 
 sudo ufw enable
-for num in $(sudo ufw status numbered | grep "ALLOW" | awk -F"[][]" "{print $2}" | tr --delete [:blank:] | sort -rn); do
-	yes | sudo ufw delete $num
+
+# Clear out old allowed IPs.
+for num in $(sudo ufw status numbered | grep ALLOW | cut -d "]" -f1 | grep -o [[:digit:]]* | tac); do
+    yes | sudo ufw delete $num
 done
 
 sudo ufw default deny incoming
 sudo ufw default deny outgoing
-sudo ufw allow out from any to 127.0.0.1/24
+sudo ufw allow out from any to 127.0.0.0/24
 sudo ufw allow out from any to 0.0.0.0/24
 
 for host in $\{hosts[@]}; do
