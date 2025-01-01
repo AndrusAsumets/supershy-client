@@ -24,18 +24,21 @@ import * as webserver from './src/webserver.ts';
 import * as websocket from './src/websocket.ts';
 import { logger as _logger } from './src/logger.ts';
 import * as lib from './src/lib.ts';
-import * as integrations from './src/integrations.ts';
 import { plugins } from './src/plugins.ts';
+import { kv } from './src/integrations/kv.ts';
+import { shell } from './src/integrations/shell.ts';
+import { fs } from './src/integrations/fs.ts';
+import { compute } from './src/integrations/compute.ts';
 
 const { config } = models;
 const io = new Server({ cors: { origin: '*' }});
 const logger = _logger.get(io);
 
 const init = () => {
-    integrations.fs.ensureFolder(config().DATA_PATH);
-    integrations.fs.ensureFolder(config().SSH_PATH);
-    integrations.fs.ensureFolder(config().SSH_KEY_PATH);
-    integrations.fs.ensureFolder(config().LOG_PATH);
+    fs.ensureFolder(config().DATA_PATH);
+    fs.ensureFolder(config().SSH_PATH);
+    fs.ensureFolder(config().SSH_KEY_PATH);
+    fs.ensureFolder(config().LOG_PATH);
     !existsSync(config().SSH_KNOWN_HOSTS_PATH) && Deno.writeTextFileSync(config().SSH_KNOWN_HOSTS_PATH, '');
     loop();
     core.heartbeat();
@@ -48,7 +51,7 @@ const connect = async (
     const platformKey = getPlatform() as Platform;
     const script = core.parseScript(node, node.pluginsEnabled[0], Side.CLIENT, platformKey, Action.MAIN, Script.ENABLE);
     node = core.getConnectionString(node);
-    integrations.fs.hostKey.save(node);
+    kv.cloudflare.hostKey.save(node);
     existsSync(node.sshLogPath) && Deno.removeSync(node.sshLogPath);
     config().CONNECTION_KILLSWITCH && core.enableConnectionKillSwitch(node);
 
@@ -57,10 +60,10 @@ const connect = async (
     io.emit('/config', config());
 
     while (config().CONNECTION_STATUS != ConnectionStatus.CONNECTED) {
-        await integrations.shell.pkill(`${config().PROXY_LOCAL_PORT}:0.0.0.0`);
-        await integrations.shell.pkill('0.0.0.0/0');
+        await shell.pkill(`${config().PROXY_LOCAL_PORT}:0.0.0.0`);
+        await shell.pkill('0.0.0.0/0');
         await lib.sleep(1000);
-        await integrations.shell.command(script, node.connectionString);
+        await shell.command(script, node.connectionString);
         await lib.sleep(config().SSH_CONNECTION_TIMEOUT_SEC * 1000);
 
         try {
@@ -143,11 +146,11 @@ const rotate = async () => {
         !enabledPluginKey && logger.info(`No enabled plugins found.`);
         const nodeUuid = uuidv7();
         const nodeType = nodeTypes[nodeIndex];
-        const instanceLocationsList = await integrations.compute[instanceProvider].regions.parse();
+        const instanceLocationsList = await compute[instanceProvider].regions.parse();
         !instanceLocationsList.length && logger.info('No locations were found. Are any of the countries enabled for the VPS?');
         const [instanceRegion, instanceCountry]: string[] = lib.shuffle(instanceLocationsList)[0];
         const instanceName = `${config().APP_ID}-${config().ENV}-${nodeType}-${nodeUuid}`;
-        const { instanceSize, instanceImage } = integrations.compute[instanceProvider];
+        const { instanceSize, instanceImage } = compute[instanceProvider];
         const sshKeyPath = `${config().SSH_KEY_PATH}/${instanceName}`;
         const sshPortRange: number[] = config().SSH_PORT_RANGE.split(':').map((item: string) => Number(item));
         const sshPort = lib.randomNumberFromRange(sshPortRange);
@@ -183,11 +186,11 @@ const rotate = async () => {
             modifiedTime: null,
             deletedTime: null,
         };
-        const publicKey = await integrations.shell.privateKey.create(node);
-        node.instancePublicKeyId = await integrations.compute[instanceProvider].keys.add(publicKey, instanceName);
+        const publicKey = await shell.sshKeygen(node);
+        node.instancePublicKeyId = await compute[instanceProvider].keys.add(publicKey, instanceName);
         const script = plugins[enabledPluginKey][Side.SERVER][Platform.LINUX][Action.MAIN][Script.ENABLE](node);
         const userData = core.prepareCloudConfig(script);
-        const formattedUserData = integrations.compute[instanceProvider].userData.format(userData);
+        const formattedUserData = compute[instanceProvider].userData.format(userData);
         const instancePayload: InstancePayload = {
             datacenter: instanceRegion,
             region: instanceRegion,
@@ -203,7 +206,7 @@ const rotate = async () => {
             user_data: formattedUserData,
             backups: 'disabled',
         };
-        const { instanceId, instanceIp } = await integrations.compute[instanceProvider].instances.create(instancePayload);
+        const { instanceId, instanceIp } = await compute[instanceProvider].instances.create(instancePayload);
         node.instanceId = instanceId;
         node.instanceIp = instanceIp;
 
@@ -211,7 +214,7 @@ const rotate = async () => {
         logger.info(instancePayload);
         logger.info(`Found network at ${instanceIp}.`);
 
-        node = await integrations.kv.cloudflare.hostKey.get(node, jwtSecret);
+        node = await kv.cloudflare.hostKey.get(node, jwtSecret);
         models.updateNode(node);
         activeNodes.push(node);
         core.setCurrentNodeReserve(io);

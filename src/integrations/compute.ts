@@ -1,136 +1,20 @@
 // deno-lint-ignore-file no-explicit-any
 
-import jwt from 'npm:jsonwebtoken';
-import { platform as getPlatform } from 'node:os';
 import { encodeBase64 } from 'jsr:@std/encoding/base64';
-import { existsSync } from 'https://deno.land/std@0.224.0/fs/mod.ts';
-import { bash } from 'https://deno.land/x/bash/mod.ts';
-import * as core from './core.ts';
-import * as lib from './lib.ts';
-import * as models from './models.ts';
-import * as integrations from './integrations.ts';
-import { logger as _logger } from './logger.ts';
+import * as core from '../core.ts';
+import * as models from '../models.ts';
+import { logger as _logger } from '../logger.ts';
+import {
+    CreateDigitalOceanInstance,
+    CreateHetznerInstance,
+    CreateVultrInstance,
+} from '../types.ts';
 
 const logger = _logger.get();
 const { config } = models;
 
-import {
-    Node,
-    CreateDigitalOceanInstance,
-    CreateHetznerInstance,
-    CreateVultrInstance,
-    Action,
-    Side,
-    Platform,
-    Script,
-} from './types.ts';
-
-export const shell = {
-	privateKey: {
-		create: async (
-            node: Node,
-        ) => {
-            const platformKey = getPlatform() as Platform;
-            const script = core.parseScript(node, node.pluginsEnabled[0], Side.CLIENT, platformKey, Action.MAIN, Script.PREPARE);
-            const args = `${node.sshKeyPath} ${config().SSH_KEY_ALGORITHM} ${config().SSH_KEY_LENGTH}`;
-            await integrations.shell.command(script, args);
-            const publicKeyPath = `${node.sshKeyPath}.pub`;
-
-            while (true) {
-                try {
-                    const file = Deno.readTextFileSync(publicKeyPath);
-                    if (file) {
-                        return file;
-                    }
-                }
-                catch(_) {
-                    _;
-                }
-                await lib.sleep(1000);
-            }
-        }
-    },
-    pkill: async (input: string) => {
-        const cmd = 'pkill';
-        const args = `-f ${input}`.split(' ');
-        const command = new Deno.Command(cmd, { args });
-        await command.output();
-    },
-    command: async (cmd: string, args: string = '') => {
-        const nullArg = 'null_argument';
-        const output = await bash(`bash -c '${cmd}' ${nullArg} ${args}`);
-        return output;
-    }
-};
-
-export const fs = {
-    ensureFolder: (path: string) => {
-        !existsSync(path) && Deno.mkdirSync(path);
-    },
-    hostKey: {
-        save: (node: Node) => {
-            const isFoundFromKnownHostsFile = Deno
-                .readTextFileSync(config().SSH_KNOWN_HOSTS_PATH)
-                .includes(node.sshHostKey);
-
-            !isFoundFromKnownHostsFile && Deno.writeTextFileSync(
-                config().SSH_KNOWN_HOSTS_PATH,
-                `${node.instanceIp} ssh-${config().SSH_KEY_ALGORITHM} ${node.sshHostKey}\n`,
-                { append: true },
-            );
-        },
-    },
-};
-
-export const kv = {
-    cloudflare: {
-        heartbeat: async (): Promise<boolean> => {
-            try {
-                const options = {
-                    method: 'GET',
-                    signal: AbortSignal.timeout(config().HEARTBEAT_INTERVAL_SEC),
-                };
-                const res = await fetch(config().CLOUDFLARE_BASE_URL, core.useProxy(options));
-                await res.json();
-                logger.info('Heartbeat.');
-                return true;
-            }
-            catch(_) {
-                return false;
-            }
-        },
-        hostKey: {
-            get: async (
-                node: Node,
-                jwtSecret: string,
-            ) => {
-                while (!node.sshHostKey) {
-                    try {
-                        const headers = {
-                            Authorization: `Bearer ${config().CLOUDFLARE_API_KEY}`,
-                        };
-                        const options = { method: 'GET', headers };
-                        const url =
-                            `${config().CLOUDFLARE_BASE_URL}/accounts/${config().CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${config().CLOUDFLARE_KV_NAMESPACE}/values/${node.nodeUuid}`;
-                        const res = await fetch(url, core.useProxy(options));
-                        const text = await res.text();
-                        text.includes('errors') && !text.includes('key not found') && logger.error({ message: 'kv.cloudflare.hostKey.get error', text });
-                        const decoded = jwt.verify(text, jwtSecret);
-                        node.sshHostKey = decoded.sshHostKey;
-                        logger.info(`Fetched host key for node ${node.nodeUuid}.`);
-                    } catch (_) {
-                        await lib.sleep(1000);
-                    }
-                }
-
-                return node;
-            },
-        }
-    },
-};
-
 export const compute = {
-	digital_ocean: {
+    digital_ocean: {
         instanceSize: config().DIGITAL_OCEAN_INSTANCE_SIZE,
         instanceImage: config().DIGITAL_OCEAN_INSTANCE_IMAGE,
         userData: {
@@ -298,7 +182,7 @@ export const compute = {
             },
         },
     },
-	hetzner: {
+    hetzner: {
         instanceSize: config().HETZNER_SERVER_TYPE,
         instanceImage: config().HETZNER_INSTANCE_IMAGE,
         userData: {
@@ -457,7 +341,7 @@ export const compute = {
             },
         },
     },
-	vultr: {
+    vultr: {
         instanceSize: config().VULTR_INSTANCE_PLAN,
         instanceImage: config().VULTR_INSTANCE_IMAGE,
         userData: {
