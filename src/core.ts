@@ -7,9 +7,7 @@ import * as models from './models.ts';
 import { Config, Node, InstanceProvider, LoopStatus, Plugin, Side, Platform, Action, Script } from './types.ts';
 import * as lib from './lib.ts';
 import { plugins } from './plugins.ts';
-import { kv } from './integrations/kv.ts';
-import { shell } from './integrations/shell.ts';
-import * as compute from './integrations/compute.ts';
+import { integrations } from './integrations.ts';
 
 const { config } = models;
 const logger = _logger.get();
@@ -52,7 +50,7 @@ export const setInstanceProviders = (
 export const setInstanceCountries = async (
     config: Config
 ): Promise<Config> => {
-    const hasHeartbeat = await kv.cloudflare.heartbeat();
+    const hasHeartbeat = await integrations.kv.cloudflare.heartbeat();
     if (!hasHeartbeat) {
         return config;
     }
@@ -67,7 +65,7 @@ export const setInstanceCountries = async (
     let index = 0;
     while(index < instanceProviders.length) {
         const instanceProvider: InstanceProvider = instanceProviders[index];
-        const countries = await compute[instanceProvider].countries.list();
+        const countries = await integrations.compute[instanceProvider].countries.list();
         countries
             .forEach((country: string) =>
                 !config.INSTANCE_COUNTRIES.includes(country) && config.INSTANCE_COUNTRIES.push(country)
@@ -148,7 +146,7 @@ export const enableConnectionKillSwitch = (node: Node) => {
         .keys(nodes)
         .map((key: string) => `${nodes[key].instanceIp}:${nodes[key].sshPort}`)
         .join(',');
-    shell.command(script, args);
+    integrations.shell.command(script, args);
     logger.info(`Enabled connection killswitch.`);
 };
 
@@ -160,12 +158,12 @@ export const disableConnectionKillSwitch = (node: Node) => {
     const script = parseScript(node, pluginKey, Side.CLIENT, platformKey, Action.KILLSWITCH, Script.DISABLE);
 
     logger.info(`Disabling connection killswitch.`);
-    shell.command(script);
+    integrations.shell.command(script);
     logger.info(`Disabled connection killswitch.`);
 };
 
 export const heartbeat = async () => {
-    const hasHeartbeat = await kv.cloudflare.heartbeat();
+    const hasHeartbeat = await integrations.kv.cloudflare.heartbeat();
     if (!hasHeartbeat) {
         const isLooped = config().LOOP_STATUS == LoopStatus.FINISHED;
         isLooped && await exit('Heartbeat failure');
@@ -199,18 +197,18 @@ export const cleanup = async (
     while (index < instanceProviders.length) {
         const instanceProvider = instanceProviders[index];
 
-        const deletableKeyIds = await compute[instanceProvider].keys.list();
+        const deletableKeyIds = await integrations.compute[instanceProvider].keys.list();
         if (deletableKeyIds) {
-            await compute[instanceProvider].keys.delete(
+            await integrations.compute[instanceProvider].keys.delete(
                 deletableKeyIds
                     .filter((key: any) => key.name.includes(`${config().APP_ID}-${config().ENV}`))
                     .map((key: any) => key.id)
             );
         }
 
-        const deletableInstanceIds = await compute[instanceProvider].instances.list();
+        const deletableInstanceIds = await integrations.compute[instanceProvider].instances.list();
         if (deletableInstanceIds) {
-            await compute[instanceProvider].instances.delete(
+            await integrations.compute[instanceProvider].instances.delete(
                 deletableInstanceIds
                     .filter((instance: any) => {
                         if ('name' in instance && instance.name.includes(`${config().APP_ID}-${config().ENV}`)) return true;
@@ -234,8 +232,8 @@ export const exit = async (
     const nodes = models.nodes();
     !onPurpose && logger.error(message);
     const hasNodes = Object.keys(nodes).length > 0;
-    onPurpose && hasNodes && await shell.pkill(`${config().APP_ID}-${config().ENV}`);
-    onPurpose && Object.keys(nodes).forEach(async (nodeUuid: string) => await shell.pkill(nodeUuid));
+    onPurpose && hasNodes && await integrations.shell.pkill(`${config().APP_ID}-${config().ENV}`);
+    onPurpose && Object.keys(nodes).forEach(async (nodeUuid: string) => await integrations.shell.pkill(nodeUuid));
     // Give a little time to kill the process.
     onPurpose && await lib.sleep(1000);
     throw new Error();

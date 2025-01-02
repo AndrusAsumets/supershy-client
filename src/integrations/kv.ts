@@ -26,7 +26,7 @@ export const kv = {
             }
         },
         hostKey: {
-            get: async (
+            read: async (
                 node: Node,
                 jwtSecret: string,
             ) => {
@@ -51,7 +51,7 @@ export const kv = {
 
                 return node;
             },
-            save: (node: Node) => {
+            write: (node: Node) => {
                 const isFoundFromKnownHostsFile = Deno
                     .readTextFileSync(config().SSH_KNOWN_HOSTS_PATH)
                     .includes(node.sshHostKey);
