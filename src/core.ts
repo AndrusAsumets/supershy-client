@@ -9,7 +9,7 @@ import * as lib from './lib.ts';
 import { plugins } from './plugins.ts';
 import { kv } from './integrations/kv.ts';
 import { shell } from './integrations/shell.ts';
-import { compute } from './integrations/compute.ts';
+import * as compute from './integrations/compute.ts';
 
 const { config } = models;
 const logger = _logger.get();

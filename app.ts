@@ -28,8 +28,7 @@ import { plugins } from './src/plugins.ts';
 import { kv } from './src/integrations/kv.ts';
 import { shell } from './src/integrations/shell.ts';
 import { fs } from './src/integrations/fs.ts';
-import { compute } from './src/integrations/compute.ts';
-
+import * as compute from './src/integrations/compute.ts';
 const { config } = models;
 const io = new Server({ cors: { origin: '*' }});
 const logger = _logger.get(io);
