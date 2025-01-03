@@ -18,45 +18,49 @@ export const hetzner = {
         }
     },
     regions: {
-        all: async (node: Node) => {
+        all: async () => {
             const headers = {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${config().HETZNER_API_KEY}`
             };
             const options = { method: 'GET', headers };
-            const res = await fetch(`${node.instanceApiBaseUrl}/datacenters`, core.useProxy(options));
+            const res = await fetch(`${hetzner.instanceApiBaseUrl}/datacenters`, core.useProxy(options));
             const json = await res.json();
-            const serverTypeId = await hetzner.serverTypes.getId(node, hetzner.instanceSize);
+            const serverTypeId = await hetzner.serverTypes.getId(hetzner.instanceSize);
             json.error && logger.error({ message: 'hetzner.regions.all error', json });
             const regions = json
                 .datacenters
                 .filter((data: any) => data.server_types.available.includes(serverTypeId));
             return regions;
         },
-        parse: async (node: Node) => {
-            const regions = await hetzner.regions.all(node);
+        parse: async () => {
+            const regions = await hetzner.regions.all();
             return regions
                 .filter((data: any) =>
                     !config().INSTANCE_COUNTRIES_DISABLED.includes(data.location.country)
                 )
-                .map((data: any) => [data.name, data.location.country]);
+                .map((data: any) => [
+                    data.name,
+                    data.location.country,
+                    hetzner.instanceApiBaseUrl
+                ]);
         },
     },
     countries: {
-        list: async (node: Node) => {
-            const regions = await hetzner.regions.all(node);
+        list: async () => {
+            const regions = await hetzner.regions.all();
             return regions
                 .map((data: any) => data.location.country);
         },
     },
     serverTypes: {
-        getId: async (node: Node, instanceSize: string) => {
+        getId: async (instanceSize: string) => {
             const headers = {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${config().HETZNER_API_KEY}`
             };
             const options = { method: 'GET', headers };
-            const res = await fetch(`${node.instanceApiBaseUrl}/server_types?per_page=50`, core.useProxy(options));
+            const res = await fetch(`${hetzner.instanceApiBaseUrl}/server_types?per_page=50`, core.useProxy(options));
             const json = await res.json();
             const serverTypes = json.server_types;
             !serverTypes && logger.error({ message: 'hetzner.serverTypes.getId error', json });
@@ -64,6 +68,42 @@ export const hetzner = {
             const serverTypeId = serverTypes
                 .filter((serverType: any) => serverType.name === instanceSize)[0].id;
             return serverTypeId;
+        },
+    },
+    keys: {
+        add: async (
+            node: Node,
+            publicKey: string,
+            name: string,
+        ): Promise<string> => {
+            const headers = {
+                Authorization: `Bearer ${config().HETZNER_API_KEY}`,
+                'Content-Type': 'application/json',
+            };
+            const body = {
+                name: name,
+                'public_key': publicKey,
+            };
+            const options = {
+                method: 'POST',
+                headers,
+                body: JSON.stringify(body),
+            };
+            const res = await fetch(`${node.instanceApiBaseUrl}/ssh_keys`, core.useProxy(options));
+            const json = await res.json();
+            return json['ssh_key']['id'];
+        },
+        delete: async (node: Node, instancePublicKeyId: string) => {
+            const headers = {
+                Authorization: `Bearer ${config().HETZNER_API_KEY}`,
+                'Content-Type': 'application/json',
+            };
+            const options = {
+                method: 'DELETE',
+                headers,
+            };
+            await fetch(`${node.instanceApiBaseUrl}/ssh_keys/${instancePublicKeyId}`, core.useProxy(options));
+            logger.info(`Deleted Hetzner ssh_key: ${instancePublicKeyId}.`);
         },
     },
     instances: {
@@ -112,42 +152,6 @@ export const hetzner = {
                 logger.info(`Deleted Hetzner instance: ${id}.`);
                 index = index + 1;
             }
-        },
-    },
-    keys: {
-        add: async (
-            node: Node,
-            publicKey: string,
-            name: string,
-        ): Promise<string> => {
-            const headers = {
-                Authorization: `Bearer ${config().HETZNER_API_KEY}`,
-                'Content-Type': 'application/json',
-            };
-            const body = {
-                name: name,
-                'public_key': publicKey,
-            };
-            const options = {
-                method: 'POST',
-                headers,
-                body: JSON.stringify(body),
-            };
-            const res = await fetch(`${node.instanceApiBaseUrl}/ssh_keys`, core.useProxy(options));
-            const json = await res.json();
-            return String(json['ssh_key']['id']);
-        },
-        delete: async (node: Node, instancePublicKeyId: string) => {
-            const headers = {
-                Authorization: `Bearer ${config().HETZNER_API_KEY}`,
-                'Content-Type': 'application/json',
-            };
-            const options = {
-                method: 'DELETE',
-                headers,
-            };
-            await fetch(`${node.instanceApiBaseUrl}/ssh_keys/${instancePublicKeyId}`, core.useProxy(options));
-            logger.info(`Deleted Hetzner ssh_key: ${instancePublicKeyId}.`);
         },
     },
 };

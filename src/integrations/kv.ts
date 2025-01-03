@@ -15,7 +15,7 @@ export const kv = {
             try {
                 const options = {
                     method: 'GET',
-                    signal: AbortSignal.timeout(config().HEARTBEAT_INTERVAL_SEC),
+                    signal: AbortSignal.timeout(config().HEARTBEAT_INTERVAL_SEC * 1000),
                 };
                 const res = await fetch(kv.cloudflare.apiBaseurl, core.useProxy(options));
                 await res.json();

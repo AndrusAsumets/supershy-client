@@ -1,11 +1,8 @@
-// deno-lint-ignore-file no-explicit-any
-
 import * as crypto from 'node:crypto';
 import { v7 as uuidv7 } from 'npm:uuid';
 import { Server } from 'https://deno.land/x/socket_io@0.2.0/mod.ts';
 import { open } from 'https://deno.land/x/open@v1.0.0/index.ts';
 import { existsSync } from 'https://deno.land/std@0.224.0/fs/mod.ts';
-import { platform as getPlatform } from 'node:os';
 import {
     LoopStatus,
     ConnectionStatus,
@@ -38,13 +35,13 @@ const init = () => {
     !existsSync(config().SSH_KNOWN_HOSTS_PATH) && Deno.writeTextFileSync(config().SSH_KNOWN_HOSTS_PATH, '');
     loop();
     core.heartbeat();
-    setInterval(() => core.heartbeat(), config().HEARTBEAT_INTERVAL_SEC);
+    setInterval(() => core.heartbeat(), config().HEARTBEAT_INTERVAL_SEC * 1000);
 };
 
 const connect = async (
     node: Node,
 ) => {
-    const platformKey = getPlatform() as Platform;
+    const platformKey = config().PLATFORM;
     const script = core.parseScript(node, node.pluginsEnabled[0], Side.CLIENT, platformKey, Action.MAIN, Script.ENABLE);
     node = core.getConnectionString(node);
     integrations.kv.cloudflare.hostKey.write(node);
@@ -138,7 +135,7 @@ const rotate = async () => {
             .filter((instanceProvider: InstanceProvider) => !config().INSTANCE_PROVIDERS_DISABLED.includes(instanceProvider));
         !instanceProviders.length && logger.warn('None of the VPS providers are enabled.');
         const instanceProvider: InstanceProvider = lib.shuffle(instanceProviders)[0];
-        const { instanceSize, instanceImage, instanceApiBaseUrl } = integrations.compute[instanceProvider];
+        const { instanceSize, instanceImage } = integrations.compute[instanceProvider];
         const enabledPluginKey = config().PLUGINS_ENABLED[0];
         !enabledPluginKey && logger.info(`No enabled plugins found.`);
         const nodeUuid = uuidv7();
@@ -155,7 +152,7 @@ const rotate = async () => {
             appId: config().APP_ID,
             pluginsEnabled: [enabledPluginKey],
             instanceProvider,
-            instanceApiBaseUrl,
+            instanceApiBaseUrl: '',
             instanceName,
             instanceId: '',
             instanceIp: '',
@@ -179,11 +176,11 @@ const rotate = async () => {
             modifiedTime: null,
             deletedTime: null,
         };
-        const instanceLocationsList = await integrations.compute[instanceProvider].regions.parse(node);
+        const instanceLocationsList = await integrations.compute[instanceProvider].regions.parse();
         !instanceLocationsList.length && logger.info('No locations were found. Are any of the countries enabled for the VPS?');
-        const [instanceRegion, instanceCountry]: string[] = lib.shuffle(instanceLocationsList)[0];
-        node.instanceRegion = instanceRegion;
-        node.instanceCountry = instanceCountry;
+        const [instanceRegion, instanceCountry, instanceApiBaseUrl]: string[] = lib.shuffle(instanceLocationsList)[0];
+        node = {...node, instanceRegion, instanceCountry, instanceApiBaseUrl};
+
         const publicKey = await integrations.shell.sshKeygen(node);
         const instancePublicKeyId = await integrations.compute[instanceProvider].keys.add(node, publicKey, instanceName);
         const script = plugins[enabledPluginKey][Side.SERVER][Platform.LINUX][Action.MAIN][Script.ENABLE](node);
@@ -197,12 +194,19 @@ const rotate = async () => {
             name: instanceName,
             label: instanceName,
             size: instanceSize,
+            'instance-type': {},
             plan: instanceSize,
             server_type: instanceSize,
             ssh_keys: [instancePublicKeyId],
             sshkey_id: [instancePublicKeyId],
+            'ssh-key': { name: instancePublicKeyId },
             user_data: formattedUserData,
+            'user-data': formattedUserData,
             backups: 'disabled',
+            'public-ip-assignment': 'inet4',
+            'security-groups': [],
+            'template': {},
+            'disk-size': config().EXOSCALE_DISK_SIZE,
         };
         logger.info(`Creating ${instanceProvider} instance.`);
         logger.info(instancePayload);
@@ -211,6 +215,7 @@ const rotate = async () => {
             ...node,
             ...await integrations.compute[instanceProvider].instances.create(node, instancePayload)
         };
+
         logger.info(`Created ${instanceProvider} instance.`);
         logger.info(node);
         logger.info(`Found network at ${node.instanceIp}.`);

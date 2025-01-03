@@ -20,7 +20,7 @@ const instanceRegions: Record<string, string> = {
     syd: 'AU',
 };
 
-export const digital_ocean = {
+export const digitalOcean = {
     instanceApiBaseUrl: 'https://api.digitalocean.com/v2',
     instanceRegions,
     instanceSize: config().DIGITAL_OCEAN_INSTANCE_SIZE,
@@ -31,92 +31,39 @@ export const digital_ocean = {
         }
     },
     regions: {
-        all: async (node: Node) => {
+        all: async () => {
             const headers = {
                 Authorization: `Bearer ${config().DIGITAL_OCEAN_API_KEY}`,
             };
             const options = { method: 'GET', headers };
-            const res = await fetch(`${node.instanceApiBaseUrl}/regions`, core.useProxy(options));
+            const res = await fetch(`${digitalOcean.instanceApiBaseUrl}/regions`, core.useProxy(options));
             const json = await res.json();
             const regions = json.regions;
-            !regions && logger.error({ message: 'digital_ocean.regions.list error', json });
+            !regions && logger.error({ message: 'digitalOcean.regions.list error', json });
 
             return regions
-                .filter((region: any) => region.sizes.includes(digital_ocean.instanceSize))
+                .filter((region: any) => region.sizes.includes(digitalOcean.instanceSize))
                 .map((region: any) => region.slug);
         },
-        parse: async (node: Node) => {
-            const regions = await digital_ocean.regions.all(node);
+        parse: async () => {
+            const regions = await digitalOcean.regions.all();
             return regions
                 .filter((region: string) =>
                     !config().INSTANCE_COUNTRIES_DISABLED.includes(
-                        digital_ocean.instanceRegions[region.replace(/[0-9]/g, '')]
+                        digitalOcean.instanceRegions[region.replace(/[0-9]/g, '')]
                     )
-                ).map((region: string) => [region, digital_ocean.instanceRegions[region.replace(/[0-9]/g, '')]]);
+                ).map((region: string) => [
+                    region,
+                    digitalOcean.instanceRegions[region.replace(/[0-9]/g, '')],
+                    digitalOcean.instanceApiBaseUrl
+                ]);
         },
     },
     countries: {
-        list: async (node: Node) => {
-            const regions = await digital_ocean.regions.all(node);
+        list: async () => {
+            const regions = await digitalOcean.regions.all();
             return regions
-                .map((region: string) => digital_ocean.instanceRegions[region.replace(/[0-9]/g, '')]);
-        },
-    },
-    instances: {
-        create: async (node: Node, args: CreateDigitalOceanInstance) => {
-            const headers = {
-                Authorization: `Bearer ${config().DIGITAL_OCEAN_API_KEY}`,
-                'Content-Type': 'application/json',
-            };
-            const options = {
-                method: 'POST',
-                headers,
-                body: JSON.stringify(args),
-            };
-            const res = await fetch(`${node.instanceApiBaseUrl}/droplets`, core.useProxy(options));
-            const json = await res.json();
-            !json.droplet && logger.error({ message: 'digital_ocean.instances.create error', json });
-            const instanceIp = await digital_ocean.ip.get(node, json.droplet.id);
-            return {
-                instanceId: String(json.droplet.id),
-                instanceIp,
-            };
-        },
-        get: async (node: Node, dropletId: string) => {
-            const headers = {
-                Authorization: `Bearer ${config().DIGITAL_OCEAN_API_KEY}`,
-            };
-            const options = { method: 'GET', headers };
-            const res = await fetch(`${node.instanceApiBaseUrl}/droplets/${dropletId}`, core.useProxy(options));
-            const json = await res.json();
-            return json.droplet;
-        },
-        list: async (): Promise<any[][]> => {
-            const headers = {
-                Authorization: `Bearer ${config().DIGITAL_OCEAN_API_KEY}`,
-            };
-            const options = { method: 'GET', headers };
-            const res = await fetch(`${digital_ocean.instanceApiBaseUrl}/droplets`, core.useProxy(options));
-            const json = await res.json();
-            return [[json.droplets, digital_ocean.instanceApiBaseUrl]];
-        },
-        delete: async (ids: string[], instanceApiBaseUrl: string) => {
-            let index = 0;
-
-            while (index < ids.length) {
-                const id = ids[index];
-                const headers = {
-                    Authorization: `Bearer ${config().DIGITAL_OCEAN_API_KEY}`,
-                    'Content-Type': 'application/json',
-                };
-                const options = {
-                    method: 'DELETE',
-                    headers,
-                };
-                await fetch(`${instanceApiBaseUrl}/droplets/${id}`, core.useProxy(options));
-                logger.info(`Deleted Digital Ocean instance: ${id}.`);
-                index = index + 1;
-            }
+                .map((region: string) => digitalOcean.instanceRegions[region.replace(/[0-9]/g, '')]);
         },
     },
     keys: {
@@ -140,8 +87,8 @@ export const digital_ocean = {
             };
             const res = await fetch(`${node.instanceApiBaseUrl}/account/keys`, core.useProxy(options));
             const json = await res.json();
-            !json['ssh_key'] && logger.error({message: 'digital__ocean.keys.add error', json });
-            return String(json['ssh_key']['id']);
+            !json['ssh_key'] && logger.error({ message: 'digitalOcean.keys.add error', json });
+            return json['ssh_key']['id'];
         },
         delete: async (node: Node, instancePublicKeyId: string) => {
             const headers = {
@@ -153,7 +100,64 @@ export const digital_ocean = {
                 headers,
             };
             await fetch(`${node.instanceApiBaseUrl}/account/keys/${instancePublicKeyId}`, core.useProxy(options));
-            logger.info(`Deleted Digital Ocean ssh_key: ${instancePublicKeyId}}.`);
+            logger.info(`Deleted digital ocean ssh_key: ${instancePublicKeyId}}.`);
+        },
+    },
+    instances: {
+        create: async (node: Node, args: CreateDigitalOceanInstance) => {
+            const headers = {
+                Authorization: `Bearer ${config().DIGITAL_OCEAN_API_KEY}`,
+                'Content-Type': 'application/json',
+            };
+            const options = {
+                method: 'POST',
+                headers,
+                body: JSON.stringify(args),
+            };
+            const res = await fetch(`${node.instanceApiBaseUrl}/droplets`, core.useProxy(options));
+            const json = await res.json();
+            !json.droplet && logger.error({ message: 'digitalOcean.instances.create error', json });
+            const instanceIp = await digitalOcean.ip.get(node, json.droplet.id);
+            return {
+                instanceId: String(json.droplet.id),
+                instanceIp,
+            };
+        },
+        get: async (node: Node, dropletId: string) => {
+            const headers = {
+                Authorization: `Bearer ${config().DIGITAL_OCEAN_API_KEY}`,
+            };
+            const options = { method: 'GET', headers };
+            const res = await fetch(`${node.instanceApiBaseUrl}/droplets/${dropletId}`, core.useProxy(options));
+            const json = await res.json();
+            return json.droplet;
+        },
+        list: async (): Promise<any[][]> => {
+            const headers = {
+                Authorization: `Bearer ${config().DIGITAL_OCEAN_API_KEY}`,
+            };
+            const options = { method: 'GET', headers };
+            const res = await fetch(`${digitalOcean.instanceApiBaseUrl}/droplets`, core.useProxy(options));
+            const json = await res.json();
+            return [[json.droplets, digitalOcean.instanceApiBaseUrl]];
+        },
+        delete: async (ids: string[], instanceApiBaseUrl: string) => {
+            let index = 0;
+
+            while (index < ids.length) {
+                const id = ids[index];
+                const headers = {
+                    Authorization: `Bearer ${config().DIGITAL_OCEAN_API_KEY}`,
+                    'Content-Type': 'application/json',
+                };
+                const options = {
+                    method: 'DELETE',
+                    headers,
+                };
+                await fetch(`${instanceApiBaseUrl}/droplets/${id}`, core.useProxy(options));
+                logger.info(`Deleted digital ocean instance: ${id}.`);
+                index = index + 1;
+            }
         },
     },
     ip: {
@@ -161,7 +165,7 @@ export const digital_ocean = {
             let ip = null;
 
             while (!ip) {
-                const droplet = await digital_ocean.instances.get(node, dropletId);
+                const droplet = await digitalOcean.instances.get(node, dropletId);
                 if (droplet && droplet.networks.v4.length) {
                     ip = droplet.networks.v4.filter((network: any) =>
                         network.type == 'public'

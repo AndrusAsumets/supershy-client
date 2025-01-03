@@ -22,10 +22,10 @@ export enum ConnectionStatus {
 }
 
 export enum InstanceProvider {
-	DIGITAL_OCEAN = 'digital_ocean',
+	DIGITAL_OCEAN = 'digitalOcean',
+	EXOSCALE = 'exoscale',
 	HETZNER = 'hetzner',
 	VULTR = 'vultr',
-	//EXOSCALE = 'exoscale',
 }
 
 export interface Node {
@@ -93,15 +93,22 @@ export interface CreateVultrInstance {
 }
 
 export interface CreateExoscaleInstance {
-
+	'name': string
+	'instance-type': Record<string, string>
+	'public-ip-assignment': string
+	'security-groups': Record<string, string>[]
+	'ssh-key': Record<string, string>
+	'user-data': string
+	'template': Record<string, unknown>
+	'disk-size': number
 }
 
-export type InstancePayload = CreateDigitalOceanInstance & CreateHetznerInstance & CreateVultrInstance
+export type InstancePayload = CreateDigitalOceanInstance & CreateHetznerInstance & CreateVultrInstance & CreateExoscaleInstance
 
 export enum Plugin {
-	SSHUTTLE_VPN = 'sshuttle_vpn',
-	HTTP_PROXY = 'http_proxy',
-	SOCKS5_PROXY = 'socks5_proxy',
+	SSHUTTLE_VPN = 'sshuttleVpn',
+	HTTP_PROXY = 'httpProxy',
+	SOCKS5_PROXY = 'socks5Proxy',
 }
 
 export enum Side {
@@ -138,6 +145,7 @@ export type Plugins = Record<string, Sides>
 export interface Config {
 	APP_ID: string
 	ENV: string
+	PLATFORM: Platform
 	LOOP_STATUS: LoopStatus
 	CONNECTION_STATUS: ConnectionStatus
 	NODE_RECYCLE_INTERVAL_SEC: number
@@ -151,6 +159,8 @@ export interface Config {
 	SSH_KEY_ALGORITHM: string
 	SSH_KEY_LENGTH: number
 	DIGITAL_OCEAN_API_KEY: string
+	EXOSCALE_API_KEY: string
+	EXOSCALE_API_SECRET: string
 	HETZNER_API_KEY: string
 	VULTR_API_KEY: string
 	CLOUDFLARE_ACCOUNT_ID: string
@@ -170,11 +180,14 @@ export interface Config {
 	SSHUTTLE_PID_FILE_PATH: string
 	NODE_TYPES: NodeType[]
 	DIGITAL_OCEAN_INSTANCE_SIZE: string
+	EXOSCALE_INSTANCE_SIZE: string
 	HETZNER_SERVER_TYPE: string
 	VULTR_INSTANCE_PLAN: string
 	DIGITAL_OCEAN_INSTANCE_IMAGE: string
+	EXOSCALE_TEMPLATE_NAME: string
 	HETZNER_INSTANCE_IMAGE: string
 	VULTR_INSTANCE_IMAGE: string
+	EXOSCALE_DISK_SIZE: number
 	HEARTBEAT_INTERVAL_SEC: number
 	WEB_SERVER_PORT: number
 	WEB_URL: string

@@ -21,6 +21,8 @@ const visibleConfigKeys = {
     SSH_KEY_ALGORITHM: { editable: 'string' },
     SSH_KEY_LENGTH: { editable: 'number' },
     DIGITAL_OCEAN_API_KEY: { editable: 'password' },
+    EXOSCALE_API_KEY: { editable: 'password' },
+    EXOSCALE_API_SECRET: { editable: 'password' },
     HETZNER_API_KEY: { editable: 'password' },
     VULTR_API_KEY: { editable: 'password' },
     CLOUDFLARE_ACCOUNT_ID: { editable: 'password' },
@@ -30,7 +32,7 @@ const visibleConfigKeys = {
     LOG_PATH: { editable: false },
     DB_FILE_PATH: { editable: false },
 };
-const apiKeys = ['DIGITAL_OCEAN_API_KEY', 'HETZNER_API_KEY', 'VULTR_API_KEY'];
+const apiKeys = ['DIGITAL_OCEAN_API_KEY', 'HETZNER_API_KEY', 'VULTR_API_KEY', 'EXOSCALE_API_KEY', 'EXOSCALE_API_SECRET'];
 const faviconStatus = {
     'connected': ['❊', 'white'],
     'connecting': ['❊', 'blue'],
@@ -303,6 +305,12 @@ const updateActions = () => {
         });
 };
 
+const hideByPlatform = (platform) => {
+    const elements = document.getElementsByClassName(`hide-on-${platform}`);
+    [].slice.call(elements)
+        .forEach(element => element.style = 'display:none;');
+};
+
 const updateConfig = () => {
     $providersSection.innerText = '';
     $countriesSection.innerText = '';
@@ -341,6 +349,15 @@ const updateConfig = () => {
             );
         });
 
+    /*
+    console.log(
+        config.INSTANCE_COUNTRIES
+            .sort((a, b) => COUNTRY_CODES[a].localeCompare(COUNTRY_CODES[b]))
+            .map(key => COUNTRY_CODES[key])
+            .join(', ')
+    );
+    */
+
     config.INSTANCE_COUNTRIES
         .sort((a, b) => COUNTRY_CODES[a].localeCompare(COUNTRY_CODES[b]))
         .forEach((key) => {
@@ -376,6 +393,7 @@ socket
     .on('/config', (_config) => {
         config = _config;
         updateAll();
+        hideByPlatform(config.PLATFORM);
     })
     .on('/node', (_node) => {
         node = _node;

@@ -5,7 +5,7 @@ Supershy is a DIY VPN with a rotating exit node.
 </p>
 
 During its initiation, the client creates two new VPS instances (let's call them
-First Node and Second Node) inside Digital Ocean, Hetzner and/or Vultr containing
+First Node and Second Node) inside Digital Ocean, Exoscale, Hetzner and/or Vultr containing
 nothing else but a SSH server. Next up, it creates a SSH
 connection from your machine to the First Node. All of your local TCP (HTTP etc.) 
 traffic will be routed through the instance via sshuttle as though you had been
@@ -49,8 +49,9 @@ these days everywhere.
 ### Features
 * Creates a sshuttle VPN using VPS provider(s) you define.
 * Periodically changes VPS nodes and thus your exit IPs.
-* Includes a connection killswitch toggle. If enabled, allows for only connections 
-made through the VPN to succeed. (Actions -> CONNECTION_KILLSWITCH -> Enabled).
+* Includes a connection killswitch toggle for LInux.
+If enabled, allows for only connections  made through the VPN to succeed
+ (Actions -> CONNECTION_KILLSWITCH -> Enabled).
 * Uses sshuttle underneath to VPN all your system-wide TCP traffic through VPS.
 It appears to be leaking IPv6 requests though, so make sure to have connection 
 killswitch enabled at all times.
@@ -74,10 +75,10 @@ to default.
 
 
 ### Supported VPS
-Digital Ocean, Hetzner, Vultr.
+Digital Ocean, Exoscale, Hetzner, Vultr.
 
 ### Supported countries
-Australia, Brazil, Canada, Chile, Finland, France, Germany, India, Israel, Japan, Korea, Mexico, Netherlands, Poland, Singapore, South Africa, Spain, Sweden, United Kingdom, United States.
+Australia, Austria, Brazil, Bulgaria, Canada, Chile, Finland, France, Germany, India, Israel, Japan, Korea, Mexico, Netherlands, Poland, Singapore, South Africa, Spain, Sweden, Switzerland, United Kingdom, United States
 
 ## Installation
 
@@ -107,6 +108,15 @@ DIGITAL_OCEAN_API_KEY
  -> Droplet: create, read, delete.
  -> ssh_key: create, delete.
  -> Click to copy the API key.
+
+EXOSCALE_API_KEY & EXOSCALE_API_SECRET
+ -> Open https://portal.exoscale.com/u/supershy-dev/iam/keys
+ -> ADD.
+ -> Name it.
+ -> SELECT: Owner.
+ -> CREATE.
+ -> Click to copy the key.
+ -> Click to copy the secret.
 
 HETZNER_API_KEY
  -> Open https://console.hetzner.cloud/projects
@@ -205,19 +215,8 @@ brew install screen
 ```
 # Deno
 curl -fsSL https://deno.land/install.sh | sh
-```s
-
 ```
-# Sudo workaround for toggling connection killswitch as Deno can not run sudo directly.
-Not the prettiest solution, open to suggestions.
-#Linux:
-permission="$(whoami) ALL=(ALL:ALL) NOPASSWD: /home/$(whoami)/.supershy-data/scripts/"
-echo -e $permission | sudo tee -a /etc/sudoers
 
-#MacOS:
-permission="$(whoami) ALL=(ALL:ALL) NOPASSWD: /Users/$(whoami)/.supershy-data/scripts/"
-echo -e $permission | sudo tee -a /etc/sudoers
-```
 
 ```
 deno task start

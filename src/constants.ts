@@ -1,9 +1,11 @@
 import { homedir } from 'node:os';
 import * as path from 'https://deno.land/std@0.224.0/path/mod.ts';
-import { NodeType, Config, InstanceProvider, LoopStatus, ConnectionStatus, Plugin } from './types.ts';
+import { platform as getPlatform } from 'node:os';
+import { NodeType, Config, InstanceProvider, LoopStatus, ConnectionStatus, Plugin, Platform } from './types.ts';
 
 const APP_ID = 'supershy-client';
 const ENV = 'dev';
+const PLATFORM = getPlatform() as Platform;
 const NODE_RECYCLE_INTERVAL_SEC = 1800;
 const NODE_RESERVE_COUNT = 1;
 const NODE_CURRENT_RESERVE_COUNT = 0;
@@ -17,6 +19,8 @@ const SSH_PORT_RANGE: string = '10000:65535';
 const SSH_KEY_ALGORITHM = 'ed25519';
 const SSH_KEY_LENGTH = 32768;
 const DIGITAL_OCEAN_API_KEY = '';
+const EXOSCALE_API_KEY = '';
+const EXOSCALE_API_SECRET = '';
 const HETZNER_API_KEY = '';
 const VULTR_API_KEY = '';
 const CLOUDFLARE_ACCOUNT_ID = '';
@@ -37,14 +41,17 @@ const SSH_CONNECTION_TIMEOUT_SEC = 5;
 const SSHUTTLE_PID_FILE_PATH = `${DATA_PATH}/sshuttle.pid`;
 const NODE_TYPES = [...Array(NODE_RESERVE_COUNT + 1).keys().map(() => NodeType.A)];
 const DIGITAL_OCEAN_INSTANCE_SIZE = 's-1vcpu-512mb-10gb';
+const EXOSCALE_INSTANCE_SIZE = 'micro';
 const HETZNER_SERVER_TYPE = 'cx22';
 const VULTR_INSTANCE_PLAN = 'vc2-1c-1gb';
 const DIGITAL_OCEAN_INSTANCE_IMAGE = 'debian-12-x64';
+const EXOSCALE_TEMPLATE_NAME = 'Linux Debian 12 (Bookworm) 64-bit';
 const HETZNER_INSTANCE_IMAGE = 'debian-12';
 const VULTR_INSTANCE_IMAGE = 'Debian 12 x64 (bookworm)';
+const EXOSCALE_DISK_SIZE = 10;
 const INSTANCE_PROVIDERS: InstanceProvider[] = [];
 const INSTANCE_PROVIDERS_DISABLED: InstanceProvider[] = [];
-const HEARTBEAT_INTERVAL_SEC = 10 * 1000;
+const HEARTBEAT_INTERVAL_SEC = 10;
 const WEB_SERVER_PORT = 8080;
 const WEB_URL = `http://localhost:${WEB_SERVER_PORT}`;
 const WEB_SOCKET_PORT = 8880;
@@ -64,21 +71,27 @@ export const config: Config = {
     PROXY_LOCAL_PORT,
     PROXY_REMOTE_PORT,
     DIGITAL_OCEAN_API_KEY,
+    EXOSCALE_API_KEY,
+    EXOSCALE_API_SECRET,
     HETZNER_API_KEY,
     VULTR_API_KEY,
     CLOUDFLARE_ACCOUNT_ID,
     CLOUDFLARE_API_KEY,
     CLOUDFLARE_KV_NAMESPACE,
     DIGITAL_OCEAN_INSTANCE_SIZE,
+    EXOSCALE_INSTANCE_SIZE,
     HETZNER_SERVER_TYPE,
     VULTR_INSTANCE_PLAN,
     DIGITAL_OCEAN_INSTANCE_IMAGE,
+    EXOSCALE_TEMPLATE_NAME,
     HETZNER_INSTANCE_IMAGE,
     VULTR_INSTANCE_IMAGE,
+    EXOSCALE_DISK_SIZE,
     NODE_ENABLED,
     AUTO_LAUNCH_WEB,
     APP_ID,
     ENV,
+    PLATFORM,
     INSTANCE_PROVIDERS,
     INSTANCE_PROVIDERS_DISABLED,
     HEARTBEAT_INTERVAL_SEC,

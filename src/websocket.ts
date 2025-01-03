@@ -33,7 +33,7 @@ export const start = (io: Server) => {
             const isPluginsEnabledDiff = JSON.stringify(prevConfig.PLUGINS_ENABLED) != JSON.stringify(config().PLUGINS_ENABLED);
             const isConnectionKillswitchDiff = prevConfig.CONNECTION_KILLSWITCH != config().CONNECTION_KILLSWITCH;
 
-            (isInstanceProvidersDiff || isInstanceProvidersDisabledDiff) && models.updateConfig(await core.setInstanceCountries(models.getInitialNode(), config()));
+            (isInstanceProvidersDiff || isInstanceProvidersDisabledDiff) && models.updateConfig(await core.setInstanceCountries(config()));
             isPluginsEnabledDiff && core.disableConnectionKillSwitch(models.getInitialNode());
             (isConnectionKillswitchDiff && config().CONNECTION_KILLSWITCH == true && models.getInitialNode()) && core.enableConnectionKillSwitch(models.getInitialNode());
             (isConnectionKillswitchDiff && config().CONNECTION_KILLSWITCH == false) && core.disableConnectionKillSwitch(models.getInitialNode());

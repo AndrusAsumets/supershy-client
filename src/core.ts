@@ -1,6 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { platform as getPlatform } from 'node:os';
 import { Server } from 'https://deno.land/x/socket_io@0.2.0/mod.ts';
 import { logger as _logger } from './logger.ts';
 import * as models from './models.ts';
@@ -32,7 +31,7 @@ export const getAvailablePlugins = (): Plugin[] => {
         .filter((pluginKey: string) => {
             const sides = plugins[pluginKey];
             const platforms = sides[Side.CLIENT];
-            const actions = platforms[getPlatform()];
+            const actions = platforms[config().PLATFORM];
             return actions;
         }) as Plugin[];
 };
@@ -42,13 +41,13 @@ export const setInstanceProviders = (
 ): Config => {
     config.INSTANCE_PROVIDERS = [];
     config.DIGITAL_OCEAN_API_KEY && config.INSTANCE_PROVIDERS.push(InstanceProvider.DIGITAL_OCEAN);
+    config.EXOSCALE_API_KEY && config.EXOSCALE_API_SECRET && config.INSTANCE_PROVIDERS.push(InstanceProvider.EXOSCALE);
     config.HETZNER_API_KEY && config.INSTANCE_PROVIDERS.push(InstanceProvider.HETZNER);
     config.VULTR_API_KEY && config.INSTANCE_PROVIDERS.push(InstanceProvider.VULTR);
     return config;
 };
 
 export const setInstanceCountries = async (
-    node: Node,
     config: Config
 ): Promise<Config> => {
     const hasHeartbeat = await integrations.kv.cloudflare.heartbeat();
@@ -66,7 +65,7 @@ export const setInstanceCountries = async (
     let index = 0;
     while(index < instanceProviders.length) {
         const instanceProvider: InstanceProvider = instanceProviders[index];
-        const countries = await integrations.compute[instanceProvider].countries.list(node);
+        const countries = await integrations.compute[instanceProvider].countries.list();
         countries
             .forEach((country: string) =>
                 !config.INSTANCE_COUNTRIES.includes(country) && config.INSTANCE_COUNTRIES.push(country)
@@ -124,7 +123,7 @@ export const useProxy = (options: any) => {
     if (!connectedNode) return options;
 
     const pluginKey = connectedNode.pluginsEnabled[0];
-    const hasNodeProtocol = pluginKey.includes('proxy');
+    const hasNodeProtocol = pluginKey.toLocaleLowerCase().includes('proxy');
     if (!hasNodeProtocol) return options;
 
     const protocol = pluginKey.split('_')[0];
@@ -138,7 +137,7 @@ export const enableConnectionKillSwitch = (node: Node) => {
     const pluginKey = getEnabledPluginKey();
     if (!pluginKey) return;
 
-    const platformKey = getPlatform() as Platform;
+    const platformKey = config().PLATFORM;
     const script = parseScript(node, pluginKey, Side.CLIENT, platformKey, Action.KILLSWITCH, Script.ENABLE);
 
     logger.info(`Enabling connection killswitch.`);
@@ -155,7 +154,7 @@ export const disableConnectionKillSwitch = (node: Node) => {
     const pluginKey = getEnabledPluginKey();
     if (!pluginKey) return;
 
-    const platformKey = getPlatform() as Platform;
+    const platformKey = config().PLATFORM;
     const script = parseScript(node, pluginKey, Side.CLIENT, platformKey, Action.KILLSWITCH, Script.DISABLE);
 
     logger.info(`Disabling connection killswitch.`);

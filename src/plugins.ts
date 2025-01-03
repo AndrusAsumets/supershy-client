@@ -107,6 +107,8 @@ sudo ufw disable || true
 sudo ufw --force reset || true
 `;
 
+const ENABLE_DARWIN_KILLSWITCH = () => ``;
+/*
 const ENABLE_DARWIN_KILLSWITCH = () => `
 raw_hosts=$1
 IFS=',' read -r -a hosts <<< $raw_hosts
@@ -171,7 +173,10 @@ sudo launchctl unload $daemon_dir || true
 sudo launchctl load $daemon_dir || true
 sudo launchctl start $daemon_dir || true
 `;
+*/
 
+const DISABLE_DARWIN_KILLSWITCH = () => ``;
+/*
 const DISABLE_DARWIN_KILLSWITCH = () => `
 daemon_dir=/Library/LaunchDaemons/org.supershy.firewall.plist
 firewall_dir=/usr/local/supershy.firewall.sh
@@ -190,6 +195,7 @@ sudo launchctl unload $daemon_dir || true
 sudo pfctl -d || true
 sudo ifconfig utun0 down || true
 `;
+*/
 
 export const plugins: Plugins = {
 	[Plugin.SSHUTTLE_VPN]: {
