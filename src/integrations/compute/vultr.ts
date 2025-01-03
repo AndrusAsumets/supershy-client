@@ -4,12 +4,13 @@ import { encodeBase64 } from 'jsr:@std/encoding/base64';
 import * as core from '../../core.ts';
 import * as models from '../../models.ts';
 import { logger as _logger } from '../../logger.ts';
-import { CreateVultrInstance } from '../../types.ts';
+import { Node, CreateVultrInstance } from '../../types.ts';
 
 const logger = _logger.get();
 const { config } = models;
 
 export const vultr = {
+    instanceApiBaseUrl: 'https://api.vultr.com/v2',
     instanceSize: config().VULTR_INSTANCE_PLAN,
     instanceImage: config().VULTR_INSTANCE_IMAGE,
     userData: {
@@ -18,49 +19,49 @@ export const vultr = {
         }
     },
     regions: {
-        availability: async (regionId: string) => {
+        availability: async (node: Node, regionId: string) => {
             const headers = {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${config().VULTR_API_KEY}`
             };
             const options = { method: 'GET', headers };
-            const res = await fetch(`${config().VULTR_BASE_URL}/regions/${regionId}/availability`, core.useProxy(options));
+            const res = await fetch(`${node.instanceApiBaseUrl}/regions/${regionId}/availability`, core.useProxy(options));
             const json = await res.json();
             const availablePlans = json.available_plans;
             return availablePlans;
         },
-        all: async () => {
+        all: async (node: Node) => {
             const headers = {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${config().VULTR_API_KEY}`
             };
             const options = { method: 'GET', headers };
-            const res = await fetch(`${config().VULTR_BASE_URL}/regions`, core.useProxy(options));
+            const res = await fetch(`${node.instanceApiBaseUrl}/regions`, core.useProxy(options));
             const json = await res.json();
             return json.regions;
         },
-        parse: async () => {
-            const regions = await vultr.regions.all();
+        parse: async (node: Node) => {
+            const regions = await vultr.regions.all(node);
             return regions
                 .filter((data: any) =>
                     !config().INSTANCE_COUNTRIES_DISABLED.includes(data.country)
                 )
                 .filter(async(data: any) => {
-                    const availablePlans = await vultr.regions.availability(data.id);
+                    const availablePlans = await vultr.regions.availability(node, data.id);
                     return availablePlans.includes(vultr.instanceSize);
                 })
                 .map((data: any) => [data.id, data.country]);
         },
     },
     countries: {
-        list: async () => {
-            const regions = await vultr.regions.all();
+        list: async (node: Node) => {
+            const regions = await vultr.regions.all(node);
             return regions
                 .map((data: any) => data.country);
         },
     },
     os: {
-        getId: async (instanceImage: string) => {
+        getId: async (node: Node, instanceImage: string) => {
             let results: any[] = [];
             let cursor = '';
             const headers = {
@@ -71,7 +72,7 @@ export const vultr = {
 
             let canLoop = true;
             while (canLoop) {
-                let url = `${config().VULTR_BASE_URL}/os?per_page=50`;
+                let url = `${node.instanceApiBaseUrl}/os?per_page=50`;
                 if (cursor) {
                     url = `${url}&cursor=${cursor}`;
                 }
@@ -90,8 +91,8 @@ export const vultr = {
         },
     },
     instances: {
-        create: async (args: CreateVultrInstance) => {
-            const osId = await vultr.os.getId(vultr.instanceImage);
+        create: async (node: Node, args: CreateVultrInstance) => {
+            const osId = await vultr.os.getId(node, vultr.instanceImage);
             args.os_id = osId;
             const headers = {
                 'Content-Type': 'application/json',
@@ -102,36 +103,36 @@ export const vultr = {
                 headers,
                 body: JSON.stringify(args),
             };
-            const res = await fetch(`${config().VULTR_BASE_URL}/instances`, core.useProxy(options));
+            const res = await fetch(`${node.instanceApiBaseUrl}/instances`, core.useProxy(options));
             const json = await res.json();
             !json.instance && logger.error({ message: 'vultr.instances.create error', json });
-            const instanceIp = await vultr.ip.get(json.instance.id);
+            const instanceIp = await vultr.ip.get(node, json.instance.id);
             return {
-                instanceId: json.instance.id,
+                instanceId: String(json.instance.id),
                 instanceIp,
             }
         },
-        get: async (instanceId: string) => {
+        get: async (node: Node, instanceId: string) => {
             const headers = {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${config().VULTR_API_KEY}`
             };
             const options = { method: 'GET', headers };
-            const res = await fetch(`${config().VULTR_BASE_URL}/instances/${instanceId}`, core.useProxy(options));
+            const res = await fetch(`${node.instanceApiBaseUrl}/instances/${instanceId}`, core.useProxy(options));
             const json = await res.json();
             return json.instance;
         },
-        list: async () => {
+        list: async (): Promise<any[][]> => {
             const headers = {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${config().VULTR_API_KEY}`
             };
             const options = { method: 'GET', headers };
-            const res = await fetch(`${config().VULTR_BASE_URL}/instances`, core.useProxy(options));
+            const res = await fetch(`${vultr.instanceApiBaseUrl}/instances`, core.useProxy(options));
             const json = await res.json();
-            return json.instances;
+            return [[json.instances, vultr.instanceApiBaseUrl]];
         },
-        delete: async (ids: number[]) => {
+        delete: async (ids: number[], instanceApiBaseUrl: string) => {
             let index = 0;
 
             while (index < ids.length) {
@@ -144,17 +145,18 @@ export const vultr = {
                     method: 'DELETE',
                     headers,
                 };
-                await fetch(`${config().VULTR_BASE_URL}/instances/${id}`, core.useProxy(options));
+                await fetch(`${instanceApiBaseUrl}/instances/${id}`, core.useProxy(options));
                 logger.info(`Deleted Vultr instance: ${id}.`);
                 index = index + 1;
             }
         },
     },
     keys: {
-        add: async function(
+        add: async (
+            node: Node,
             publicKey: string,
             name: string,
-        ) {
+        ): Promise<string> => {
             const headers = {
                 Authorization: `Bearer ${config().VULTR_API_KEY}`,
                 'Content-Type': 'application/json',
@@ -168,49 +170,30 @@ export const vultr = {
                 headers,
                 body: JSON.stringify(body),
             };
-            const res = await fetch(`${config().VULTR_BASE_URL}/ssh-keys`, core.useProxy(options));
+            const res = await fetch(`${node.instanceApiBaseUrl}/ssh-keys`, core.useProxy(options));
             const json = await res.json();
             !json['ssh_key'] && logger.error({ message: 'vultr.keys.add error', json });
-            return json['ssh_key']['id'];
+            return String(json['ssh_key']['id']);
         },
-        list: async () => {
+        delete: async (node: Node, instancePublicKeyId: string) => {
             const headers = {
                 Authorization: `Bearer ${config().VULTR_API_KEY}`,
                 'Content-Type': 'application/json',
             };
             const options = {
-                method: 'GET',
+                method: 'DELETE',
                 headers,
             };
-            const res = await fetch(`${config().VULTR_BASE_URL}/ssh-keys`, core.useProxy(options));
-            const json = await res.json();
-            return json['ssh_keys'];
-        },
-        delete: async (ids: number[]) => {
-            let index = 0;
-
-            while (index < ids.length) {
-                const id = ids[index];
-                const headers = {
-                    Authorization: `Bearer ${config().VULTR_API_KEY}`,
-                    'Content-Type': 'application/json',
-                };
-                const options = {
-                    method: 'DELETE',
-                    headers,
-                };
-                await fetch(`${config().VULTR_BASE_URL}/ssh-keys/${id}`, core.useProxy(options));
-                logger.info(`Deleted Vultr ssh_key: ${id}.`);
-                index = index + 1;
-            }
+            await fetch(`${node.instanceApiBaseUrl}/ssh-keys/${instancePublicKeyId}`, core.useProxy(options));
+            logger.info(`Deleted Vultr ssh_key: ${instancePublicKeyId}.`);
         },
     },
     ip: {
-        get: async (instanceId: string) => {
+        get: async (node: Node, instanceId: string) => {
             let ip = null;
 
             while (!ip) {
-                const instance = await vultr.instances.get(instanceId);
+                const instance = await vultr.instances.get(node, instanceId);
 
                 if (instance && instance.main_ip !== '0.0.0.0') {
                     ip = instance.main_ip;

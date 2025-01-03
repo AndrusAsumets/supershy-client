@@ -25,6 +25,7 @@ export enum InstanceProvider {
 	DIGITAL_OCEAN = 'digital_ocean',
 	HETZNER = 'hetzner',
 	VULTR = 'vultr',
+	//EXOSCALE = 'exoscale',
 }
 
 export interface Node {
@@ -34,6 +35,7 @@ export interface Node {
 	proxyRemotePort: number
 	pluginsEnabled: Plugin[]
 	instanceProvider: InstanceProvider
+	instanceApiBaseUrl: string
 	instanceId: string
 	instanceName: string
 	instanceIp: string
@@ -41,7 +43,6 @@ export interface Node {
 	instanceCountry: string
 	instanceSize: string
 	instanceImage: string
-	instancePublicKeyId: string
 	sshUser: string
 	sshKeyAlgorithm: string
 	sshKeyLength: number;
@@ -89,6 +90,10 @@ export interface CreateVultrInstance {
 	sshkey_id: [string]
 	user_data: string
 	backups: string
+}
+
+export interface CreateExoscaleInstance {
+
 }
 
 export type InstancePayload = CreateDigitalOceanInstance & CreateHetznerInstance & CreateVultrInstance
@@ -151,10 +156,6 @@ export interface Config {
 	CLOUDFLARE_ACCOUNT_ID: string
 	CLOUDFLARE_API_KEY: string
 	CLOUDFLARE_KV_NAMESPACE: string
-	DIGITAL_OCEAN_BASE_URL: string
-	HETZNER_BASE_URL: string
-	VULTR_BASE_URL: string
-	CLOUDFLARE_BASE_URL: string
 	HOME_PATH: string
 	DATA_PATH: string
 	SSH_KEY_PATH: string
@@ -179,7 +180,6 @@ export interface Config {
 	WEB_URL: string
 	WEB_SOCKET_PORT: number
 	NODE_ENABLED: boolean
-	DIGITAL_OCEAN_REGIONS: Record<string, string>
 	PLUGINS: Plugin[]
 	PLUGINS_ENABLED: Plugin[]
 	INSTANCE_PROVIDERS: InstanceProvider[]

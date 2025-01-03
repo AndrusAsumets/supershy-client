@@ -91,8 +91,8 @@ const loop = async () => {
     try {
         core.setLoopStatus(io, LoopStatus.ACTIVE);
         const startTime = performance.now();
-        await rotate();
         logger.info('Started node rotation.');
+        await rotate();
         const endTime = performance.now();
         core.setLoopStatus(io, LoopStatus.FINISHED);
 
@@ -138,15 +138,12 @@ const rotate = async () => {
             .filter((instanceProvider: InstanceProvider) => !config().INSTANCE_PROVIDERS_DISABLED.includes(instanceProvider));
         !instanceProviders.length && logger.warn('None of the VPS providers are enabled.');
         const instanceProvider: InstanceProvider = lib.shuffle(instanceProviders)[0];
+        const { instanceSize, instanceImage, instanceApiBaseUrl } = integrations.compute[instanceProvider];
         const enabledPluginKey = config().PLUGINS_ENABLED[0];
         !enabledPluginKey && logger.info(`No enabled plugins found.`);
         const nodeUuid = uuidv7();
         const nodeType = nodeTypes[nodeIndex];
-        const instanceLocationsList = await integrations.compute[instanceProvider].regions.parse();
-        !instanceLocationsList.length && logger.info('No locations were found. Are any of the countries enabled for the VPS?');
-        const [instanceRegion, instanceCountry]: string[] = lib.shuffle(instanceLocationsList)[0];
         const instanceName = `${config().APP_ID}-${config().ENV}-${nodeType}-${nodeUuid}`;
-        const { instanceSize, instanceImage } = integrations.compute[instanceProvider];
         const sshKeyPath = `${config().SSH_KEY_PATH}/${instanceName}`;
         const sshPortRange: number[] = config().SSH_PORT_RANGE.split(':').map((item: string) => Number(item));
         const sshPort = lib.randomNumberFromRange(sshPortRange);
@@ -158,14 +155,14 @@ const rotate = async () => {
             appId: config().APP_ID,
             pluginsEnabled: [enabledPluginKey],
             instanceProvider,
+            instanceApiBaseUrl,
             instanceName,
             instanceId: '',
             instanceIp: '',
-            instanceRegion,
-            instanceCountry,
+            instanceRegion: '',
+            instanceCountry: '',
             instanceSize,
             instanceImage,
-            instancePublicKeyId: '',
             nodeType,
             sshUser: config().SSH_USER,
             sshHostKey: '',
@@ -182,8 +179,13 @@ const rotate = async () => {
             modifiedTime: null,
             deletedTime: null,
         };
+        const instanceLocationsList = await integrations.compute[instanceProvider].regions.parse(node);
+        !instanceLocationsList.length && logger.info('No locations were found. Are any of the countries enabled for the VPS?');
+        const [instanceRegion, instanceCountry]: string[] = lib.shuffle(instanceLocationsList)[0];
+        node.instanceRegion = instanceRegion;
+        node.instanceCountry = instanceCountry;
         const publicKey = await integrations.shell.sshKeygen(node);
-        node.instancePublicKeyId = await integrations.compute[instanceProvider].keys.add(publicKey, instanceName);
+        const instancePublicKeyId = await integrations.compute[instanceProvider].keys.add(node, publicKey, instanceName);
         const script = plugins[enabledPluginKey][Side.SERVER][Platform.LINUX][Action.MAIN][Script.ENABLE](node);
         const userData = core.prepareCloudConfig(script);
         const formattedUserData = integrations.compute[instanceProvider].userData.format(userData);
@@ -197,23 +199,27 @@ const rotate = async () => {
             size: instanceSize,
             plan: instanceSize,
             server_type: instanceSize,
-            ssh_keys: [node.instancePublicKeyId],
-            sshkey_id: [node.instancePublicKeyId],
+            ssh_keys: [instancePublicKeyId],
+            sshkey_id: [instancePublicKeyId],
             user_data: formattedUserData,
             backups: 'disabled',
         };
-        const { instanceId, instanceIp } = await integrations.compute[instanceProvider].instances.create(instancePayload);
-        node.instanceId = instanceId;
-        node.instanceIp = instanceIp;
-
-        logger.info(`Created ${instanceProvider} instance.`);
+        logger.info(`Creating ${instanceProvider} instance.`);
         logger.info(instancePayload);
-        logger.info(`Found network at ${instanceIp}.`);
+
+        node = {
+            ...node,
+            ...await integrations.compute[instanceProvider].instances.create(node, instancePayload)
+        };
+        logger.info(`Created ${instanceProvider} instance.`);
+        logger.info(node);
+        logger.info(`Found network at ${node.instanceIp}.`);
 
         node = await integrations.kv.cloudflare.hostKey.read(node, jwtSecret);
         models.updateNode(node);
         activeNodes.push(node);
         core.setCurrentNodeReserve(io);
+        await integrations.compute[instanceProvider].keys.delete(node, instancePublicKeyId);
         nodeIndex = nodeIndex + 1;
     }
 

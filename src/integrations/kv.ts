@@ -10,13 +10,14 @@ const { config } = models;
 
 export const kv = {
     cloudflare: {
+        apiBaseurl: 'https://api.cloudflare.com/client/v4',
         heartbeat: async (): Promise<boolean> => {
             try {
                 const options = {
                     method: 'GET',
                     signal: AbortSignal.timeout(config().HEARTBEAT_INTERVAL_SEC),
                 };
-                const res = await fetch(config().CLOUDFLARE_BASE_URL, core.useProxy(options));
+                const res = await fetch(kv.cloudflare.apiBaseurl, core.useProxy(options));
                 await res.json();
                 logger.info('Heartbeat.');
                 return true;
@@ -30,6 +31,8 @@ export const kv = {
                 node: Node,
                 jwtSecret: string,
             ) => {
+                logger.info(`Fetching host key for node ${node.nodeUuid}.`);
+
                 while (!node.sshHostKey) {
                     try {
                         const headers = {
@@ -37,7 +40,7 @@ export const kv = {
                         };
                         const options = { method: 'GET', headers };
                         const url =
-                            `${config().CLOUDFLARE_BASE_URL}/accounts/${config().CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${config().CLOUDFLARE_KV_NAMESPACE}/values/${node.nodeUuid}`;
+                            `${kv.cloudflare.apiBaseurl}/accounts/${config().CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${config().CLOUDFLARE_KV_NAMESPACE}/values/${node.nodeUuid}`;
                         const res = await fetch(url, core.useProxy(options));
                         const text = await res.text();
                         text.includes('errors') && !text.includes('key not found') && logger.error({ message: 'kv.cloudflare.hostKey.get error', text });

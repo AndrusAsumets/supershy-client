@@ -105,7 +105,7 @@ DIGITAL_OCEAN_API_KEY
  -> Generate New Token.
  -> Regions: read.
  -> Droplet: create, read, delete.
- -> ssh_key: create, read, delete.
+ -> ssh_key: create, delete.
  -> Click to copy the API key.
 
 HETZNER_API_KEY

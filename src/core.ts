@@ -48,6 +48,7 @@ export const setInstanceProviders = (
 };
 
 export const setInstanceCountries = async (
+    node: Node,
     config: Config
 ): Promise<Config> => {
     const hasHeartbeat = await integrations.kv.cloudflare.heartbeat();
@@ -65,7 +66,7 @@ export const setInstanceCountries = async (
     let index = 0;
     while(index < instanceProviders.length) {
         const instanceProvider: InstanceProvider = instanceProviders[index];
-        const countries = await integrations.compute[instanceProvider].countries.list();
+        const countries = await integrations.compute[instanceProvider].countries.list(node);
         countries
             .forEach((country: string) =>
                 !config.INSTANCE_COUNTRIES.includes(country) && config.INSTANCE_COUNTRIES.push(country)
@@ -195,29 +196,23 @@ export const cleanup = async (
 
     let index = 0;
     while (index < instanceProviders.length) {
-        const instanceProvider = instanceProviders[index];
+        const instanceProvider: InstanceProvider = instanceProviders[index];
+        (await integrations.compute[instanceProvider].instances.list())
+            .forEach(async(instancesList: any[]) => {
+                const [instances, instanceApiBaseUrl] = instancesList;
 
-        const deletableKeyIds = await integrations.compute[instanceProvider].keys.list();
-        if (deletableKeyIds) {
-            await integrations.compute[instanceProvider].keys.delete(
-                deletableKeyIds
-                    .filter((key: any) => key.name.includes(`${config().APP_ID}-${config().ENV}`))
-                    .map((key: any) => key.id)
-            );
-        }
+                if (instances) {
+                    const deletableInstances = instances
+                        .filter((instance: any) => {
+                            if ('name' in instance && instance.name.includes(`${config().APP_ID}-${config().ENV}`)) return true;
+                            if ('label' in instance && instance.label.includes(`${config().APP_ID}-${config().ENV}`)) return true;
+                        })
+                        .map((instance: any) => String(instance.id))
+                        .filter((instanceId: any) => !instanceIdsToKeep.includes(instanceId));
 
-        const deletableInstanceIds = await integrations.compute[instanceProvider].instances.list();
-        if (deletableInstanceIds) {
-            await integrations.compute[instanceProvider].instances.delete(
-                deletableInstanceIds
-                    .filter((instance: any) => {
-                        if ('name' in instance && instance.name.includes(`${config().APP_ID}-${config().ENV}`)) return true;
-                        if ('label' in instance && instance.label.includes(`${config().APP_ID}-${config().ENV}`)) return true;
-                    })
-                    .map((instance: any) => instance.id)
-                    .filter((id: string) => !instanceIdsToKeep.includes(id))
-            );
-        }
+                    await integrations.compute[instanceProvider].instances.delete(deletableInstances, instanceApiBaseUrl);
+                }
+            });
 
         index = index + 1;
     }

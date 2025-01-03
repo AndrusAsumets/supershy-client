@@ -22,10 +22,6 @@ const VULTR_API_KEY = '';
 const CLOUDFLARE_ACCOUNT_ID = '';
 const CLOUDFLARE_API_KEY = '';
 const CLOUDFLARE_KV_NAMESPACE = '';
-const DIGITAL_OCEAN_BASE_URL = 'https://api.digitalocean.com/v2';
-const HETZNER_BASE_URL = 'https://api.hetzner.cloud/v1';
-const VULTR_BASE_URL = 'https://api.vultr.com/v2';
-const CLOUDFLARE_BASE_URL = 'https://api.cloudflare.com/client/v4';
 const HOME_PATH = homedir();
 const __DIRNAME = path.dirname(path.fromFileUrl(import.meta.url));
 const UI_PATH = `${__DIRNAME}/ui`;
@@ -53,17 +49,6 @@ const WEB_SERVER_PORT = 8080;
 const WEB_URL = `http://localhost:${WEB_SERVER_PORT}`;
 const WEB_SOCKET_PORT = 8880;
 const NODE_ENABLED = false;
-const DIGITAL_OCEAN_REGIONS: Record<string, string> = {
-    nyc: 'US',
-    ams: 'NL',
-    sfo: 'US',
-    sgp: 'SG',
-    lon: 'UK',
-    fra: 'DE',
-    tor: 'CA',
-    blr: 'IN',
-    syd: 'AU',
-};
 const PLUGINS: Plugin[] = [];
 const PLUGINS_ENABLED: Plugin[] = [Plugin.SSHUTTLE_VPN];
 const INSTANCE_COUNTRIES: string[] = [];
@@ -94,10 +79,6 @@ export const config: Config = {
     AUTO_LAUNCH_WEB,
     APP_ID,
     ENV,
-    DIGITAL_OCEAN_BASE_URL,
-    HETZNER_BASE_URL,
-    VULTR_BASE_URL,
-    CLOUDFLARE_BASE_URL,
     INSTANCE_PROVIDERS,
     INSTANCE_PROVIDERS_DISABLED,
     HEARTBEAT_INTERVAL_SEC,
@@ -120,7 +101,6 @@ export const config: Config = {
     SSH_LOG_EXTENSION,
     SSH_USER,
     NODE_TYPES,
-    DIGITAL_OCEAN_REGIONS,
     PLUGINS,
     PLUGINS_ENABLED,
     INSTANCE_COUNTRIES,
