@@ -46,7 +46,7 @@ const connect = async (
     node = core.getConnectionString(node);
     integrations.kv.cloudflare.hostKey.write(node);
     existsSync(node.sshLogPath) && Deno.removeSync(node.sshLogPath);
-    config().CONNECTION_KILLSWITCH && core.enableConnectionKillSwitch(node);
+    config().CONNECTION_KILLSWITCH && core.enableConnectionKillSwitch();
 
     logger.info(`Connecting SSH to ${node.instanceIp}:${node.sshPort}.`);
     models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTING});
@@ -68,6 +68,8 @@ const connect = async (
                 node.connectedTime = new Date().toISOString();
                 models.updateNode(node);
                 models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTED});
+                core.setCurrentNodeReserve(io);
+                io.emit('/node', node);
                 io.emit('/config', config());
             }
         }
@@ -113,7 +115,6 @@ const rotate = async () => {
 
     if (initialNode) {
         await connect(initialNode);
-        io.emit('/node', initialNode);
         activeNodes.push(initialNode);
         const nodeCurrentReserveCount = core.getCurrentNodeReserve().length;
          // Cant reserve negative nodes.
@@ -126,7 +127,6 @@ const rotate = async () => {
         core.getCurrentNodeReserve().map(
             (nodeUuid: string) => activeNodes.push(models.nodes()[nodeUuid]
         ));
-        core.setCurrentNodeReserve(io);
     }
 
     let nodeIndex = 0;

@@ -12,7 +12,7 @@ const { config } = models;
 const logger = _logger.get();
 
 export const parseScript = (
-    node: Node,
+    node: Node | null,
     pluginKey: Plugin,
     sideKey: Side,
     platformKey: Platform,
@@ -137,12 +137,12 @@ export const useProxy = (options: any) => {
     return options;
 };
 
-export const enableConnectionKillSwitch = (node: Node) => {
+export const enableConnectionKillSwitch = () => {
     const pluginKey = getEnabledPluginKey();
     if (!pluginKey) return;
 
     const platformKey = config().PLATFORM;
-    const script = parseScript(node, pluginKey, Side.CLIENT, platformKey, Action.KILLSWITCH, Script.ENABLE);
+    const script = parseScript(null, pluginKey, Side.CLIENT, platformKey, Action.KILLSWITCH, Script.ENABLE);
 
     logger.info(`Enabling connection killswitch.`);
     const nodes = models.nodes();
@@ -154,12 +154,12 @@ export const enableConnectionKillSwitch = (node: Node) => {
     logger.info(`Enabled connection killswitch.`);
 };
 
-export const disableConnectionKillSwitch = (node: Node) => {
+export const disableConnectionKillSwitch = () => {
     const pluginKey = getEnabledPluginKey();
     if (!pluginKey) return;
 
     const platformKey = config().PLATFORM;
-    const script = parseScript(node, pluginKey, Side.CLIENT, platformKey, Action.KILLSWITCH, Script.DISABLE);
+    const script = parseScript(null, pluginKey, Side.CLIENT, platformKey, Action.KILLSWITCH, Script.DISABLE);
 
     logger.info(`Disabling connection killswitch.`);
     integrations.shell.command(script);
