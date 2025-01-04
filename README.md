@@ -67,7 +67,7 @@ connect to the same node twice, therefore reducing risc of a possible MITM attac
 Digital Ocean, Exoscale, Hetzner, Vultr.
 
 ### Supported countries
-Australia, Austria, Brazil, Bulgaria, Canada, Chile, Finland, France, Germany, India, Israel, Japan, Korea, Mexico, Netherlands, Poland, Singapore, South Africa, Spain, Sweden, Switzerland, United Kingdom, United States
+Australia, Austria, Brazil, Bulgaria, Canada, Chile, Finland, France, Germany, India, Israel, Japan, Korea, Mexico, Netherlands, Poland, Singapore, South Africa, Spain, Sweden, Switzerland, United Kingdom, United States.
 
 ## Installation
 
