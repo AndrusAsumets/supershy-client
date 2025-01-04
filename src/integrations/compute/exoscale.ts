@@ -117,7 +117,6 @@ export const exoscale = {
             };
             const res = await fetch(`${node.instanceApiBaseUrl}${requestPath}`, core.useProxy(options));
             const json = await res.json();
-            !json['instance-types'] && logger.error({ message: 'exoscale.instanceTypes error', json });
             return json['instance-types'];
         },
     },

@@ -47,6 +47,14 @@ export const setInstanceProviders = (
     return config;
 };
 
+const getEnabledInstanceProviders = (): InstanceProvider[] => {
+    return config()
+        .INSTANCE_PROVIDERS
+        .filter((instanceProvider: InstanceProvider) =>
+            !config().INSTANCE_PROVIDERS_DISABLED.includes(instanceProvider)
+    );
+};
+
 export const setInstanceCountries = async (
     config: Config
 ): Promise<Config> => {
@@ -55,11 +63,7 @@ export const setInstanceCountries = async (
         return config;
     }
 
-    const instanceProviders: InstanceProvider[] = config
-        .INSTANCE_PROVIDERS
-        .filter((instanceProvider: InstanceProvider) =>
-            !config.INSTANCE_PROVIDERS_DISABLED.includes(instanceProvider)
-    );
+    const instanceProviders = getEnabledInstanceProviders();
     config.INSTANCE_COUNTRIES = [];
 
     let index = 0;

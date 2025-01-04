@@ -205,11 +205,14 @@ cd supershy-client
 
 ```
 # Linux
-sudo apt install git unzip ufw build-essential sshuttle screen -y
+sudo apt install git unzip ufw build-essential sshuttle -y
 
 # Mac
 brew install sshuttle
-brew install screen
+
+# You might also need to add `Defaults timestamp_timeout=-1` to /etc/sudoers, as 
+# by default OSX seems to keep forgetting sudo password every 5 minutes (which is 
+# needed by sshuttle).
 ```
 
 ```

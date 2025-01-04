@@ -251,8 +251,8 @@ const updateStatus = () => {
     if (isAppEnabled && node && Object.keys(node).length && config.CONNECTION_STATUS == 'connected') {
         status.push(['IPv4', node.instanceIp]);
         status.push(['Country', COUNTRY_CODES[node.instanceCountry]]);
-        status.push(['VPS', node.instanceProvider.toUpperCase()]);
-        status.push(['Plugin', node.pluginsEnabled[0].toUpperCase()]);
+        status.push(['VPS', capitalize(node.instanceProvider)]);
+        status.push(['Plugin', capitalize(node.pluginsEnabled[0])]);
         status.push(['Nodes in reserve', `${config.NODE_CURRENT_RESERVE_COUNT} / ${config.NODE_RESERVE_COUNT}`]);
     }
 
