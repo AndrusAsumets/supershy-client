@@ -127,10 +127,14 @@ export const useProxy = (options: any) => {
     if (!connectedNode) return options;
 
     const pluginKey = connectedNode.pluginsEnabled[0];
-    const hasNodeProtocol = pluginKey.toLocaleLowerCase().includes('proxy');
+    const isHttpProxy = pluginKey == Plugin.HTTP_PROXY;
+    const isSocks5Proxy = pluginKey == Plugin.SOCKS5_PROXY;
+    const hasNodeProtocol = isHttpProxy || isSocks5Proxy;
     if (!hasNodeProtocol) return options;
 
-    const protocol = pluginKey.split('_')[0];
+    const protocol = isHttpProxy
+        ? 'http'
+        : 'socks5';
     const url = `${protocol}://0.0.0.0:${connectedNode.proxyLocalPort}`;
     options.client = Deno.createHttpClient({ proxy: { url } });
 
