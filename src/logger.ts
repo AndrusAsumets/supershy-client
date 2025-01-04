@@ -3,12 +3,8 @@ import { Server } from 'https://deno.land/x/socket_io@0.2.0/mod.ts';
 import * as models from './models.ts';
 
 const { config } = models;
-const {
-    LOG_PATH,
-} = config();
-
 const _logger = new Logger();
-await _logger.initFileLogger(`${LOG_PATH}`);
+await _logger.initFileLogger(`${config().LOG_PATH}`);
 
 export const logger = {
 	get: function (io: Server | null = null) {

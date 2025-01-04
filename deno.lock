@@ -158,6 +158,7 @@
     }
   },
   "redirects": {
+    "https://deno.land/x/bash/mod.ts": "https://deno.land/x/bash@0.2.0/mod.ts",
     "https://deno.land/x/is_docker/mod.ts": "https://deno.land/x/is_docker@v2.0.0/mod.ts",
     "https://deno.land/x/open/index.ts": "https://deno.land/x/open@v1.0.0/index.ts"
   },
@@ -298,6 +299,7 @@
     "https://deno.land/std@0.224.0/path/windows/resolve.ts": "8dae1dadfed9d46ff46cc337c9525c0c7d959fb400a6308f34595c45bdca1972",
     "https://deno.land/std@0.224.0/path/windows/to_file_url.ts": "40e560ee4854fe5a3d4d12976cef2f4e8914125c81b11f1108e127934ced502e",
     "https://deno.land/std@0.224.0/path/windows/to_namespaced_path.ts": "4ffa4fb6fae321448d5fe810b3ca741d84df4d7897e61ee29be961a6aac89a4c",
+    "https://deno.land/x/bash@0.2.0/mod.ts": "acfca1b0f024987f15ff1cf47ad37a4a4a0c53f4075b62fd94eb91915df46823",
     "https://deno.land/x/is_docker@v2.0.0/mod.ts": "4c8753346f4afbb6c251d7984a609aa84055559cf713fba828939a5d39c95cd0",
     "https://deno.land/x/is_wsl@v1.1.0/mod.ts": "30996b09376652df7a4d495320e918154906ab94325745c1399e13e658dca5da",
     "https://deno.land/x/logger@v1.1.6/date.ts": "e0e2246350afbbad09a40fb0755c0820e52154a0e576719f685fe9a0103d29f3",

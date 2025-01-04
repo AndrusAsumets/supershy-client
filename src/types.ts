@@ -5,7 +5,7 @@ export interface Provider {
 
 export type Providers = Record<string, Provider>
 
-export enum ProxyType {
+export enum NodeType {
 	A = 'a'
 }
 
@@ -15,16 +15,27 @@ export enum LoopStatus {
 	FINISHED = 'finished',
 }
 
+export enum ConnectionStatus {
+	CONNECTED = 'connected',
+	CONNECTING = 'connecting',
+	DISCONNECTED = 'disconnected',
+}
+
 export enum InstanceProvider {
-	DIGITAL_OCEAN = 'digital_ocean',
+	DIGITAL_OCEAN = 'digitalOcean',
+	EXOSCALE = 'exoscale',
 	HETZNER = 'hetzner',
 	VULTR = 'vultr',
 }
 
-export interface Proxy {
-	proxyUuid: string
-	proxyType: ProxyType
+export interface Node {
+	nodeUuid: string
+	nodeType: NodeType
+	proxyLocalPort: number
+	proxyRemotePort: number
+	pluginsEnabled: Plugin[]
 	instanceProvider: InstanceProvider
+	instanceApiBaseUrl: string
 	instanceId: string
 	instanceName: string
 	instanceIp: string
@@ -32,11 +43,7 @@ export interface Proxy {
 	instanceCountry: string
 	instanceSize: string
 	instanceImage: string
-	instancePublicKeyId: number
 	sshUser: string
-	passphrase: string
-	proxyLocalPort: number
-	proxyRemotePort: number
 	sshKeyAlgorithm: string
 	sshKeyLength: number;
 	sshKeyPath: string
@@ -45,14 +52,16 @@ export interface Proxy {
 	sshPort: number
 	sshHostKey: string
 	sshLogPath: string
+	jwtSecret: string
 	isDeleted: false
+	connectedTime: string | null
 	createdTime: string
 	modifiedTime: string | null
 	deletedTime: string | null
 }
 
 export enum DatabaseKey {
-	PROXIES = 'proxies',
+	NODES = 'nodes',
 	CONFIG = 'config'
 }
 
@@ -83,27 +92,80 @@ export interface CreateVultrInstance {
 	backups: string
 }
 
+export interface CreateExoscaleInstance {
+	'name': string
+	'instance-type': Record<string, string>
+	'public-ip-assignment': string
+	'security-groups': Record<string, string>[]
+	'ssh-key': Record<string, string>
+	'user-data': string
+	'template': Record<string, unknown>
+	'disk-size': number
+}
+
+export type InstancePayload = CreateDigitalOceanInstance & CreateHetznerInstance & CreateVultrInstance & CreateExoscaleInstance
+
+export enum Plugin {
+	SSHUTTLE_VPN = 'sshuttleVpn',
+	HTTP_PROXY = 'httpProxy',
+	SOCKS5_PROXY = 'socks5Proxy',
+}
+
+export enum Side {
+	CLIENT = 'client',
+	SERVER = 'server',
+}
+
+export enum Platform {
+	LINUX = 'linux',
+	DARWIN = 'darwin',
+}
+
+export enum Action {
+	MAIN = 'main',
+	KILLSWITCH = 'killswitch',
+}
+
+export enum Script {
+	PREPARE = 'prepare',
+	ENABLE = 'enable',
+	DISABLE = 'disable',
+}
+
+export type Scripts = Record<string, (() => string) | ((node: Node | null) => string)>
+
+export type Actions = Record<string, Scripts>
+
+export type Platforms = Record<string, Actions>
+
+export type Sides = Record<string, Platforms>
+
+export type Plugins = Record<string, Sides>
+
 export interface Config {
 	APP_ID: string
 	ENV: string
-	PROXY_RECYCLE_INTERVAL_SEC: number
+	PLATFORM: Platform
+	LOOP_STATUS: LoopStatus
+	CONNECTION_STATUS: ConnectionStatus
+	NODE_RECYCLE_INTERVAL_SEC: number
+	NODE_RESERVE_COUNT: number;
+	NODE_CURRENT_RESERVE_COUNT: number
+	CONNECTION_KILLSWITCH: boolean
 	AUTO_LAUNCH_WEB: boolean
-	SSH_PORT_RANGE: number[]
 	PROXY_LOCAL_PORT: number
 	PROXY_REMOTE_PORT: number
+	SSH_PORT_RANGE: string
 	SSH_KEY_ALGORITHM: string
 	SSH_KEY_LENGTH: number
 	DIGITAL_OCEAN_API_KEY: string
+	EXOSCALE_API_KEY: string
+	EXOSCALE_API_SECRET: string
 	HETZNER_API_KEY: string
 	VULTR_API_KEY: string
 	CLOUDFLARE_ACCOUNT_ID: string
 	CLOUDFLARE_API_KEY: string
 	CLOUDFLARE_KV_NAMESPACE: string
-	PROXY_URL: string
-	DIGITAL_OCEAN_BASE_URL: string
-	HETZNER_BASE_URL: string
-	VULTR_BASE_URL: string
-	CLOUDFLARE_BASE_URL: string
 	HOME_PATH: string
 	DATA_PATH: string
 	SSH_KEY_PATH: string
@@ -115,27 +177,30 @@ export interface Config {
 	SSH_LOG_EXTENSION: string
 	SSH_USER: string
 	SSH_CONNECTION_TIMEOUT_SEC: number
-	PROXY_TYPES: ProxyType[]
+	SSHUTTLE_PID_FILE_PATH: string
+	NODE_TYPES: NodeType[]
 	DIGITAL_OCEAN_INSTANCE_SIZE: string
+	EXOSCALE_INSTANCE_SIZE: string
 	HETZNER_SERVER_TYPE: string
 	VULTR_INSTANCE_PLAN: string
 	DIGITAL_OCEAN_INSTANCE_IMAGE: string
+	EXOSCALE_TEMPLATE_NAME: string
 	HETZNER_INSTANCE_IMAGE: string
 	VULTR_INSTANCE_IMAGE: string
-	GENERATE_SSH_KEY_FILE_NAME: string
-	CONNECT_SSH_TUNNEL_FILE_NAME: string
+	EXOSCALE_DISK_SIZE: number
 	HEARTBEAT_INTERVAL_SEC: number
 	WEB_SERVER_PORT: number
 	WEB_URL: string
 	WEB_SOCKET_PORT: number
-	PROXY_ENABLED: boolean
-	DIGITAL_OCEAN_REGIONS: Record<string, string>
+	NODE_ENABLED: boolean
+	PLUGINS: Plugin[]
+	PLUGINS_ENABLED: Plugin[]
 	INSTANCE_PROVIDERS: InstanceProvider[]
 	INSTANCE_PROVIDERS_DISABLED: InstanceProvider[]
 	INSTANCE_COUNTRIES: string[]
 	INSTANCE_COUNTRIES_DISABLED: string[]
 }
 
-export type Proxies = Record<string, Proxy>
+export type Nodes = Record<string, Node>
 
-export type DatabaseData = Record<DatabaseKey, Proxies | Config>
+export type DatabaseData = Record<DatabaseKey, Nodes | Config>

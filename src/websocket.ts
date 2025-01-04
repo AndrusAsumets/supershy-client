@@ -1,54 +1,46 @@
 import { serve } from 'https://deno.land/std@0.150.0/http/server.ts';
 import { Server } from 'https://deno.land/x/socket_io@0.2.0/mod.ts';
-
-import {
-    Config,
-} from './types.ts';
+import { Config, ConnectionStatus } from './types.ts';
 import * as core from './core.ts';
 import * as models from './models.ts';
 
-const { config, proxies } = models;
-const {
-    PROXY_ENABLED,
-    WEB_SOCKET_PORT,
-} = config();
+const { config } = models;
 
 export const start = (io: Server) => {
     io.on('connection', (socket) => {
-        io.emit('/started', PROXY_ENABLED);
+        io.emit('/started', config().NODE_ENABLED);
         io.emit('/config', config());
-        io.emit('/proxy', proxies()[Object.keys(proxies())[0]]);
+        io.emit('/node', models.getLastConnectedNode());
 
-        socket.on('/proxy/enable', () => {
-            models.updateConfig({...config(), 'PROXY_ENABLED': true});
-            core.exit('/proxy/enable', true);
+        socket.on('/node/enable', () => {
+            models.updateConfig({...config(), 'NODE_ENABLED': true, CONNECTION_STATUS: ConnectionStatus.DISCONNECTED});
+            io.emit('/config', config());
+            core.exit('/node/enable', true);
         });
 
-        socket.on('/proxy/disable', () => {
-            models.updateConfig({...config(), 'PROXY_ENABLED': false});
-            core.exit('/proxy/disable', true);
+        socket.on('/node/disable', () => {
+            models.updateConfig({...config(), 'NODE_ENABLED': false, CONNECTION_STATUS: ConnectionStatus.DISCONNECTED});
+            io.emit('/config', config());
+            core.exit('/node/disable', true);
         });
 
-        socket.on('/config/save', async (_config: Config) => {
-            const prevInstanceProviders = JSON.stringify(config().INSTANCE_PROVIDERS);
-            const prevInstanceProvidersDisabled = JSON.stringify(config().INSTANCE_PROVIDERS_DISABLED);
+        socket.on('/config/save', async (newConfig: Config) => {
+            const prevConfig: Config = JSON.parse(JSON.stringify(config()));
+            models.updateConfig(core.setInstanceProviders(newConfig));
 
-            _config = core.setInstanceProviders(_config);
-            models.updateConfig(_config);
+            const isInstanceProvidersDiff = prevConfig.INSTANCE_PROVIDERS.length != config().INSTANCE_PROVIDERS.length;
+            const isInstanceProvidersDisabledDiff = prevConfig.INSTANCE_PROVIDERS_DISABLED.length != config().INSTANCE_PROVIDERS_DISABLED.length;
+            const isPluginsEnabledDiff = JSON.stringify(prevConfig.PLUGINS_ENABLED) != JSON.stringify(config().PLUGINS_ENABLED);
+            const isConnectionKillswitchDiff = prevConfig.CONNECTION_KILLSWITCH != config().CONNECTION_KILLSWITCH;
 
-            const currentInstanceProviders = JSON.stringify(_config.INSTANCE_PROVIDERS);
-            const currentInstanceProvidersDisabled = JSON.stringify(_config.INSTANCE_PROVIDERS_DISABLED);
-            const isInstanceProvidersDiff = prevInstanceProviders != currentInstanceProviders;
-            const isInstanceProvidersDisabledDiff = prevInstanceProvidersDisabled != currentInstanceProvidersDisabled;
-
-            if (isInstanceProvidersDiff || isInstanceProvidersDisabledDiff) {
-                _config = await core.setInstanceCountries(_config);
-                models.updateConfig(_config);
-            }
+            (isInstanceProvidersDiff || isInstanceProvidersDisabledDiff) && models.updateConfig(await core.setInstanceCountries(config()));
+            isPluginsEnabledDiff && core.disableConnectionKillSwitch(models.getInitialNode());
+            (isConnectionKillswitchDiff && config().CONNECTION_KILLSWITCH == true && models.getInitialNode()) && core.enableConnectionKillSwitch(models.getInitialNode());
+            (isConnectionKillswitchDiff && config().CONNECTION_KILLSWITCH == false) && core.disableConnectionKillSwitch(models.getInitialNode());
 
             io.emit('/config', config());
         });
     });
 
-    serve(io.handler(), { port: WEB_SOCKET_PORT });
+    serve(io.handler(), { port: config().WEB_SOCKET_PORT });
 };

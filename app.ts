@@ -1,5 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
-
 import * as crypto from 'node:crypto';
 import { v7 as uuidv7 } from 'npm:uuid';
 import { Server } from 'https://deno.land/x/socket_io@0.2.0/mod.ts';
@@ -7,12 +5,15 @@ import { open } from 'https://deno.land/x/open@v1.0.0/index.ts';
 import { existsSync } from 'https://deno.land/std@0.224.0/fs/mod.ts';
 import {
     LoopStatus,
-    ProxyType,
-    Proxy,
+    ConnectionStatus,
+    NodeType,
+    Node,
     InstanceProvider,
-    CreateDigitalOceanInstance,
-    CreateHetznerInstance,
-    CreateVultrInstance,
+    InstancePayload,
+    Action,
+    Side,
+    Platform,
+    Script,
 } from './src/types.ts';
 import * as core from './src/core.ts';
 import * as models from './src/models.ts';
@@ -20,152 +21,172 @@ import * as webserver from './src/webserver.ts';
 import * as websocket from './src/websocket.ts';
 import { logger as _logger } from './src/logger.ts';
 import * as lib from './src/lib.ts';
-import * as integrations from './src/integrations.ts';
+import { plugins } from './src/plugins.ts';
+import { integrations } from './src/integrations.ts';
 const { config } = models;
-
-const {
-    ENV,
-    APP_ID,
-    PROXY_LOCAL_PORT,
-    PROXY_REMOTE_PORT,
-    DATA_PATH,
-    SSH_KEY_PATH,
-    LOG_PATH,
-    GENERATE_SSH_KEY_FILE_NAME,
-    CONNECT_SSH_TUNNEL_FILE_NAME,
-    SSH_USER,
-    PROXY_TYPES,
-    SSH_PORT_RANGE,
-    PROXY_RECYCLE_INTERVAL_SEC,
-    AUTO_LAUNCH_WEB,
-    WEB_URL,
-    SSH_KEY_ALGORITHM,
-    SSH_KEY_LENGTH,
-    SSH_PATH,
-    SSH_KNOWN_HOSTS_PATH,
-    HEARTBEAT_INTERVAL_SEC,
-    PROXY_ENABLED,
-} = config();
-import {
-    GENERATE_SSH_KEY_FILE,
-    CONNECT_SSH_TUNNEL_FILE,
-} from './src/ssh.ts';
-
 const io = new Server({ cors: { origin: '*' }});
 const logger = _logger.get(io);
 
-let loopStatus: LoopStatus = LoopStatus.INACTIVE;
+const init = () => {
+    integrations.fs.ensureFolder(config().DATA_PATH);
+    integrations.fs.ensureFolder(config().SSH_PATH);
+    integrations.fs.ensureFolder(config().SSH_KEY_PATH);
+    integrations.fs.ensureFolder(config().LOG_PATH);
+    !existsSync(config().SSH_KNOWN_HOSTS_PATH) && Deno.writeTextFileSync(config().SSH_KNOWN_HOSTS_PATH, '');
+    loop();
+    core.heartbeat();
+    setInterval(() => core.heartbeat(), config().HEARTBEAT_INTERVAL_SEC * 1000);
+};
 
 const connect = async (
-    proxy: Proxy,
+    node: Node,
 ) => {
-    const port = PROXY_LOCAL_PORT;
-    proxy.connectionString = core
-        .getConnectionString(proxy)
-        .replace('\n', '');
+    const platformKey = config().PLATFORM;
+    const script = core.parseScript(node, node.pluginsEnabled[0], Side.CLIENT, platformKey, Action.MAIN, Script.ENABLE);
+    node = core.getConnectionString(node);
+    integrations.kv.cloudflare.hostKey.write(node);
+    existsSync(node.sshLogPath) && Deno.removeSync(node.sshLogPath);
+    config().CONNECTION_KILLSWITCH && core.enableConnectionKillSwitch(node);
 
-    logger.info(`Starting SSH tunnel proxy to ${proxy.instanceIp}:${port}.`);
+    logger.info(`Connecting SSH to ${node.instanceIp}:${node.sshPort}.`);
+    models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTING});
+    io.emit('/config', config());
 
-    integrations.fs.hostKey.save(proxy);
-    existsSync(proxy.sshLogPath) && Deno.removeSync(proxy.sshLogPath);
-
-    let isConnected = false;
-    while (!isConnected) {
-        await integrations.shell.pkill(`${port}:`);
+    while (config().CONNECTION_STATUS != ConnectionStatus.CONNECTED) {
+        await integrations.shell.pkill(`${config().PROXY_LOCAL_PORT}:0.0.0.0`);
+        await integrations.shell.pkill('0.0.0.0/0');
         await lib.sleep(1000);
-        integrations.shell.command(proxy.connectionString);
+        await integrations.shell.command(script, node.connectionString);
         await lib.sleep(config().SSH_CONNECTION_TIMEOUT_SEC * 1000);
 
         try {
-            const output = Deno.readTextFileSync(proxy.sshLogPath);
-            isConnected = output.includes('pledge: network');
+            const output = Deno.readTextFileSync(node.sshLogPath);
+            const hasNetwork = output.includes('pledge: network');
 
-            if (isConnected) {
-                logger.info(`Connected SSH tunnel to ${proxy.instanceIp}:${port}.`);
-                models.updateProxy(proxy);
-                return;
+            if (hasNetwork) {
+                logger.info(`Connected SSH to ${node.instanceIp}:${node.sshPort}.`);
+                node.connectedTime = new Date().toISOString();
+                models.updateNode(node);
+                models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTED});
+                io.emit('/config', config());
             }
         }
         catch(err) {
-            logger.warn(err);
-            logger.warn(`Restarting SSH tunnel to ${proxy.instanceIp}:${port}.`);
+            logger.warn({ message: `Restarting SSH connect to ${node.instanceIp}:${node.sshPort}.`, err });
         }
-        await lib.sleep(1000);
     }
 };
 
-const cleanup = async (
-    instanceIdsToKeep: string[]
-) => {
-    const instanceProviders = Object.values(InstanceProvider);
+const loop = async () => {
+    setTimeout(async () => {
+        const isStillWorking = config().LOOP_STATUS == LoopStatus.ACTIVE;
+        isStillWorking
+            ? await core.exit(`Timeout after passing ${config().NODE_RECYCLE_INTERVAL_SEC} seconds.`)
+            : await loop();
+    }, config().NODE_RECYCLE_INTERVAL_SEC * 1000);
 
-    let index = 0;
-    while (index < instanceProviders.length) {
-        const instanceProvider = instanceProviders[index];
+    try {
+        core.setLoopStatus(io, LoopStatus.ACTIVE);
+        const startTime = performance.now();
+        logger.info('Started node rotation.');
+        await rotate();
+        const endTime = performance.now();
+        core.setLoopStatus(io, LoopStatus.FINISHED);
 
-        const deletableKeyIds = await integrations.compute[instanceProvider].keys.list();
-        if (deletableKeyIds) {
-            await integrations.compute[instanceProvider].keys.delete(
-                deletableKeyIds
-                    .filter((key: any) => key.name.includes(`${APP_ID}-${ENV}`))
-                    .map((key: any) => key.id)
-            );
-        }
-
-        const deletableInstanceIds = await integrations.compute[instanceProvider].instances.list();
-        if (deletableInstanceIds) {
-            await integrations.compute[instanceProvider].instances.delete(
-                deletableInstanceIds
-                    .filter((instance: any) => {
-                        if ('name' in instance && instance.name.includes(`${APP_ID}-${ENV}`)) return true;
-                        if ('label' in instance && instance.label.includes(`${APP_ID}-${ENV}`)) return true;
-                    })
-                    .map((instance: any) => instance.id)
-                    .filter((id: string) => !instanceIdsToKeep.includes(id))
-            );
-        }
-
-        index = index + 1;
+        logger.info(
+            `Node rotation finished in ${
+                Number((endTime - startTime) / 1000).toFixed(0)
+            } seconds.`,
+        );
+    } catch (err) {
+        logger.error(err);
+        await core.exit('Loop failure.');
     }
-
-    models.removeUsedProxies(instanceIdsToKeep);
 };
 
 const rotate = async () => {
-    const instanceProviders = lib.shuffle(config().INSTANCE_PROVIDERS)
-        .filter((instanceProvider: InstanceProvider) => !config().INSTANCE_PROVIDERS_DISABLED.includes(instanceProvider));
-    if (!instanceProviders.length) {
-        return logger.warn('None of the VPS providers are enabled.');
-    }
-    const instanceProvider: InstanceProvider = lib.shuffle(instanceProviders)[0];
-    const activeProxies: Proxy[] = [];
-    const initialProxy = models.getInitialProxy();
-    if (initialProxy) {
-        await connect(initialProxy);
-        io.emit('/proxy', initialProxy);
-        activeProxies.push(initialProxy);
-    }
-    const proxyTypes: ProxyType[] = initialProxy
-        ? [ProxyType.A]
-        : PROXY_TYPES;
+    const activeNodes: Node[] = [];
+    const initialNode = models.getInitialNode();
+    const nodeTypes: NodeType[] = !initialNode
+        ? config().NODE_TYPES
+        : [];
 
-    let proxyIndex = 0;
-    while (proxyIndex < proxyTypes.length) {
-        const proxyUuid = uuidv7();
-        const proxyType = proxyTypes[proxyIndex];
-        const instanceLocationsList = await integrations.compute[instanceProvider].regions.parse();
-        const [instanceRegion, instanceCountry]: string[] = lib.shuffle(instanceLocationsList)[0];
-        const instanceName = `${APP_ID}-${ENV}-${proxyType}-${proxyUuid}`;
+    if (initialNode) {
+        await connect(initialNode);
+        io.emit('/node', initialNode);
+        activeNodes.push(initialNode);
+        const nodeCurrentReserveCount = core.getCurrentNodeReserve().length;
+         // Cant reserve negative nodes.
+        const nodesToReserve = config().NODE_RESERVE_COUNT - nodeCurrentReserveCount >= 0
+            ? config().NODE_RESERVE_COUNT - nodeCurrentReserveCount
+            : 0;
+        // Prepare enough nodes for the reserve.
+        [...Array(nodesToReserve).keys()].map(() => nodeTypes.push(NodeType.A));
+        // Mark down active nodes, so we would know which ones to keep from being deleted.
+        core.getCurrentNodeReserve().map(
+            (nodeUuid: string) => activeNodes.push(models.nodes()[nodeUuid]
+        ));
+        core.setCurrentNodeReserve(io);
+    }
+
+    let nodeIndex = 0;
+    while (nodeIndex < nodeTypes.length) {
+        const instanceProviders = config().INSTANCE_PROVIDERS
+            .filter((instanceProvider: InstanceProvider) => !config().INSTANCE_PROVIDERS_DISABLED.includes(instanceProvider));
+        !instanceProviders.length && logger.warn('None of the VPS providers are enabled.');
+        const instanceProvider: InstanceProvider = lib.shuffle(instanceProviders)[0];
         const { instanceSize, instanceImage } = integrations.compute[instanceProvider];
-        const sshKeyPath = `${SSH_KEY_PATH}/${instanceName}`;
-        const passphrase = crypto.randomBytes(64).toString('hex');
-        const publicKey = await integrations.shell.privateKey.create(sshKeyPath, passphrase);
-        const instancePublicKeyId = await integrations.compute[instanceProvider].keys.add(publicKey, instanceName);
+        const enabledPluginKey = config().PLUGINS_ENABLED[0];
+        !enabledPluginKey && logger.info(`No enabled plugins found.`);
+        const nodeUuid = uuidv7();
+        const nodeType = nodeTypes[nodeIndex];
+        const instanceName = `${config().APP_ID}-${config().ENV}-${nodeType}-${nodeUuid}`;
+        const sshKeyPath = `${config().SSH_KEY_PATH}/${instanceName}`;
+        const sshPortRange: number[] = config().SSH_PORT_RANGE.split(':').map((item: string) => Number(item));
+        const sshPort = lib.randomNumberFromRange(sshPortRange);
         const jwtSecret = crypto.randomBytes(64).toString('hex');
-        const sshPort = lib.randomNumberFromRange(SSH_PORT_RANGE[0], SSH_PORT_RANGE[1]);
-        const userData = core.getUserData(proxyUuid, sshPort, jwtSecret);
+        let node: Node = {
+            nodeUuid,
+            proxyLocalPort: config().PROXY_LOCAL_PORT,
+            proxyRemotePort: config().PROXY_REMOTE_PORT,
+            appId: config().APP_ID,
+            pluginsEnabled: [enabledPluginKey],
+            instanceProvider,
+            instanceApiBaseUrl: '',
+            instanceName,
+            instanceId: '',
+            instanceIp: '',
+            instanceRegion: '',
+            instanceCountry: '',
+            instanceSize,
+            instanceImage,
+            nodeType,
+            sshUser: config().SSH_USER,
+            sshHostKey: '',
+            sshKeyAlgorithm: config().SSH_KEY_ALGORITHM,
+            sshKeyLength: config().SSH_KEY_LENGTH,
+            sshKeyPath,
+            sshPort,
+            jwtSecret,
+            sshLogPath: core.getSshLogPath(nodeUuid),
+            connectionString: '',
+            isDeleted: false,
+            connectedTime: null,
+            createdTime: new Date().toISOString(),
+            modifiedTime: null,
+            deletedTime: null,
+        };
+        const instanceLocationsList = await integrations.compute[instanceProvider].regions.parse();
+        !instanceLocationsList.length && logger.info('No locations were found. Are any of the countries enabled for the VPS?');
+        const [instanceRegion, instanceCountry, instanceApiBaseUrl]: string[] = lib.shuffle(instanceLocationsList)[0];
+        node = {...node, instanceRegion, instanceCountry, instanceApiBaseUrl};
+
+        const publicKey = await integrations.shell.sshKeygen(node);
+        const instancePublicKeyId = await integrations.compute[instanceProvider].keys.add(node, publicKey, instanceName);
+        const script = plugins[enabledPluginKey][Side.SERVER][Platform.LINUX][Action.MAIN][Script.ENABLE](node);
+        const userData = core.prepareCloudConfig(script);
         const formattedUserData = integrations.compute[instanceProvider].userData.format(userData);
-        const instancePayload: CreateDigitalOceanInstance & CreateHetznerInstance & CreateVultrInstance = {
+        const instancePayload: InstancePayload = {
             datacenter: instanceRegion,
             region: instanceRegion,
             image: instanceImage,
@@ -173,127 +194,51 @@ const rotate = async () => {
             name: instanceName,
             label: instanceName,
             size: instanceSize,
+            'instance-type': {},
             plan: instanceSize,
             server_type: instanceSize,
             ssh_keys: [instancePublicKeyId],
             sshkey_id: [instancePublicKeyId],
+            'ssh-key': { name: instancePublicKeyId },
             user_data: formattedUserData,
+            'user-data': formattedUserData,
             backups: 'disabled',
+            'public-ip-assignment': 'inet4',
+            'security-groups': [],
+            'template': {},
+            'disk-size': config().EXOSCALE_DISK_SIZE,
         };
-        const { instanceId, instanceIp } = await integrations.compute[instanceProvider].instances.create(instancePayload);
-        logger.info(`Created ${instanceProvider} instance.`);
+        logger.info(`Creating ${instanceProvider} instance.`);
         logger.info(instancePayload);
-        logger.info(`Found network at ${instanceIp}.`);
 
-        let proxy: Proxy = {
-            proxyUuid,
-            appId: APP_ID,
-            instanceProvider,
-            instanceName,
-            instanceId,
-            instanceIp,
-            instanceRegion,
-            instanceCountry,
-            instanceSize,
-            instanceImage,
-            instancePublicKeyId,
-            proxyType,
-            sshUser: SSH_USER,
-            passphrase,
-            proxyLocalPort: PROXY_LOCAL_PORT,
-            proxyRemotePort: PROXY_REMOTE_PORT,
-            sshHostKey: '',
-            sshKeyAlgorithm: SSH_KEY_ALGORITHM,
-            sshKeyLength: SSH_KEY_LENGTH,
-            sshKeyPath,
-            sshPort,
-            sshLogPath: core.getSshLogPath(proxyUuid),
-            connectionString: '',
-            isDeleted: false,
-            createdTime: new Date().toISOString(),
-            modifiedTime: null,
-            deletedTime: null,
+        node = {
+            ...node,
+            ...await integrations.compute[instanceProvider].instances.create(node, instancePayload)
         };
-        proxy = await integrations.kv.cloudflare.hostKey.get(proxy, jwtSecret);
-        models.updateProxy(proxy);
-        activeProxies.push(proxy);
-        proxyIndex = proxyIndex + 1;
+
+        logger.info(`Created ${instanceProvider} instance.`);
+        logger.info(`Found network at ${node.instanceIp}.`);
+
+        node = await integrations.kv.cloudflare.hostKey.read(node, jwtSecret);
+        models.updateNode(node);
+        activeNodes.push(node);
+        core.setCurrentNodeReserve(io);
+        await integrations.compute[instanceProvider].keys.delete(node, instancePublicKeyId);
+        nodeIndex = nodeIndex + 1;
     }
 
-    !initialProxy && await connect(activeProxies[0]);
-
-    await cleanup(
-        activeProxies.map(proxy => proxy.instanceId)
-    );
+    !initialNode && await connect(activeNodes[0]);
+    await core.cleanup(activeNodes.map(node => node.instanceId));
 };
 
-const updateStatus = (status: LoopStatus) => {
-    loopStatus = status;
-    io.emit('event', status);
-};
-
-const loop = async () => {
-    setTimeout(async () => {
-        const isStillWorking = loopStatus == LoopStatus.ACTIVE;
-        isStillWorking
-            ? await core.exit(`Timeout after passing ${PROXY_RECYCLE_INTERVAL_SEC} seconds.`)
-            : await loop();
-    }, PROXY_RECYCLE_INTERVAL_SEC * 1000);
-
-    try {
-        updateStatus(LoopStatus.ACTIVE);
-        const startTime = performance.now();
-        await rotate();
-        logger.info('Started proxy rotation.');
-        const endTime = performance.now();
-        updateStatus(LoopStatus.FINISHED);
-
-        logger.info(
-            `Proxy rotation finished in ${
-                Number((endTime - startTime) / 1000).toFixed(0)
-            } seconds.`,
-        );
-    } catch (err) {
-        await core.exit(`Loop failure: ${err}`);
-    }
-};
-
-const heartbeat = async () => {
-    try {
-        await integrations.kv.cloudflare.heartbeat();
-    }
-    catch(err) {
-        const isLooped = loopStatus == LoopStatus.FINISHED;
-
-        if (isLooped) {
-            await core.exit(`Heartbeat failure: ${err}`);
-        }
-    }
-};
-
-const connectProxy = () => {
-    integrations.fs.ensureFolder(DATA_PATH);
-    integrations.fs.ensureFolder(SSH_PATH);
-    integrations.fs.ensureFolder(SSH_KEY_PATH);
-    integrations.fs.ensureFolder(LOG_PATH);
-
-    !existsSync(SSH_KNOWN_HOSTS_PATH) && Deno.writeTextFileSync(SSH_KNOWN_HOSTS_PATH, '');
-    Deno.writeTextFileSync(`${DATA_PATH}/${GENERATE_SSH_KEY_FILE_NAME}`, GENERATE_SSH_KEY_FILE);
-    Deno.writeTextFileSync(`${DATA_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME}`, CONNECT_SSH_TUNNEL_FILE);
-
-    new Deno.Command('chmod', { args: ['+x', GENERATE_SSH_KEY_FILE_NAME] });
-    new Deno.Command('chmod', { args: ['+x', CONNECT_SSH_TUNNEL_FILE_NAME] });
-
-    Deno.chmodSync(`${DATA_PATH}/${GENERATE_SSH_KEY_FILE_NAME}`, 0o700);
-    Deno.chmodSync(`${DATA_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME}`, 0o700);
-
-    loop();
-    heartbeat();
-    setInterval(() => heartbeat(), HEARTBEAT_INTERVAL_SEC);
-};
-
+models.updateConfig({
+    ...config(),
+    LOOP_STATUS: LoopStatus.INACTIVE,
+    CONNECTION_STATUS: ConnectionStatus.DISCONNECTED,
+    PLUGINS: core.getAvailablePlugins()
+});
 webserver.start();
 websocket.start(io);
-AUTO_LAUNCH_WEB && open(WEB_URL);
-AUTO_LAUNCH_WEB && models.updateConfig({...config(), AUTO_LAUNCH_WEB: false});
-PROXY_ENABLED && connectProxy();
+config().AUTO_LAUNCH_WEB && open(config().WEB_URL);
+config().AUTO_LAUNCH_WEB && models.updateConfig({...config(), AUTO_LAUNCH_WEB: false});
+config().NODE_ENABLED && init();

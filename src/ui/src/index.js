@@ -3,40 +3,48 @@ const socket = io('ws://localhost:8880', {
 });
 
 const $enablementToggle = document.getElementsByClassName('enablement-toggle')[0];
+const $restartToggle = document.getElementsByClassName('restart-toggle')[0];
 const $statusSection = document.getElementsByClassName('section-content status')[0];
+const $pluginsSection = document.getElementsByClassName('section-content plugins')[0];
+const $actionsSection = document.getElementsByClassName('section-content actions')[0];
 const $providersSection = document.getElementsByClassName('section-content providers')[0];
 const $countriesSection = document.getElementsByClassName('section-content countries')[0];
 const $configSection = document.getElementsByClassName('section-content config')[0];
 const $logSection = document.getElementsByClassName('section-content log')[0];
-
-const visibleConfigKeys = {
-    'PROXY_RECYCLE_INTERVAL_SEC': { editable: 'number' },
-    'SSH_PORT_RANGE': { editable: 'string' },
-    'SSH_KEY_ALGORITHM': { editable: 'string' },
-    'SSH_KEY_LENGTH': { editable: 'number' },
-    'DIGITAL_OCEAN_API_KEY': { editable: 'password' },
-    'HETZNER_API_KEY': { editable: 'password' },
-    'VULTR_API_KEY': { editable: 'password' },
-    'CLOUDFLARE_ACCOUNT_ID': { editable: 'password' },
-    'CLOUDFLARE_API_KEY': { editable: 'password' },
-    'CLOUDFLARE_KV_NAMESPACE': { editable: 'password' },
-    'WEB_SERVER_PORT': { editable: 'number' },
-    'PROXY_LOCAL_PORT': { editable: 'number' },
-    'LOG_PATH': { editable: false },
-    'DB_FILE_PATH': { editable: false },
+const visibleActionKeys = {
+    CONNECTION_KILLSWITCH: { editable: 'boolean' },
 };
-const apiKeys = ['DIGITAL_OCEAN_API_KEY', 'HETZNER_API_KEY', 'VULTR_API_KEY'];
-let isProxyEnabled = false;
+const visibleConfigKeys = {
+    NODE_RECYCLE_INTERVAL_SEC: { editable: 'number' },
+    NODE_RESERVE_COUNT: { editable: 'number' },
+    SSH_PORT_RANGE: { editable: 'string' },
+    SSH_KEY_ALGORITHM: { editable: 'string' },
+    SSH_KEY_LENGTH: { editable: 'number' },
+    DIGITAL_OCEAN_API_KEY: { editable: 'password' },
+    EXOSCALE_API_KEY: { editable: 'password' },
+    EXOSCALE_API_SECRET: { editable: 'password' },
+    HETZNER_API_KEY: { editable: 'password' },
+    VULTR_API_KEY: { editable: 'password' },
+    CLOUDFLARE_ACCOUNT_ID: { editable: 'password' },
+    CLOUDFLARE_API_KEY: { editable: 'password' },
+    CLOUDFLARE_KV_NAMESPACE: { editable: 'password' },
+    WEB_SERVER_PORT: { editable: 'number' },
+    LOG_PATH: { editable: false },
+    DB_FILE_PATH: { editable: false },
+};
+const apiKeys = ['DIGITAL_OCEAN_API_KEY', 'HETZNER_API_KEY', 'VULTR_API_KEY', 'EXOSCALE_API_KEY', 'EXOSCALE_API_SECRET'];
+const faviconStatus = {
+    'connected': ['❊', 'white'],
+    'connecting': ['❊', 'blue'],
+    'disconnected': ['❊', 'red'],
+};
+let isAppEnabled = false;
 let config = {};
-let proxy = {};
+let node = {};
+
+const capitalize = s => s && String(s[0]).toUpperCase() + String(s).slice(1);
 
 const updateEnablementToggle = (label) => $enablementToggle.innerText = label;
-
-const convertSnakeCaseToPascalCase = (str) =>
-    str
-        .split('_')
-        .map((element) => element.slice(0, 1).toUpperCase() + element.slice(1))
-        .join('');
 
 const setChangeListener = (div, listener) => {
     div.addEventListener('focusout', listener);
@@ -47,26 +55,37 @@ const setClickListener = (div, listener) => {
 };
 
 const constructConfigLine = (
+    keys,
     key,
     value,
     emitPath,
     isEditable = false,
     hasApiKey = false,
 ) => {
+    const isEditableBoolean = keys[key].editable === 'boolean';
+    const isEditablePassword = keys[key].editable === 'password';
+    const isEditableString = keys[key].editable == 'string';
+    const isEditableNumber = keys[key].editable == 'number';
     const $key = document.createElement('div');
     $key.className = 'line-key';
     $key.innerText = key;
 
     const $value = document.createElement('div');
+    $value.innerText = value;
+
+    if (isEditableBoolean) {
+        $value.innerText = value
+            ? 'Enabled'
+            : 'Disabled'
+    }
     const hasEvents = emitPath
         ? 'has-events'
         : '';
-    $value.className = `${key} line-value ${hasEvents}`;
-    $value.innerText = value;
+    $value.className = `${key} line-value ${hasEvents} ${$value.innerText.toLowerCase()}`;
     $value.spellcheck = false;
+
     if (isEditable) {
         $value.className += ' config-editable';
-        $value.contentEditable = true;
 
         if (apiKeys.includes(key) && !hasApiKey) {
             $value.className += ' config-alert';
@@ -75,25 +94,35 @@ const constructConfigLine = (
             $value.className += ' config-alert';
         }
 
-        if (value && visibleConfigKeys[key].editable == 'password') {
+        if (value && isEditablePassword) {
             $value.className += ' config-password';
         }
 
-        setChangeListener($value, (event) => {
-            switch(true) {
-                case visibleConfigKeys[key].editable == 'string':
-                    config[key] = String(event.target.innerText).replace('\n', '');
-                    break;
-                case visibleConfigKeys[key].editable == 'password':
-                    config[key] = String(event.target.innerText).replace('\n', '');
-                    break;
-                case visibleConfigKeys[key].editable == 'number':
-                    config[key] = Number(event.target.innerText);
-                    break;
-            }
+        if (isEditableBoolean) {
+            setClickListener($value, () => {
+                config[key] = !config[key];
+                socket.emit(emitPath, config);
+            });
+        }
+        else {
+            $value.contentEditable = true;
 
-            socket.emit(emitPath, config);
-        });
+            setChangeListener($value, (event) => {
+                switch(true) {
+                    case isEditableString:
+                        config[key] = String(event.target.innerText).replace('\n', '');
+                        break;
+                    case isEditablePassword:
+                        config[key] = String(event.target.innerText).replace('\n', '');
+                        break;
+                    case isEditableNumber:
+                        config[key] = Number(event.target.innerText);
+                        break;
+                }
+
+                socket.emit(emitPath, config);
+            });
+        }
     }
 
     const $configLine = document.createElement('div');
@@ -107,14 +136,15 @@ const constructGenericLine = (
     key,
     value,
     option,
-    emitPath
+    emitPath,
+    selectMultiple = true,
 ) => {
     const $key = document.createElement('div');
     $key.className = 'line-key';
-    $key.innerText = convertSnakeCaseToPascalCase(key);
+    $key.innerText = capitalize(key);
 
-    if (COUNTRY_CODES[$key.innerText]) {
-        $key.innerText = COUNTRY_CODES[$key.innerText];
+    if (COUNTRY_CODES[key]) {
+        $key.innerText = COUNTRY_CODES[key];
     }
 
     const $value = document.createElement('div');
@@ -126,6 +156,10 @@ const constructGenericLine = (
     $value.spellcheck = false;
 
     emitPath && setClickListener($value, () => {
+        if (!selectMultiple) {
+            config[option] = [];
+        }
+
         !config[option].includes(key)
             ? config[option].push(key)
             : config[option] = config[option]
@@ -141,19 +175,23 @@ const constructGenericLine = (
     return $configLine;
 };
 
+const start = () => {
+    isAppEnabled = true;
+    updateEnablementToggle('Enabling ...');
+    socket.emit('/node/enable');
+};
+
+const stop = () => {
+    isAppEnabled = false
+    updateEnablementToggle('Disabling ...');
+    socket.emit('/node/disable');
+};
+
 const interact = () => {
     socket.emit('/config/save', config);
-
-    if (!isProxyEnabled) {
-        isProxyEnabled = true;
-        updateEnablementToggle('Enabling ...');
-        socket.emit('/proxy/enable');
-    }
-    else {
-        isProxyEnabled = false
-        updateEnablementToggle('Disabling ...');
-        socket.emit('/proxy/disable');
-    }
+    !isAppEnabled
+        ? start()
+        : stop();
 };
 
 const appendLogMessage = (message, key) => {
@@ -196,98 +234,161 @@ const changeFavicon = (args) => {
     document.head.appendChild(link);
 };
 
-socket
-    .on('/started', (_isProxyEnabled) => {
-        isProxyEnabled = _isProxyEnabled;
-        updateEnablementToggle(
-            isProxyEnabled
-                ? 'Disable Proxy'
-                : 'Enable Proxy'
+const updateStatus = () => {
+    $statusSection.innerText = '';
+
+    const status = [[
+        'Connection',
+        capitalize(config.CONNECTION_STATUS)
+    ],
+    [
+        'Application',
+        isAppEnabled
+            ? 'Enabled'
+            : 'Disabled'
+    ]];
+
+    if (isAppEnabled && node && Object.keys(node).length && config.CONNECTION_STATUS == 'connected') {
+        status.push(['IPv4', node.instanceIp]);
+        status.push(['Country', COUNTRY_CODES[node.instanceCountry]]);
+        status.push(['VPS', capitalize(node.instanceProvider)]);
+        status.push(['Plugin', capitalize(node.pluginsEnabled[0])]);
+        status.push(['Nodes in reserve', `${config.NODE_CURRENT_RESERVE_COUNT} / ${config.NODE_RESERVE_COUNT}`]);
+    }
+
+    status.forEach((list) => {
+        $statusSection.append(
+            constructGenericLine(
+                list[0],
+                list[1],
+            )
         );
-        changeFavicon(
-            isProxyEnabled
-                ? ['❊', 'white']
-                : ['❊', 'red']
+    });
+
+    changeFavicon(faviconStatus[config.CONNECTION_STATUS]);
+};
+
+const updatePlugins = () => {
+    $pluginsSection.innerText = '';
+
+    config.PLUGINS
+        .forEach((key) => {
+            $pluginsSection.append(
+                constructGenericLine(
+                    key,
+                    config['PLUGINS_ENABLED'].includes(key)
+                        ? 'Enabled'
+                        : 'Disabled',
+                    'PLUGINS_ENABLED',
+                    '/config/save',
+                    false,
+                )
+            );
+        });
+};
+
+const updateActions = () => {
+    $actionsSection.innerText = '';
+
+    Object.keys(config)
+        .sort((a, b) => a.localeCompare(b))
+        .forEach((key) => {
+            visibleActionKeys[key] && $actionsSection.append(
+                constructConfigLine(
+                    visibleActionKeys,
+                    key,
+                    config[key],
+                    '/config/save',
+                    visibleActionKeys[key].editable,
+                )
+            );
+        });
+};
+
+const hideByPlatform = (platform) => {
+    const elements = document.getElementsByClassName(`hide-on-${platform}`);
+    [].slice.call(elements)
+        .forEach(element => element.style = 'display:none;');
+};
+
+const updateConfig = () => {
+    $providersSection.innerText = '';
+    $countriesSection.innerText = '';
+    $configSection.innerText = '';
+
+    const hasApiKey = apiKeys
+        .filter((apiKey) => config[apiKey])
+        .length > 0;
+
+    Object.keys(config)
+        .forEach((key) => {
+            visibleConfigKeys[key] && $configSection.append(
+                constructConfigLine(
+                    visibleConfigKeys,
+                    key,
+                    config[key],
+                    '/config/save',
+                    visibleConfigKeys[key].editable,
+                    hasApiKey
+                )
+            );
+        });
+
+    config.INSTANCE_PROVIDERS
+        .sort((a, b) => a.localeCompare(b))
+        .forEach((key) => {
+            $providersSection.append(
+                constructGenericLine(
+                    key,
+                    config['INSTANCE_PROVIDERS_DISABLED'].includes(key)
+                        ? 'Disabled'
+                        : 'Enabled',
+                    'INSTANCE_PROVIDERS_DISABLED',
+                    '/config/save'
+                )
+            );
+        });
+
+    config.INSTANCE_COUNTRIES
+        .sort((a, b) => COUNTRY_CODES[a].localeCompare(COUNTRY_CODES[b]))
+        .forEach((key) => {
+            $countriesSection.append(
+                constructGenericLine(
+                    key,
+                    config['INSTANCE_COUNTRIES_DISABLED'].includes(key)
+                        ? 'Disabled'
+                        : 'Enabled',
+                    'INSTANCE_COUNTRIES_DISABLED',
+                    '/config/save'
+                )
+            );
+        });
+};
+
+const updateAll = () => {
+    updatePlugins();
+    updateStatus();
+    updateActions();
+    updateConfig();
+};
+
+socket
+    .on('/started', (_isAppEnabled) => {
+        isAppEnabled = _isAppEnabled;
+        updateEnablementToggle(
+            isAppEnabled
+                ? 'Disable'
+                : 'Enable'
         );
     })
     .on('/config', (_config) => {
         config = _config;
-        $providersSection.innerText = '';
-        $countriesSection.innerText = '';
-        $configSection.innerText = '';
-
-        const hasApiKey = apiKeys
-            .filter((apiKey) => config[apiKey])
-            .length > 0;
-
-        Object.keys(config)
-            .forEach((key) => {
-                visibleConfigKeys[key] && $configSection.append(
-                    constructConfigLine(
-                        key,
-                        config[key],
-                        '/config/save',
-                        visibleConfigKeys[key].editable,
-                        hasApiKey
-                    )
-                );
-            });
-
-        config.INSTANCE_PROVIDERS
-            .sort()
-            .forEach((key) => {
-                $providersSection.append(
-                    constructGenericLine(
-                        key,
-                        config['INSTANCE_PROVIDERS_DISABLED'].includes(key)
-                            ? 'Disabled'
-                            : 'Enabled',
-                        'INSTANCE_PROVIDERS_DISABLED',
-                        '/config/save'
-                    )
-                );
-            });
-
-        config.INSTANCE_COUNTRIES
-            .sort((a, b) => COUNTRY_CODES[a] > COUNTRY_CODES[b])
-            .forEach((key) => {
-                $countriesSection.append(
-                    constructGenericLine(
-                        key,
-                        config['INSTANCE_COUNTRIES_DISABLED'].includes(key)
-                            ? 'Disabled'
-                            : 'Enabled',
-                        'INSTANCE_COUNTRIES_DISABLED',
-                        '/config/save'
-                    )
-                );
-            });
+        updateAll();
+        hideByPlatform(config.PLATFORM);
     })
-    .on('/proxy', (_proxy) => {
-        proxy = _proxy;
-        $statusSection.innerText = '';
-
-        const status = [[
-            'Proxy',
-            isProxyEnabled
-                ? 'Enabled'
-                : 'Disabled'
-        ]];
-
-        if (isProxyEnabled && proxy && Object.keys(proxy).length) {
-            status.push(['VPS', convertSnakeCaseToPascalCase(proxy.instanceProvider)]);
-            status.push(['Country', COUNTRY_CODES[proxy.instanceCountry]]);
-            status.push(['IPv4', proxy.instanceIp]);
-        }
-
-        status.forEach((list) => {
-            $statusSection.append(
-                constructGenericLine(
-                    list[0],
-                    list[1],
-                )
-            );
-        });
+    .on('/node', (_node) => {
+        node = _node;
+        updateStatus();
     })
     .on('/log', (message) => {
         Object
@@ -295,11 +396,23 @@ socket
             .forEach(key => appendLogMessage(message, key));
     })
     .on('connect', () => {
-        appendLogMessage(createLogMessage('Connected to WebSocket.'), 'Info')
+        appendLogMessage(createLogMessage('Connected to WebSocket.'), 'Info');
     })
     .on('disconnect', () => {
-        appendLogMessage(createLogMessage('Disconnected from WebSocket.'), 'Info')
+        appendLogMessage(createLogMessage('Disconnected from WebSocket.'), 'Info');
+        changeFavicon(faviconStatus.disconnected);
+        $statusSection.innerText = '';
+
+        $statusSection.append(
+            constructGenericLine(
+                'Application',
+                'Reconnecting',
+            )
+        );
     });
 
 $enablementToggle
     .addEventListener('click', () => interact());
+
+$restartToggle
+    .addEventListener('click', () => start());

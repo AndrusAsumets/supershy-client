@@ -1,56 +1,69 @@
+// deno-lint-ignore-file no-explicit-any
+
+import { Server } from 'https://deno.land/x/socket_io@0.2.0/mod.ts';
 import { logger as _logger } from './logger.ts';
 import * as models from './models.ts';
+import { Config, Node, InstanceProvider, LoopStatus, Plugin, Side, Platform, Action, Script } from './types.ts';
+import * as lib from './lib.ts';
+import { plugins } from './plugins.ts';
+import { integrations } from './integrations.ts';
 
 const { config } = models;
-const {
-    CLOUDFLARE_BASE_URL,
-    DATA_PATH,
-    CONNECT_SSH_TUNNEL_FILE_NAME,
-    SSH_USER,
-    LOG_PATH,
-    SSH_LOG_EXTENSION,
-    APP_ID,
-    ENV,
-    PROXY_LOCAL_PORT,
-    PROXY_REMOTE_PORT,
-    CLOUDFLARE_ACCOUNT_ID,
-    CLOUDFLARE_KV_NAMESPACE,
-    CLOUDFLARE_API_KEY,
-} = config();
-import { Config, Proxy, InstanceProvider } from './types.ts';
-import * as lib from './lib.ts';
-import * as integrations from './integrations.ts';
-
 const logger = _logger.get();
+
+export const parseScript = (
+    node: Node,
+    pluginKey: Plugin,
+    sideKey: Side,
+    platformKey: Platform,
+    actionKey: Action,
+    scriptKey: Script
+): string => {
+    const escapeDollarSignOperator = ['\${', '${'];
+    return plugins[pluginKey][sideKey][platformKey][actionKey][scriptKey](node)
+        .replaceAll(escapeDollarSignOperator[0], escapeDollarSignOperator[1])
+        .replaceAll('\t', '');
+};
+
+export const getAvailablePlugins = (): Plugin[] => {
+    return Object
+        .keys(plugins)
+        .filter((pluginKey: string) => {
+            const sides = plugins[pluginKey];
+            const platforms = sides[Side.CLIENT];
+            const actions = platforms[config().PLATFORM];
+            return actions;
+        }) as Plugin[];
+};
 
 export const setInstanceProviders = (
     config: Config
-) => {
+): Config => {
     config.INSTANCE_PROVIDERS = [];
-
-    if (config.DIGITAL_OCEAN_API_KEY) {
-        config.INSTANCE_PROVIDERS.push(InstanceProvider.DIGITAL_OCEAN);
-    }
-
-    if (config.HETZNER_API_KEY) {
-        config.INSTANCE_PROVIDERS.push(InstanceProvider.HETZNER);
-    }
-
-    if (config.VULTR_API_KEY) {
-        config.INSTANCE_PROVIDERS.push(InstanceProvider.VULTR);
-    }
-
+    config.DIGITAL_OCEAN_API_KEY && config.INSTANCE_PROVIDERS.push(InstanceProvider.DIGITAL_OCEAN);
+    config.EXOSCALE_API_KEY && config.EXOSCALE_API_SECRET && config.INSTANCE_PROVIDERS.push(InstanceProvider.EXOSCALE);
+    config.HETZNER_API_KEY && config.INSTANCE_PROVIDERS.push(InstanceProvider.HETZNER);
+    config.VULTR_API_KEY && config.INSTANCE_PROVIDERS.push(InstanceProvider.VULTR);
     return config;
+};
+
+const getEnabledInstanceProviders = (): InstanceProvider[] => {
+    return config()
+        .INSTANCE_PROVIDERS
+        .filter((instanceProvider: InstanceProvider) =>
+            !config().INSTANCE_PROVIDERS_DISABLED.includes(instanceProvider)
+    );
 };
 
 export const setInstanceCountries = async (
     config: Config
-) => {
-    const instanceProviders: InstanceProvider[] = config
-        .INSTANCE_PROVIDERS
-        .filter((instanceProvider: InstanceProvider) =>
-            !config.INSTANCE_PROVIDERS_DISABLED.includes(instanceProvider)
-    );
+): Promise<Config> => {
+    const hasHeartbeat = await integrations.kv.cloudflare.heartbeat();
+    if (!hasHeartbeat) {
+        return config;
+    }
+
+    const instanceProviders = getEnabledInstanceProviders();
     config.INSTANCE_COUNTRIES = [];
 
     let index = 0;
@@ -64,64 +77,162 @@ export const setInstanceCountries = async (
         index = index + 1;
     }
 
-    config.INSTANCE_COUNTRIES = lib.shuffle(config.INSTANCE_COUNTRIES);
-
     return config;
 };
 
-export const getUserData = (
-    proxyUuid: string,
-    sshPort: number,
-    jwtSecret: string,
-) => {
+export const getEnabledPluginKey = (): Plugin | undefined => {
+    const connectedNode = models.getLastConnectedNode();
+    if (connectedNode && connectedNode.pluginsEnabled.length) {
+        return connectedNode.pluginsEnabled[0];
+    }
+};
+
+export const prepareCloudConfig = (
+    string: string,
+): string => {
+    const lineSeparator = '\n';
+    const body = string
+        .replaceAll('\t', '')
+        .split(lineSeparator)
+        .filter((line: string) => line)
+        .map((line: string) => `- ${line}`)
+        .join(lineSeparator);
     return `
 #cloud-config
 runcmd:
-    - echo 'PasswordAuthentication no' >> /etc/ssh/sshd_config
-    - echo 'Port ${sshPort}' >> /etc/ssh/sshd_config
-    - sudo systemctl restart ssh
-
-    - sudo apt update
-    - sudo apt dist-upgrade -y
-    - sudo apt install tinyproxy -y
-    - echo 'Port ${PROXY_REMOTE_PORT}' >> tinyproxy.conf
-    - echo 'Listen 0.0.0.0' >> tinyproxy.conf
-    - echo 'Timeout 600' >> tinyproxy.conf
-    - echo 'Allow 0.0.0.0' >> tinyproxy.conf
-    - tinyproxy -d -c tinyproxy.conf
-
-    - HOST_KEY=$(cat /etc/ssh/ssh_host_ed25519_key.pub | cut -d ' ' -f 2)
-    - ENCODED_HOST_KEY=$(python3 -c 'import sys;import jwt;payload={};payload[\"sshHostKey\"]=sys.argv[1];print(jwt.encode(payload, sys.argv[2], algorithm=\"HS256\"))' $HOST_KEY ${jwtSecret})
-    - curl --request PUT -H 'Content-Type=*\/*' --data $ENCODED_HOST_KEY --url ${CLOUDFLARE_BASE_URL}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${CLOUDFLARE_KV_NAMESPACE}/values/${proxyUuid} --oauth2-bearer ${CLOUDFLARE_API_KEY}
-
-    - iptables -A INPUT -p tcp --dport ${sshPort} -j ACCEPT
-`;
+${body}`;
 };
 
 export const getConnectionString = (
-    proxy: Proxy,
-): string => {
+    node: Node,
+): Node => {
     const {
-        passphrase,
         instanceIp,
         sshPort,
         sshKeyPath,
-        sshLogPath
-    } = proxy;
-    return `${DATA_PATH}/${CONNECT_SSH_TUNNEL_FILE_NAME} ${passphrase} ${instanceIp} ${SSH_USER} ${sshPort} ${PROXY_LOCAL_PORT} ${PROXY_REMOTE_PORT} ${sshKeyPath} ${sshLogPath}`;
+        sshLogPath,
+        proxyLocalPort,
+        proxyRemotePort,
+    } = node;
+    node.connectionString = `${instanceIp} ${config().SSH_USER} ${sshPort} ${sshKeyPath} ${sshLogPath} ${config().SSHUTTLE_PID_FILE_PATH} ${proxyLocalPort} ${proxyRemotePort}`
+    return node;
 };
 
 export const getSshLogPath = (
-    proxyUuid: string
-): string =>`${LOG_PATH}/${proxyUuid}${SSH_LOG_EXTENSION}`;
+    nodeUuid: string
+): string =>`${config().LOG_PATH}/${nodeUuid}${config().SSH_LOG_EXTENSION}`;
+
+export const useProxy = (options: any) => {
+    const connectedNode = models.getLastConnectedNode();
+    if (!connectedNode) return options;
+
+    const pluginKey = connectedNode.pluginsEnabled[0];
+    const hasNodeProtocol = pluginKey.toLocaleLowerCase().includes('proxy');
+    if (!hasNodeProtocol) return options;
+
+    const protocol = pluginKey.split('_')[0];
+    const url = `${protocol}://0.0.0.0:${connectedNode.proxyLocalPort}`;
+    options.client = Deno.createHttpClient({ proxy: { url } });
+
+    return options;
+};
+
+export const enableConnectionKillSwitch = (node: Node) => {
+    const pluginKey = getEnabledPluginKey();
+    if (!pluginKey) return;
+
+    const platformKey = config().PLATFORM;
+    const script = parseScript(node, pluginKey, Side.CLIENT, platformKey, Action.KILLSWITCH, Script.ENABLE);
+
+    logger.info(`Enabling connection killswitch.`);
+    const nodes = models.nodes();
+    const args = Object
+        .keys(nodes)
+        .map((key: string) => `${nodes[key].instanceIp}:${nodes[key].sshPort}`)
+        .join(',');
+    integrations.shell.command(script, args);
+    logger.info(`Enabled connection killswitch.`);
+};
+
+export const disableConnectionKillSwitch = (node: Node) => {
+    const pluginKey = getEnabledPluginKey();
+    if (!pluginKey) return;
+
+    const platformKey = config().PLATFORM;
+    const script = parseScript(node, pluginKey, Side.CLIENT, platformKey, Action.KILLSWITCH, Script.DISABLE);
+
+    logger.info(`Disabling connection killswitch.`);
+    integrations.shell.command(script);
+    logger.info(`Disabled connection killswitch.`);
+};
+
+export const heartbeat = async () => {
+    const hasHeartbeat = await integrations.kv.cloudflare.heartbeat();
+    if (!hasHeartbeat) {
+        const isLooped = config().LOOP_STATUS == LoopStatus.FINISHED;
+        isLooped && await exit('Heartbeat failure');
+    }
+};
+
+export const setLoopStatus = (io: Server, loopStatus: LoopStatus) => {
+    models.updateConfig({...config(), LOOP_STATUS: loopStatus});
+    io.emit('event', config().LOOP_STATUS);
+};
+
+export const getCurrentNodeReserve = (): string[] => {
+    const currentlyReservedNodes = Object
+        .keys(models.nodes())
+        // Ignore used nodes.
+        .filter((nodeUuid: string) => !models.nodes()[nodeUuid].connectionString);
+    return currentlyReservedNodes;
+};
+
+export const setCurrentNodeReserve = (io: Server) => {
+    models.updateConfig({...config(), NODE_CURRENT_RESERVE_COUNT: getCurrentNodeReserve().length });
+    io.emit('/config', config());
+};
+
+export const cleanup = async (
+    instanceIdsToKeep: string[]
+) => {
+    const instanceProviders = Object.values(InstanceProvider);
+
+    let index = 0;
+    while (index < instanceProviders.length) {
+        const instanceProvider: InstanceProvider = instanceProviders[index];
+        (await integrations.compute[instanceProvider].instances.list())
+            .forEach(async(instancesList: any[]) => {
+                const [instances, instanceApiBaseUrl] = instancesList;
+
+                if (instances) {
+                    const deletableInstances = instances
+                        .filter((instance: any) => {
+                            if ('name' in instance && instance.name.includes(`${config().APP_ID}-${config().ENV}`)) return true;
+                            if ('label' in instance && instance.label.includes(`${config().APP_ID}-${config().ENV}`)) return true;
+                        })
+                        .map((instance: any) => String(instance.id))
+                        .filter((instanceId: any) => !instanceIdsToKeep.includes(instanceId));
+
+                    await integrations.compute[instanceProvider].instances.delete(deletableInstances, instanceApiBaseUrl);
+                }
+            });
+
+        index = index + 1;
+    }
+
+    models.removeUsedNodes(instanceIdsToKeep);
+};
 
 export const exit = async (
     message: string,
     onPurpose = false
 ) => {
+    const nodes = models.nodes();
     !onPurpose && logger.error(message);
-    const hasProxies = Object.keys(models.proxies()).length > 0;
-    onPurpose && hasProxies && await integrations.shell.pkill(`${APP_ID}-${ENV}`);
-    await lib.sleep(1000);
+    const hasNodes = Object.keys(nodes).length > 0;
+    onPurpose && hasNodes && await integrations.shell.pkill(`${config().APP_ID}-${config().ENV}`);
+    onPurpose && Object.keys(nodes).forEach(async (nodeUuid: string) => await integrations.shell.pkill(nodeUuid));
+    // Give a little time to kill the process.
+    onPurpose && await lib.sleep(1000);
     throw new Error();
 };

@@ -14,6 +14,10 @@
     user-select: none;
 }
 
+.clickable:hover {
+    border-bottom: 1px solid var(--active-color);
+}
+
 ::selection {
     color: var(--primary-bg-color);
     background: var(--active-color);
@@ -42,24 +46,38 @@ body {
     overflow-x: hidden;
 }
 
-.app-header {
+.app-header,
+.app-header-right {
     display: flex;
     justify-content: space-between;
     user-select: none;
     font-family: SourceCodePro-Semibold;
 }
 
-.app-name {
-    font-size: 20px;
-    margin: 16px 0 0 16px;
+.app-header {
+    margin-top: 16px;
 }
 
-.enablement-toggle {
+.app-name {
+    font-size: 20px;
+    margin: 8px 0 0 16px;
+}
+
+.enablement-toggle,
+.restart-toggle {
     width: fit-content;
-    margin: 16px;
-    padding: 8px 24px;
-    border: 1px solid var(--secondary-bg-color);
+    margin: 4px;
+    padding: 8px 16px;
+    border-bottom: 1px dotted var(--inactive-color);
     font-size: 12px;
+}
+
+.restart-toggle {
+    padding: 0 4px;
+    margin-right: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .content {
@@ -67,7 +85,7 @@ body {
     height: calc(100vh - 128px);
     margin: 16px;
     padding: 0 16px 16px 16px;
-    border: 1px solid var(--secondary-bg-color);
+    border: 1px dotted var(--inactive-color);
     word-wrap: break-word;
     font-size: 12px;
     overflow-y: scroll;
@@ -88,13 +106,17 @@ body {
     padding-top: 16px;
     padding-bottom: 8px;
     background: var(--primary-bg-color);
-    border-bottom: 1px solid var(--secondary-bg-color);
+    border-bottom: 1px dotted var(--inactive-color);
     font-size: 14px;
     font-family: SourceCodePro-Semibold;
 }
 
 .section-content {
     margin-top: 12px;
+}
+
+.section-content.log {
+    min-height: calc(100vh - 200px);
 }
 
 .config-line {

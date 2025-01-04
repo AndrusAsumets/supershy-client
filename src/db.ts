@@ -1,8 +1,5 @@
 import { JSONFileSyncPreset } from 'npm:lowdb/node';
 import { config } from './constants.ts';
-const {
-    DB_FILE_PATH,
-} = config;
 
 import {
     DatabaseData,
@@ -10,13 +7,13 @@ import {
 } from './types.ts';
 
 const defaultData: DatabaseData = {
-    [DatabaseKey.PROXIES]: {},
+    [DatabaseKey.NODES]: {},
     [DatabaseKey.CONFIG]: config,
 };
 
-export const db = JSONFileSyncPreset<DatabaseData>(DB_FILE_PATH, defaultData);
+export const db = JSONFileSyncPreset<DatabaseData>(config.DB_FILE_PATH, defaultData);
 
 db.data = {
-    [DatabaseKey.PROXIES]: {...defaultData[DatabaseKey.PROXIES], ...db.data[DatabaseKey.PROXIES]},
+    [DatabaseKey.NODES]: {...defaultData[DatabaseKey.NODES], ...db.data[DatabaseKey.NODES]},
     [DatabaseKey.CONFIG]: {...defaultData[DatabaseKey.CONFIG], ...db.data[DatabaseKey.CONFIG]},
 };

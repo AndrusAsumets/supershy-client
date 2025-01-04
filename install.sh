@@ -1,63 +1,82 @@
+# Set current user.
 user=$1
 
-# install dependencies
+# install dependencies.
 if [[ ! -z $(type -p yum) ]]; then
-    sudo yum install unzip expect -y
+    sudo yum install unzip ufw sshuttle -y
 elif [[ ! -z $(type -p dnf) ]]; then
-    sudo dnf install unzip expect -y
+    sudo dnf install unzip ufw sshuttle -y
 elif [[ ! -z $(type -p apt) ]]; then
-    sudo apt install unzip expect -y
+    sudo apt install unzip  ufw sshuttle -y
 elif [[ ! -z $(type -p brew) ]]; then
     sudo -u $user brew install unzip
-    sudo -u $user brew install expect
+    sudo -u $user brew install sshuttle
 else
     echo "Warning: Can't install packages as no package manager was found."
 fi
 
-# set platform target
+# Set platform target.
 case $(uname -sm) in
-	"Darwin x86_64") target="supershy-macos-x86_64" ;;
-	"Darwin arm64") target="supershy-macos-arm64" ;;
-	"Linux aarch64") target="supershy-linux-arm64" ;;
-	*) target="supershy-linux-x86_64" ;;
+	"Darwin x86_64")
+        supershy_target="macos-x86_64"
+    ;;
+	"Darwin arm64")
+        supershy_target="macos-arm64"
+    ;;
+	"Linux aarch64")
+        supershy_target="linux-arm64"
+    ;;
+	*)
+        supershy_target="linux-x86_64"
+    ;;
 esac
 
 version="$(curl -s https://version.supershy.org/)"
-uri="https://github.com/AndrusAsumets/supershy-client/releases/download/${version}/${target}.zip"
+supershy_uri="https://github.com/AndrusAsumets/supershy-client/releases/download/${version}/supershy-${supershy_target}.zip"
+
 app_id="org.supershy.supershyd"
 daemon="/etc/systemd/user/supershy-daemon.service"
-bin_dir="/usr/bin"
-if [[ $target == *"macos"* ]]; then
+home_dir=$(getent passwd "$user" | cut -d: -f6)
+data_dir="${home_dir}/.supershy-data"
+usr_bin=/usr/bin
+if [[ $supershy_target == *"macos"* ]]; then
     launch_agents_dir="/Users/${user}/Library/LaunchAgents"
     sudo mkdir -p $launch_agents_dir
     sudo chown -R $user $launch_agents_dir
     daemon="${launch_agents_dir}/${app_id}.plist"
-    bin_dir="/Users/${user}"
+    data_dir="/Users/${user}/.supershy-data"
 fi
+script_dir="${data_dir}/scripts"
+sudo mkdir -p $data_dir
 tmp_dir="/tmp"
-zip="$tmp_dir/supershy.zip"
-tmp_exe="$tmp_dir/supershyd"
-exe="$bin_dir/supershyd"
 
-# remove old installation
-sudo rm -rf $exe
+# File paths.
+supershy_zip="$tmp_dir/supershy.zip"
+supershy_tmp_exe="$tmp_dir/supershyd"
+supershy_exe="$data_dir/supershyd"
 
-# download the binary
-curl --fail --location --progress-bar --output "$zip" "$uri"
+# Download.
+curl --fail --location --progress-bar --output $supershy_zip $supershy_uri
 
-# unzip
-unzip -d "$tmp_dir" -o "$zip"
+# Unzip.
+unzip -d $tmp_dir -o $supershy_zip
 
-# move to binaries
-sudo mv $tmp_exe $exe
+# Move to binaries.
+sudo mv $supershy_tmp_exe $supershy_exe
 
-sudo chown -R $user $exe
+# Make user the owner of the binaries.
+sudo chown -R $user $supershy_exe
 
-# remove old daemon service
+# Link to system binaries.
+supershy_link=$usr_bin/supershyd
+sudo rm -f supershy_link
+sudo ln -sf $supershy_exe $supershy_link
+
+# Remove old daemon service.
 rm -f $daemon
 
-# create daemon servicea
-case $target in
+# Create daemon service.
+case $supershy_target in
     *"linux"*)
         sudo echo '[Unit]' >> $daemon
         sudo echo 'Description=supershyd' >> $daemon
@@ -69,10 +88,10 @@ case $target in
         sudo echo '[Install]' >> $daemon
         sudo echo 'WantedBy=default.target' >> $daemon
 
-        # run supershy daemon in background
-        sudo -u $user XDG_RUNTIME_DIR="/run/user/$(id -u $user)" systemctl --user daemon-reload
-        sudo -u $user XDG_RUNTIME_DIR="/run/user/$(id -u $user)" systemctl --user enable supershy-daemon.service
-        sudo -u $user XDG_RUNTIME_DIR="/run/user/$(id -u $user)" systemctl --user restart supershy-daemon.service
+        # Run supershy daemon in background.
+        sudo -u $user XDG_RUNTIME_DIR="/run/user/$(id -u $user)" systemctl --user daemon-reload || true
+        sudo -u $user XDG_RUNTIME_DIR="/run/user/$(id -u $user)" systemctl --user enable supershy-daemon.service || true
+        sudo -u $user XDG_RUNTIME_DIR="/run/user/$(id -u $user)" systemctl --user restart supershy-daemon.service || true
     ;;
     *"macos"*)
         sudo echo '<?xml version="1.0" encoding="UTF-8"?>' >> $daemon
@@ -83,7 +102,7 @@ case $target in
         sudo echo "<string>${app_id}</string>" >> $daemon
         sudo echo '<key>ProgramArguments</key>' >> $daemon
         sudo echo '<array>' >> $daemon
-        sudo echo "<string>${exe}</string>" >> $daemon
+        sudo echo "<string>${supershy_exe}</string>" >> $daemon
         sudo echo '</array>' >> $daemon
         sudo echo '<key>RunAtLoad</key>' >> $daemon
         sudo echo '<true/>' >> $daemon
@@ -92,8 +111,8 @@ case $target in
         sudo echo '</dict>' >> $daemon
         sudo echo '</plist>' >> $daemon
 
-        # run supershy daemon in background
-        sudo -u $user launchctl unload $daemon || true
-        sudo -u $user launchctl load $daemon
+        # Run supershy daemon in background.
+        sudo -u $user launchctl unload $daemon &>/dev/null || true
+        sudo -u $user launchctl load $daemon || true
     ;;
 esac
