@@ -217,7 +217,6 @@ const rotate = async () => {
         };
 
         logger.info(`Created ${instanceProvider} instance.`);
-        logger.info(node);
         logger.info(`Found network at ${node.instanceIp}.`);
 
         node = await integrations.kv.cloudflare.hostKey.read(node, jwtSecret);

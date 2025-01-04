@@ -141,7 +141,7 @@ const constructGenericLine = (
 ) => {
     const $key = document.createElement('div');
     $key.className = 'line-key';
-    $key.innerText = key;
+    $key.innerText = capitalize(key);
 
     if (COUNTRY_CODES[key]) {
         $key.innerText = COUNTRY_CODES[key];
@@ -348,15 +348,6 @@ const updateConfig = () => {
                 )
             );
         });
-
-    /*
-    console.log(
-        config.INSTANCE_COUNTRIES
-            .sort((a, b) => COUNTRY_CODES[a].localeCompare(COUNTRY_CODES[b]))
-            .map(key => COUNTRY_CODES[key])
-            .join(', ')
-    );
-    */
 
     config.INSTANCE_COUNTRIES
         .sort((a, b) => COUNTRY_CODES[a].localeCompare(COUNTRY_CODES[b]))
