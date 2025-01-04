@@ -141,10 +141,10 @@ const constructGenericLine = (
 ) => {
     const $key = document.createElement('div');
     $key.className = 'line-key';
-    $key.innerText = key.toUpperCase();
+    $key.innerText = key;
 
-    if (COUNTRY_CODES[$key.innerText]) {
-        $key.innerText = COUNTRY_CODES[$key.innerText];
+    if (COUNTRY_CODES[key]) {
+        $key.innerText = COUNTRY_CODES[key];
     }
 
     const $value = document.createElement('div');
