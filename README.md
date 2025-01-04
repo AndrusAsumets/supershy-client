@@ -32,7 +32,7 @@ Supershy's use cases will depend on your possible adversaries. Firstly, if for
 some reason you aren't able to use Mullvad, Proton or any other of the mainstream
 VPNs either because they are blocked in your region or because you might not
 trust them enough, then supershy could be the next option to try. Secondly, if
-you would like to have Tor-like experience, yet think Tor is too slow, then
+you would like to have TOR-like experience, yet think TOR is too slow, then
 perhaps you should also check out supershy.
 
 The motivation for creating the project derives from the fact that my own
@@ -49,8 +49,8 @@ these days everywhere.
 ### Features
 * Creates a sshuttle VPN using VPS provider(s) you define.
 * Periodically changes VPS nodes and thus your exit IPs.
-* Includes a connection killswitch toggle for LInux.
-If enabled, allows for only connections  made through the VPN to succeed
+* Includes a connection killswitch toggle for Linux.
+If enabled, allows for only connections made through the VPN to succeed
  (Actions -> CONNECTION_KILLSWITCH -> Enabled).
 * Uses sshuttle underneath to VPN all your system-wide TCP traffic through VPS.
 It appears to be leaking IPv6 requests though, so make sure to have connection 
@@ -61,18 +61,7 @@ killswitch enabled at all times.
 redirected through SSH tunnels made by the application itself.
 * Has a web-based UI.
 * Has an option to create n number of reserve nodes for making sure you do not
-connect to the same node twice, therefore reducing the risc of a possible MITM attack 
-happening even more so.
-
-### Changelog
-* Upgrading from v0.2.30 to >= v1.0.0 introduces some breaking changes, namely:
-the app is now behaving more like a VPN than a proxy, which means that you do not 
-need to manually configure proxy on your browser anymore as all TCP requests 
-will be routed automatically to the VPS. If you previously had your browser 
-manually configured to use the proxy, then please reset your proxy settings back 
-to default.
-* Features a connecting killswitch.
-
+connect to the same node twice, therefore reducing risc of a possible MITM attack.
 
 ### Supported VPS
 Digital Ocean, Exoscale, Hetzner, Vultr.
@@ -96,6 +85,8 @@ curl -fsSL https://install.supershy.org | sudo bash -s $(whoami)
 NODE_RECYCLE_INTERVAL_SEC=How often you would like to recycle the exit nodes in seconds, defaults to 1800.
 
 NODE_RESERVE_COUNT=The number of fresh VPS nodes you like to have for backup, defaults to 1.
+Whenever possible, the application will try to avoid reconnecting to a Node.
+The higher the reserve count for Nodes is, the less likelier it is to happen.
 You can disable the whole rotation progress by setting this value to 0 (and always keep connecting to the same 
 original node), however that would kind of defeat the whole purpose of this project.
 
