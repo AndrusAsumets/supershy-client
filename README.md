@@ -50,15 +50,14 @@ these days everywhere.
 * Creates a sshuttle VPN using VPS provider(s) you define.
 * Periodically changes VPS nodes and thus your exit IPs.
 * Includes a connection killswitch toggle for Linux.
-If enabled, allows for only connections made through the VPN to succeed
- (Actions -> CONNECTION_KILLSWITCH -> Enabled).
+If enabled, allows for only connections made through the VPN to succeed.
 * Uses sshuttle underneath to VPN all your system-wide TCP traffic through VPS.
 It appears to be leaking IPv6 requests though, so make sure to have connection 
 killswitch enabled at all times.
-* Also has support for creating HTTP and SOCKS5 proxies.
-* Runs as a daemon process in background, which keeps supershy running even after reboot.
-* All application's own requests (i.e, towards VPS providers and CloudFlare) will be
-redirected through SSH tunnels made by the application itself.
+* Support creating a VPN using sshuttle or HTTP and SOCKS5 proxies.
+* Runs as a daemon process in the background, which keeps supershy running even after reboot.
+* Redirects all its own traffic (i.e, VPS and CloudFlare API calls) through SSH
+tunnels made by the application itself.
 * Has a web-based UI.
 * Has an option to create n number of reserve nodes for making sure you do not
 connect to the same node twice, therefore reducing risc of a possible MITM attack.
@@ -82,15 +81,20 @@ curl -fsSL https://install.supershy.org | sudo bash -s $(whoami)
 
 ```
 # Update Config through the supershy's UI.
-NODE_RECYCLE_INTERVAL_SEC=How often you would like to recycle the exit nodes in seconds, defaults to 1800.
+NODE_RECYCLE_INTERVAL_SEC=How often you would like to recycle the exit nodes
+in seconds, defaults to 1800.
 
-NODE_RESERVE_COUNT=The number of fresh VPS nodes you like to have for backup, defaults to 1.
+NODE_RESERVE_COUNT=The number of fresh VPS nodes you like to have for backup,
+defaults to 1.
 Whenever possible, the application will try to avoid reconnecting to a Node.
 The higher the reserve count for Nodes is, the less likelier it is to happen.
-You can disable the whole rotation progress by setting this value to 0 (and always keep connecting to the same 
-original node), however that would kind of defeat the whole purpose of this project.
+You can disable the whole rotation progress by setting this value to 0 (and
+always keep connecting to the same 
+original node), however that would kind of defeat the whole purpose of this
+project.
 
-SSH_PORT_RANGE=Colon separated [from:to] range of numbers for a random selection, defaults to 10000:65535.
+SSH_PORT_RANGE=Colon separated [from:to] range of numbers for a random
+selection, defaults to 10000:65535.
 
 DIGITAL_OCEAN_API_KEY
  -> Open https://cloud.digitalocean.com/account/api/tokens
@@ -147,9 +151,11 @@ CLOUDFLARE_API_KEY
  -> Create Token.
  -> Get started on Create Custom Token from below.
  -> Name it.
- -> Click Select item... from the Permissions, select Workers KV Storage, select Edit from select...
+ -> Click Select item... from the Permissions, select Workers KV Storage,
+    select Edit from select...
  -> Continue to summary.
- -> Make sure it contains "All accounts - Workers KV Storage:Edit" below User API Tokens.
+ -> Make sure it contains "All accounts - Workers KV Storage:Edit" below
+    User API Tokens.
  -> Create Token.
  -> Click to copy the API token.
 ```
