@@ -47,20 +47,14 @@ give something back to the humanity as kindness seems to be in short supply
 these days everywhere.
 
 ### Features
-* Creates a sshuttle VPN using VPS provider(s) you define.
+* DIY sshuttle VPN (and/or HTTP/SOCKS5 proxies) through multiple VPS providers.
 * Periodically changes VPS nodes and thus your exit IPs.
+* Has a web-based UI.
 * Includes a connection killswitch toggle for Linux.
-If enabled, allows for only connections made through the VPN to succeed.
-* Uses sshuttle underneath to VPN all your system-wide TCP traffic through VPS.
-It appears to be leaking IPv6 requests though, so make sure to have connection 
-killswitch enabled at all times.
-* Support creating a VPN using sshuttle or HTTP and SOCKS5 proxies.
-* Runs as a daemon process in the background, which keeps supershy running even after reboot.
+* Has an option to create n number of reserve nodes for making sure you do not
+connect to the same node twice, therefore reducing risk of a possible MITM attack.
 * Redirects all its own traffic (i.e, VPS and CloudFlare API calls) through SSH
 tunnels made by the application itself.
-* Has a web-based UI.
-* Has an option to create n number of reserve nodes for making sure you do not
-connect to the same node twice, therefore reducing risc of a possible MITM attack.
 
 ### Supported VPS
 Digital Ocean, Exoscale, Hetzner, Vultr.
@@ -71,8 +65,31 @@ Australia, Austria, Brazil, Bulgaria, Canada, Chile, Finland, France, Germany, I
 ## Installation
 
 ```
-# Linux, MacOS
-curl -fsSL https://install.supershy.org | sudo bash -s $(whoami)
+# supershy-client
+git clone git@github.com:AndrusAsumets/supershy-client.git
+cd supershy-client
+```
+
+```
+# Linux
+sudo apt install ufw build-essential sshuttle -y
+
+# Mac
+brew install sshuttle
+
+# You might also need to add `Defaults timestamp_timeout=-1` to /etc/sudoers, as 
+# by default OSX seems to keep forgetting sudo password every 5 minutes (which is 
+# needed by sshuttle).
+```
+
+```
+# Deno
+curl -fsSL https://deno.land/install.sh | sh
+```
+
+```
+# Start supershy
+deno task start
 ```
 
 ```
@@ -105,7 +122,9 @@ DIGITAL_OCEAN_API_KEY
  -> Click to copy the API key.
 
 EXOSCALE_API_KEY & EXOSCALE_API_SECRET
- -> Open https://portal.exoscale.com/u/supershy-dev/iam/keys
+ -> Open https://portal.exoscale.com
+ -> Select IAM.
+ -> Select KEYS.
  -> ADD.
  -> Name it.
  -> SELECT: Owner.
@@ -192,36 +211,6 @@ Firefox with HTTP_PROXY:
  -> Make sure its IP matches with the IP found inside Status tab on supershy's UI.
 ```
 
-## Development
-
-```
-# supershy-client
-git clone git@github.com:AndrusAsumets/supershy-client.git
-cd supershy-client
-```
-
-```
-# Linux
-sudo apt install git unzip ufw build-essential sshuttle -y
-
-# Mac
-brew install sshuttle
-
-# You might also need to add `Defaults timestamp_timeout=-1` to /etc/sudoers, as 
-# by default OSX seems to keep forgetting sudo password every 5 minutes (which is 
-# needed by sshuttle).
-```
-
-```
-# Deno
-curl -fsSL https://deno.land/install.sh | sh
-```
-
-
-```
-deno task start
-```
-
 ```
 # Stop supershy
 deno task stop
@@ -230,11 +219,6 @@ deno task stop
 ```
 # Log
 tail -f ~/.supershy-data/logs/*.log
-```
-
-```
-# Uninstall
-sudo bash uninstall.sh
 ```
 
 Safe travels!
