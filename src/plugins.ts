@@ -25,11 +25,21 @@ echo 'PasswordAuthentication no' >> /etc/ssh/sshd_config
 echo 'Port ${node.sshPort}' >> /etc/ssh/sshd_config
 sudo systemctl restart ssh
 
+sudo apt install git g++ build-essential -y
+git clone https://github.com/drk1wi/portspoof.git
+cd portspoof/
+./configure --sysconfdir=/etc/
+make
+sudo make install
+iptables -t nat -A PREROUTING -i eth0 -p tcp -m tcp --dport 1:${Number(node.sshPort) - 1} -j REDIRECT --to-ports 4444
+iptables -t nat -A PREROUTING -i eth0 -p tcp -m tcp --dport ${Number(node.sshPort) + 1}:65535 -j REDIRECT --to-ports 4444
+portspoof -c /etc/portspoof.conf -s /etc/portspoof_signatures -D
+iptables -A INPUT -p tcp --dport ${node.sshPort} -j ACCEPT
+
+
 HOST_KEY=$(cat /etc/ssh/ssh_host_ed25519_key.pub | cut -d ' ' -f 2)
 ENCODED_HOST_KEY=$(python3 -c 'import sys;import jwt;payload={};payload[\"sshHostKey\"]=sys.argv[1];print(jwt.encode(payload, sys.argv[2], algorithm=\"HS256\"))' $HOST_KEY ${node.jwtSecret})
 curl --request PUT -H 'Content-Type=*\/*' --data $ENCODED_HOST_KEY --url ${integrations.kv.cloudflare.apiBaseurl}/accounts/${config().CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${config().CLOUDFLARE_KV_NAMESPACE}/values/${node.nodeUuid} --oauth2-bearer ${config().CLOUDFLARE_API_KEY}
-
-iptables -A INPUT -p tcp --dport ${node.sshPort} -j ACCEPT
 `;
 
 const ENABLE_SSHUTTLE = () => `
