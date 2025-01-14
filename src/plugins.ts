@@ -60,6 +60,7 @@ ssh -v $ssh_user@$ssh_host -f -N -L $proxy_local_port:0.0.0.0:$proxy_remote_port
 
 const ENABLE_HTTP_PROXY = (node: Node) => `
 sudo apt update
+sudo DEBIAN_FRONTEND=noninteractive apt -yq upgrade
 sudo apt dist-upgrade -y
 sudo apt install tinyproxy -y
 echo 'Port ${node.proxyRemotePort}' >> tinyproxy.conf
