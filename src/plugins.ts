@@ -23,6 +23,7 @@ ssh-keygen -t $key_algorithm -b $key_length -f $key_path -q -N ""
 const ENABLE_LINUX_MAIN = (node: Node) => `
 new_user=${node.sshUser}
 ssh_config_dir=/etc/ssh/sshd_config
+fail2ban_config_dir=/etc/fail2ban/jail.local
 
 # create basic user.
 sudo useradd --system --no-create-home -p $(openssl passwd -1 password) $new_user
@@ -40,7 +41,7 @@ sudo sed -i -e "1i PubkeyAuthentication yes" $ssh_config_dir
 sudo sed -i -e "1i AuthenticationMethods publickey" $ssh_config_dir
 sudo sed -i -e "1i AuthorizedKeysFile /home/$\{new_user}/.ssh/authorized_keys" $ssh_config_dir
 sudo sed -i -e "1i PermitRootLogin no" $ssh_config_dir
-echo 'Port ${node.sshPort}' | sudo tee -a /etc/ssh/sshd_config
+echo 'Port ${node.sshPort}' | sudo tee -a $ssh_config_dir
 
 sudo systemctl restart ssh
 
@@ -55,8 +56,26 @@ iptables -t nat -A PREROUTING -i eth0 -p tcp -m tcp --dport 1:${Number(node.sshP
 iptables -t nat -A PREROUTING -i eth0 -p tcp -m tcp --dport ${Number(node.sshPort) + 1}:65535 -j REDIRECT --to-ports 4444
 portspoof -c /etc/portspoof.conf -s /etc/portspoof_signatures -D
 
-iptables -A INPUT -p tcp --dport ${node.sshPort} -j ACCEPT
+# fail2ban
+sudo apt update
+sudo apt install fail2ban -y
 
+echo '[sshd]' | sudo tee -a $fail2ban_config_dir
+echo 'enable = true' | sudo tee -a $fail2ban_config_dir
+echo 'port = ${node.sshPort}' | sudo tee -a $fail2ban_config_dir
+echo 'sshd_backend = systemd' | sudo tee -a $fail2ban_config_dir
+echo 'mode = aggressive' | sudo tee -a $fail2ban_config_dir
+echo 'bantime = -1' | sudo tee -a $fail2ban_config_dir
+echo 'findtime = 1y' | sudo tee -a $fail2ban_config_dir
+echo 'maxretry = 1' | sudo tee -a $fail2ban_config_dir
+
+sudo systemctl enable fail2ban
+sudo systemctl start fail2ban
+
+iptables -A INPUT -p tcp --dport ${node.sshPort} -j ACCEPT
+`;
+
+const ENABLE_LINUX_PHONEHOME = (node: Node) => `
 HOST_KEY=$(cat /etc/ssh/ssh_host_ed25519_key.pub | cut -d ' ' -f 2)
 ENCODED_HOST_KEY=$(python3 -c 'import sys;import jwt;payload={};payload[\"sshHostKey\"]=sys.argv[1];print(jwt.encode(payload, sys.argv[2], algorithm=\"HS256\"))' $HOST_KEY ${node.jwtSecret})
 curl --request PUT -H 'Content-Type=*\/*' --data $ENCODED_HOST_KEY --url ${integrations.kv.cloudflare.apiBaseurl}/accounts/${config().CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${config().CLOUDFLARE_KV_NAMESPACE}/values/${node.nodeUuid} --oauth2-bearer ${config().CLOUDFLARE_API_KEY}
@@ -255,7 +274,10 @@ export const plugins: Plugins = {
 		[Side.SERVER]: {
 			[Platform.LINUX]: {
 				[Action.MAIN]: {
-					[Script.ENABLE]: (node?: Node) => ENABLE_LINUX_MAIN(node!)
+					[Script.ENABLE]: (node?: Node) => `
+						${ENABLE_LINUX_MAIN(node!)}
+						${ENABLE_LINUX_PHONEHOME(node!)}
+					`
 				}
 			}
 		},
@@ -288,8 +310,9 @@ export const plugins: Plugins = {
 				[Action.MAIN]: {
 					[Script.ENABLE]: (node?: Node) =>
 						`
-							${ENABLE_HTTP_PROXY(node!)}
 							${ENABLE_LINUX_MAIN(node!)}
+							${ENABLE_HTTP_PROXY(node!)}
+							${ENABLE_LINUX_PHONEHOME(node!)}
 						`
 					,
 				}
@@ -324,8 +347,9 @@ export const plugins: Plugins = {
 				[Action.MAIN]: {
 					[Script.ENABLE]: (node?: Node) =>
 						`
-							${ENABLE_SOCKS5_PROXY(node!)}
 							${ENABLE_LINUX_MAIN(node!)}
+							${ENABLE_SOCKS5_PROXY(node!)}
+							${ENABLE_LINUX_PHONEHOME(node!)}
 						`
 					,
 				}
