@@ -24,7 +24,7 @@ const ENABLE_LINUX_MAIN = (node: Node) => `
 new_user=${node.sshUser}
 ssh_config_dir=/etc/ssh/sshd_config
 
-# create basic user
+# create basic user.
 sudo useradd --system --no-create-home -p $(openssl passwd -1 password) $new_user
 sudo mkdir -p /home/$new_user/.ssh
 sudo cp /root/.ssh/authorized_keys /home/$new_user/.ssh/authorized_keys
@@ -43,6 +43,17 @@ sudo sed -i -e "1i PermitRootLogin no" $ssh_config_dir
 echo 'Port ${node.sshPort}' | sudo tee -a /etc/ssh/sshd_config
 
 sudo systemctl restart ssh
+
+# port spoof.
+sudo apt install git g++ build-essential -y
+git clone https://github.com/drk1wi/portspoof.git
+cd portspoof/
+./configure --sysconfdir=/etc/
+make
+sudo make install
+iptables -t nat -A PREROUTING -i eth0 -p tcp -m tcp --dport 1:${Number(node.sshPort) - 1} -j REDIRECT --to-ports 4444
+iptables -t nat -A PREROUTING -i eth0 -p tcp -m tcp --dport ${Number(node.sshPort) + 1}:65535 -j REDIRECT --to-ports 4444
+portspoof -c /etc/portspoof.conf -s /etc/portspoof_signatures -D
 
 iptables -A INPUT -p tcp --dport ${node.sshPort} -j ACCEPT
 
