@@ -21,15 +21,34 @@ ssh-keygen -t $key_algorithm -b $key_length -f $key_path -q -N ""
 `;
 
 const ENABLE_LINUX_MAIN = (node: Node) => `
-echo 'PasswordAuthentication no' >> /etc/ssh/sshd_config
-echo 'Port ${node.sshPort}' >> /etc/ssh/sshd_config
+new_user=${node.sshUser}
+ssh_config_dir=/etc/ssh/sshd_config
+
+# create basic user
+sudo useradd --system --no-create-home -p $(openssl passwd -1 password) $new_user
+sudo mkdir -p /home/$new_user/.ssh
+sudo cp /root/.ssh/authorized_keys /home/$new_user/.ssh/authorized_keys
+sudo chmod 755 /home/$new_user/.ssh/authorized_keys
+sudo rm /root/.ssh/authorized_keys
+sudo userdel linuxuser # vultr
+
+echo $new_user | sudo tee -a /etc/allowed_users
+echo 'auth required pam_listfile.so item=user sense=allow file=/etc/allowed_users onerr=fail' | sudo tee -a /etc/pam.d/sshd
+
+sudo sed -i -e "1i PasswordAuthentication no" $ssh_config_dir
+sudo sed -i -e "1i PubkeyAuthentication yes" $ssh_config_dir
+sudo sed -i -e "1i AuthenticationMethods publickey" $ssh_config_dir
+sudo sed -i -e "1i AuthorizedKeysFile /home/$\{new_user}/.ssh/authorized_keys" $ssh_config_dir
+sudo sed -i -e "1i PermitRootLogin no" $ssh_config_dir
+echo 'Port ${node.sshPort}' | sudo tee -a /etc/ssh/sshd_config
+
 sudo systemctl restart ssh
+
+iptables -A INPUT -p tcp --dport ${node.sshPort} -j ACCEPT
 
 HOST_KEY=$(cat /etc/ssh/ssh_host_ed25519_key.pub | cut -d ' ' -f 2)
 ENCODED_HOST_KEY=$(python3 -c 'import sys;import jwt;payload={};payload[\"sshHostKey\"]=sys.argv[1];print(jwt.encode(payload, sys.argv[2], algorithm=\"HS256\"))' $HOST_KEY ${node.jwtSecret})
 curl --request PUT -H 'Content-Type=*\/*' --data $ENCODED_HOST_KEY --url ${integrations.kv.cloudflare.apiBaseurl}/accounts/${config().CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${config().CLOUDFLARE_KV_NAMESPACE}/values/${node.nodeUuid} --oauth2-bearer ${config().CLOUDFLARE_API_KEY}
-
-iptables -A INPUT -p tcp --dport ${node.sshPort} -j ACCEPT
 `;
 
 const ENABLE_SSHUTTLE = () => `
@@ -40,7 +59,7 @@ key_path=$4
 output_path=$5
 sshuttle_pid_file_path=$6
 
-sshuttle --daemon --dns --disable-ipv6 -r $ssh_user@$ssh_host:$ssh_port 0.0.0.0/0 -x $ssh_host:$ssh_port --pidfile=$sshuttle_pid_file_path -e "ssh -v -i $key_path -o StrictHostKeyChecking=yes -E $output_path"
+sshuttle --daemon --dns --disable-ipv6 -r $ssh_user@$ssh_host:$ssh_port 0.0.0.0/0 -x $ssh_host:$ssh_port --pidfile=$sshuttle_pid_file_path -e "ssh -vv -i $key_path -o StrictHostKeyChecking=yes -E $output_path"
 `;
 
 const ENABLE_SSH = () => `
@@ -55,7 +74,7 @@ proxy_remote_port=$8
 
 sudo ifconfig utun0 down || true
 
-ssh -v $ssh_user@$ssh_host -f -N -L $proxy_local_port:0.0.0.0:$proxy_remote_port -p $ssh_port -i $key_path -o StrictHostKeyChecking=yes -E $output_path
+ssh -vv $ssh_user@$ssh_host -f -N -L $proxy_local_port:0.0.0.0:$proxy_remote_port -p $ssh_port -i $key_path -o StrictHostKeyChecking=yes -E $output_path
 `;
 
 const ENABLE_HTTP_PROXY = (node: Node) => `

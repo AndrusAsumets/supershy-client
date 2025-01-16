@@ -90,6 +90,9 @@ export interface CreateVultrInstance {
 	sshkey_id: [string]
 	user_data: string
 	backups: string
+	enable_ipv6: boolean
+	disable_public_ipv4: boolean
+	user_scheme: string
 }
 
 export interface CreateExoscaleInstance {
@@ -175,7 +178,6 @@ export interface Config {
 	SSH_KNOWN_HOSTS_PATH: string
 	DB_FILE_PATH: string
 	SSH_LOG_EXTENSION: string
-	SSH_USER: string
 	SSH_CONNECTION_TIMEOUT_SEC: number
 	SSHUTTLE_PID_FILE_PATH: string
 	NODE_TYPES: NodeType[]

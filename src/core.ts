@@ -114,7 +114,7 @@ export const getConnectionString = (
         proxyLocalPort,
         proxyRemotePort,
     } = node;
-    node.connectionString = `${instanceIp} ${config().SSH_USER} ${sshPort} ${sshKeyPath} ${sshLogPath} ${config().SSHUTTLE_PID_FILE_PATH} ${proxyLocalPort} ${proxyRemotePort}`
+    node.connectionString = `${instanceIp} ${node.sshUser} ${sshPort} ${sshKeyPath} ${sshLogPath} ${config().SSHUTTLE_PID_FILE_PATH} ${proxyLocalPort} ${proxyRemotePort}`
     return node;
 };
 
@@ -197,7 +197,7 @@ export const setCurrentNodeReserve = (io: Server) => {
 };
 
 export const cleanup = async (
-    instanceIdsToKeep: string[]
+    instanceIdsToKeep: string[] = []
 ) => {
     const instanceProviders = Object.values(InstanceProvider);
 

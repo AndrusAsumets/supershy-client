@@ -139,6 +139,7 @@ const rotate = async () => {
         const enabledPluginKey = config().PLUGINS_ENABLED[0];
         !enabledPluginKey && logger.info(`No enabled plugins found.`);
         const nodeUuid = uuidv7();
+        const sshUser = crypto.randomBytes(16).toString('hex');
         const nodeType = nodeTypes[nodeIndex];
         const instanceName = `${config().APP_ID}-${config().ENV}-${nodeType}-${nodeUuid}`;
         const sshKeyPath = `${config().SSH_KEY_PATH}/${instanceName}`;
@@ -161,7 +162,7 @@ const rotate = async () => {
             instanceSize,
             instanceImage,
             nodeType,
-            sshUser: config().SSH_USER,
+            sshUser,
             sshHostKey: '',
             sshKeyAlgorithm: config().SSH_KEY_ALGORITHM,
             sshKeyLength: config().SSH_KEY_LENGTH,
@@ -202,8 +203,11 @@ const rotate = async () => {
             'ssh-key': { name: instancePublicKeyId },
             user_data: formattedUserData,
             'user-data': formattedUserData,
+            user_scheme: 'root',
             backups: 'disabled',
             'public-ip-assignment': 'inet4',
+            enable_ipv6: false,
+            disable_public_ipv4: false,
             'security-groups': [],
             'template': {},
             'disk-size': config().EXOSCALE_DISK_SIZE,
