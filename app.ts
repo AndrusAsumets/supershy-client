@@ -43,7 +43,6 @@ const connect = async (
 ) => {
     const platformKey = config().PLATFORM;
     const script = core.parseScript(node, node.pluginsEnabled[0], Side.CLIENT, platformKey, Action.MAIN, Script.ENABLE);
-    node = core.getConnectionString(node);
     integrations.kv.cloudflare.hostKey.write(node);
     existsSync(node.sshLogPath) && Deno.removeSync(node.sshLogPath);
     config().CONNECTION_KILLSWITCH && core.enableConnectionKillSwitch();
@@ -56,7 +55,7 @@ const connect = async (
         await integrations.shell.pkill(`${config().PROXY_LOCAL_PORT}:0.0.0.0`);
         await integrations.shell.pkill('0.0.0.0/0');
         await lib.sleep(1000);
-        await integrations.shell.command(script, node.connectionString);
+        await integrations.shell.command(script);
         await lib.sleep(config().SSH_CONNECTION_TIMEOUT_SEC * 1000);
 
         try {
@@ -170,7 +169,6 @@ const rotate = async () => {
             sshPort,
             jwtSecret,
             sshLogPath: core.getSshLogPath(nodeUuid),
-            connectionString: '',
             isDeleted: false,
             connectedTime: null,
             createdTime: new Date().toISOString(),

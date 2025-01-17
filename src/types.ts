@@ -47,7 +47,6 @@ export interface Node {
 	sshKeyAlgorithm: string
 	sshKeyLength: number;
 	sshKeyPath: string
-	connectionString: string
 	appId: string
 	sshPort: number
 	sshHostKey: string

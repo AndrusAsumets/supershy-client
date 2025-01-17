@@ -17,8 +17,7 @@ export const shell = {
     ) => {
         const platformKey = config().PLATFORM;
         const script = core.parseScript(node, node.pluginsEnabled[0], Side.CLIENT, platformKey, Action.MAIN, Script.PREPARE);
-        const args = `${node.sshKeyPath} ${config().SSH_KEY_ALGORITHM} ${config().SSH_KEY_LENGTH}`;
-        await shell.command(script, args);
+        await shell.command(script);
         const publicKeyPath = `${node.sshKeyPath}.pub`;
 
         while (true) {

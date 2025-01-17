@@ -28,7 +28,7 @@ export const getInitialNode = () => {
         .keys(nodes())
         .sort()
         .map((nodeUuid: string) => nodes()[nodeUuid])
-        .filter((node: Node) => !node.connectionString)
+        .filter((node: Node) => !node.connectedTime)
         .filter((node: Node) => !node.isDeleted)[0];
 
     // Reuse, but only when fresh ones are out.

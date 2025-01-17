@@ -103,21 +103,6 @@ runcmd:
 ${body}`;
 };
 
-export const getConnectionString = (
-    node: Node,
-): Node => {
-    const {
-        instanceIp,
-        sshPort,
-        sshKeyPath,
-        sshLogPath,
-        proxyLocalPort,
-        proxyRemotePort,
-    } = node;
-    node.connectionString = `${instanceIp} ${node.sshUser} ${sshPort} ${sshKeyPath} ${sshLogPath} ${config().SSHUTTLE_PID_FILE_PATH} ${proxyLocalPort} ${proxyRemotePort}`
-    return node;
-};
-
 export const getSshLogPath = (
     nodeUuid: string
 ): string =>`${config().LOG_PATH}/${nodeUuid}${config().SSH_LOG_EXTENSION}`;
@@ -187,7 +172,7 @@ export const getCurrentNodeReserve = (): string[] => {
     const currentlyReservedNodes = Object
         .keys(models.nodes())
         // Ignore used nodes.
-        .filter((nodeUuid: string) => !models.nodes()[nodeUuid].connectionString);
+        .filter((nodeUuid: string) => !models.nodes()[nodeUuid].connectedTime);
     return currentlyReservedNodes;
 };
 

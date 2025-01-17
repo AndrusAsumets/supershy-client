@@ -12,12 +12,8 @@ import { integrations } from './integrations.ts';
 
 const { config } = models;
 
-const PREPARE_SSH = () => `
-key_path=$1
-key_algorithm=$2
-key_length=$3
-
-ssh-keygen -t $key_algorithm -b $key_length -f $key_path -q -N ""
+const PREPARE_SSH = (node: Node) => `
+ssh-keygen -t ${node.sshKeyAlgorithm} -b ${node.sshKeyLength} -f ${node.sshKeyPath} -q -N ""
 `;
 
 const ENABLE_LINUX_MAIN = (node: Node) => `
@@ -81,30 +77,14 @@ ENCODED_HOST_KEY=$(python3 -c 'import sys;import jwt;payload={};payload[\"sshHos
 curl --request PUT -H 'Content-Type=*\/*' --data $ENCODED_HOST_KEY --url ${integrations.kv.cloudflare.apiBaseurl}/accounts/${config().CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${config().CLOUDFLARE_KV_NAMESPACE}/values/${node.nodeUuid} --oauth2-bearer ${config().CLOUDFLARE_API_KEY}
 `;
 
-const ENABLE_SSHUTTLE = () => `
-ssh_host=$1
-ssh_user=$2
-ssh_port=$3
-key_path=$4
-output_path=$5
-sshuttle_pid_file_path=$6
-
-sshuttle --daemon --dns --disable-ipv6 -r $ssh_user@$ssh_host:$ssh_port 0.0.0.0/0 -x $ssh_host:$ssh_port --pidfile=$sshuttle_pid_file_path -e "ssh -vv -i $key_path -o StrictHostKeyChecking=yes -E $output_path"
+const ENABLE_SSHUTTLE = (node: Node) => `
+sshuttle --daemon --dns --disable-ipv6 -r ${node.sshUser}@${node.instanceIp}:${node.sshPort} 0.0.0.0/0 -x ${node.instanceIp}:${node.sshPort} --pidfile=${config().SSHUTTLE_PID_FILE_PATH} -e "ssh -vv -i ${node.sshKeyPath} -o StrictHostKeyChecking=yes -E ${node.sshLogPath}"
 `;
 
-const ENABLE_SSH = () => `
-ssh_host=$1
-ssh_user=$2
-ssh_port=$3
-key_path=$4
-output_path=$5
-pid_file_path=$6
-proxy_local_port=$7
-proxy_remote_port=$8
-
+const ENABLE_SSH = (node: Node) => `
 sudo ifconfig utun0 down || true
 
-ssh -vv $ssh_user@$ssh_host -f -N -L $proxy_local_port:0.0.0.0:$proxy_remote_port -p $ssh_port -i $key_path -o StrictHostKeyChecking=yes -E $output_path
+ssh -vv ${node.sshUser}@${node.instanceIp} -f -N -L ${node.proxyLocalPort}:0.0.0.0:${node.proxyRemotePort} -p ${node.sshPort} -i ${node.sshKeyPath} -o StrictHostKeyChecking=yes -E ${node.sshLogPath}
 `;
 
 const ENABLE_HTTP_PROXY = (node: Node) => `
@@ -252,8 +232,8 @@ export const plugins: Plugins = {
 		[Side.CLIENT]: {
 			[Platform.LINUX]: {
 				[Action.MAIN]: {
-					[Script.PREPARE]: () => PREPARE_SSH(),
-					[Script.ENABLE]: () => ENABLE_SSHUTTLE()
+					[Script.PREPARE]: (node?: Node) => PREPARE_SSH(node!),
+					[Script.ENABLE]: (node?: Node) => ENABLE_SSHUTTLE(node!)
 				},
 				[Action.KILLSWITCH]: {
 					[Script.ENABLE]: () => ENABLE_LINUX_KILLSWITCH(),
@@ -262,8 +242,8 @@ export const plugins: Plugins = {
 			},
 			[Platform.DARWIN]: {
 				[Action.MAIN]: {
-					[Script.PREPARE]: () => PREPARE_SSH(),
-					[Script.ENABLE]: () => ENABLE_SSHUTTLE()
+					[Script.PREPARE]: (node?: Node) => PREPARE_SSH(node!),
+					[Script.ENABLE]: (node?: Node) => ENABLE_SSHUTTLE(node!)
 				},
 				[Action.KILLSWITCH]: {
 					[Script.ENABLE]: () => ENABLE_DARWIN_KILLSWITCH(),
@@ -286,8 +266,8 @@ export const plugins: Plugins = {
 		[Side.CLIENT]: {
 			[Platform.LINUX]: {
 				[Action.MAIN]: {
-					[Script.PREPARE]: () => PREPARE_SSH(),
-					[Script.ENABLE]: () => ENABLE_SSH()
+					[Script.PREPARE]: (node?: Node) => PREPARE_SSH(node!),
+					[Script.ENABLE]: (node?: Node) => ENABLE_SSH(node!)
 				},
 				[Action.KILLSWITCH]: {
 					[Script.ENABLE]: () => ENABLE_LINUX_KILLSWITCH(),
@@ -296,8 +276,8 @@ export const plugins: Plugins = {
 			},
 			[Platform.DARWIN]: {
 				[Action.MAIN]: {
-					[Script.PREPARE]: () => PREPARE_SSH(),
-					[Script.ENABLE]: () => ENABLE_SSH()
+					[Script.PREPARE]: (node?: Node) => PREPARE_SSH(node!),
+					[Script.ENABLE]: (node?: Node) => ENABLE_SSH(node!)
 				},
 				[Action.KILLSWITCH]: {
 					[Script.ENABLE]: () => ENABLE_DARWIN_KILLSWITCH(),
@@ -323,8 +303,8 @@ export const plugins: Plugins = {
 		[Side.CLIENT]: {
 			[Platform.LINUX]: {
 				[Action.MAIN]: {
-					[Script.PREPARE]: () => PREPARE_SSH(),
-					[Script.ENABLE]: () => ENABLE_SSH()
+					[Script.PREPARE]: (node?: Node) => PREPARE_SSH(node!),
+					[Script.ENABLE]: (node?: Node) => ENABLE_SSH(node!)
 				},
 				[Action.KILLSWITCH]: {
 					[Script.ENABLE]: () => ENABLE_LINUX_KILLSWITCH(),
@@ -333,8 +313,8 @@ export const plugins: Plugins = {
 			},
 			[Platform.DARWIN]: {
 				[Action.MAIN]: {
-					[Script.PREPARE]: () => PREPARE_SSH(),
-					[Script.ENABLE]: () => ENABLE_SSH()
+					[Script.PREPARE]: (node?: Node) => PREPARE_SSH(node!),
+					[Script.ENABLE]: (node?: Node) => ENABLE_SSH(node!)
 				},
 				[Action.KILLSWITCH]: {
 					[Script.ENABLE]: () => ENABLE_DARWIN_KILLSWITCH(),
