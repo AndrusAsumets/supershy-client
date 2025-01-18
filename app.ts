@@ -5,6 +5,7 @@ import { open } from 'https://deno.land/x/open@v1.0.0/index.ts';
 import { existsSync } from 'https://deno.land/std@0.224.0/fs/mod.ts';
 import {
     LoopStatus,
+    ConnectionType,
     ConnectionStatus,
     NodeType,
     Node,
@@ -30,7 +31,7 @@ const logger = _logger.get(io);
 const init = () => {
     integrations.fs.ensureFolder(config().DATA_PATH);
     integrations.fs.ensureFolder(config().SSH_PATH);
-    integrations.fs.ensureFolder(config().SSH_KEY_PATH);
+    integrations.fs.ensureFolder(config().KEY_PATH);
     integrations.fs.ensureFolder(config().LOG_PATH);
     !existsSync(config().SSH_KNOWN_HOSTS_PATH) && Deno.writeTextFileSync(config().SSH_KNOWN_HOSTS_PATH, '');
     loop();
@@ -38,43 +39,50 @@ const init = () => {
     setInterval(() => core.heartbeat(), config().HEARTBEAT_INTERVAL_SEC * 1000);
 };
 
-const connect = async (
-    node: Node,
-) => {
-    const platformKey = config().PLATFORM;
-    const script = core.parseScript(node, node.pluginsEnabled[0], Side.CLIENT, platformKey, Action.MAIN, Script.ENABLE);
-    integrations.kv.cloudflare.hostKey.write(node);
-    existsSync(node.sshLogPath) && Deno.removeSync(node.sshLogPath);
-    config().CONNECTION_KILLSWITCH && core.enableConnectionKillSwitch();
+const connect = {
+    [ConnectionType.SSH]: async (
+        node: Node,
+    ) => {
+        const platformKey = config().PLATFORM;
+        const script = core.parseScript(node, node.pluginsEnabled[0], Side.CLIENT, platformKey, Action.MAIN, Script.ENABLE);
+        integrations.kv.cloudflare.key.write[node.connectionType](node);
+        existsSync(node.sshLogPath) && Deno.removeSync(node.sshLogPath);
+        config().CONNECTION_KILLSWITCH && core.enableConnectionKillSwitch();
 
-    logger.info(`Connecting SSH to ${node.instanceIp}:${node.sshPort}.`);
-    models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTING});
-    io.emit('/config', config());
+        logger.info(`Using plugin ${node.pluginsEnabled[0]} to connect to ${node.instanceIp}:${node.sshPort} via ${node.connectionType}.`);
+        models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTING});
+        io.emit('/config', config());
 
-    while (config().CONNECTION_STATUS != ConnectionStatus.CONNECTED) {
-        await integrations.shell.pkill(`${config().PROXY_LOCAL_PORT}:0.0.0.0`);
-        await integrations.shell.pkill('0.0.0.0/0');
-        await lib.sleep(1000);
-        await integrations.shell.command(script);
-        await lib.sleep(config().SSH_CONNECTION_TIMEOUT_SEC * 1000);
+        while (config().CONNECTION_STATUS != ConnectionStatus.CONNECTED) {
+            await integrations.shell.pkill(`${config().PROXY_LOCAL_PORT}:0.0.0.0`);
+            await integrations.shell.pkill('0.0.0.0/0');
+            await lib.sleep(1000);
+            await integrations.shell.command(script);
+            await lib.sleep(config().SSH_CONNECTION_TIMEOUT_SEC * 1000);
 
-        try {
-            const output = Deno.readTextFileSync(node.sshLogPath);
-            const hasNetwork = output.includes('pledge: network');
+            try {
+                const output = Deno.readTextFileSync(node.sshLogPath);
+                const hasNetwork = output.includes('pledge: network');
 
-            if (hasNetwork) {
-                logger.info(`Connected SSH to ${node.instanceIp}:${node.sshPort}.`);
-                node.connectedTime = new Date().toISOString();
-                models.updateNode(node);
-                models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTED});
-                core.setCurrentNodeReserve(io);
-                io.emit('/node', node);
-                io.emit('/config', config());
+                if (hasNetwork) {
+                    logger.info(`Connected to ${node.instanceIp}:${node.sshPort}.`);
+                    node.connectedTime = new Date().toISOString();
+                    models.updateNode(node);
+                    models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTED});
+                    core.setCurrentNodeReserve(io);
+                    io.emit('/node', node);
+                    io.emit('/config', config());
+                }
+            }
+            catch(err) {
+                logger.warn({ message: `Failed to connect to ${node.instanceIp}:${node.sshPort}.`, err });
             }
         }
-        catch(err) {
-            logger.warn({ message: `Restarting SSH connect to ${node.instanceIp}:${node.sshPort}.`, err });
-        }
+    },
+    [ConnectionType.WIREGUARD]: async (
+        node: Node,
+    ) => {
+
     }
 };
 
@@ -113,7 +121,7 @@ const rotate = async () => {
         : [];
 
     if (initialNode) {
-        await connect(initialNode);
+        await connect[initialNode.connectionType](initialNode);
         activeNodes.push(initialNode);
         const nodeCurrentReserveCount = core.getCurrentNodeReserve().length;
          // Cant reserve negative nodes.
@@ -137,11 +145,14 @@ const rotate = async () => {
         const { instanceSize, instanceImage } = integrations.compute[instanceProvider];
         const enabledPluginKey = config().PLUGINS_ENABLED[0];
         !enabledPluginKey && logger.info(`No enabled plugins found.`);
+        const connectionType = enabledPluginKey.toLowerCase().includes('wireguard')
+            ? ConnectionType.WIREGUARD
+            : ConnectionType.SSH;
         const nodeUuid = uuidv7();
         const sshUser = crypto.randomBytes(16).toString('hex');
         const nodeType = nodeTypes[nodeIndex];
         const instanceName = `${config().APP_ID}-${config().ENV}-${nodeType}-${nodeUuid}`;
-        const sshKeyPath = `${config().SSH_KEY_PATH}/${instanceName}`;
+        const keyPath = `${config().KEY_PATH}/${instanceName}`;
         const sshPortRange: number[] = config().SSH_PORT_RANGE.split(':').map((item: string) => Number(item));
         const sshPort = lib.randomNumberFromRange(sshPortRange);
         const jwtSecret = crypto.randomBytes(64).toString('hex');
@@ -151,6 +162,7 @@ const rotate = async () => {
             proxyRemotePort: config().PROXY_REMOTE_PORT,
             appId: config().APP_ID,
             pluginsEnabled: [enabledPluginKey],
+            connectionType,
             instanceProvider,
             instanceApiBaseUrl: '',
             instanceName,
@@ -162,10 +174,10 @@ const rotate = async () => {
             instanceImage,
             nodeType,
             sshUser,
-            sshHostKey: '',
+            serverPublicKey: '',
             sshKeyAlgorithm: config().SSH_KEY_ALGORITHM,
             sshKeyLength: config().SSH_KEY_LENGTH,
-            sshKeyPath,
+            keyPath,
             sshPort,
             jwtSecret,
             sshLogPath: core.getSshLogPath(nodeUuid),
@@ -179,8 +191,7 @@ const rotate = async () => {
         !instanceLocationsList.length && logger.info('No locations were found. Are any of the countries enabled for the VPS?');
         const [instanceRegion, instanceCountry, instanceApiBaseUrl]: string[] = lib.shuffle(instanceLocationsList)[0];
         node = {...node, instanceRegion, instanceCountry, instanceApiBaseUrl};
-
-        const publicKey = await integrations.shell.sshKeygen(node);
+        const publicKey = await integrations.shell.keygen(node);
         const instancePublicKeyId = await integrations.compute[instanceProvider].keys.add(node, publicKey, instanceName);
         const script = plugins[enabledPluginKey][Side.SERVER][Platform.LINUX][Action.MAIN][Script.ENABLE](node);
         const userData = core.prepareCloudConfig(script);
@@ -221,7 +232,7 @@ const rotate = async () => {
         logger.info(`Created ${instanceProvider} instance.`);
         logger.info(`Found network at ${node.instanceIp}.`);
 
-        node = await integrations.kv.cloudflare.hostKey.read(node, jwtSecret);
+        node = await integrations.kv.cloudflare.key.read(node, jwtSecret);
         models.updateNode(node);
         activeNodes.push(node);
         core.setCurrentNodeReserve(io);
@@ -229,7 +240,7 @@ const rotate = async () => {
         nodeIndex = nodeIndex + 1;
     }
 
-    !initialNode && await connect(activeNodes[0]);
+    !initialNode && await connect[activeNodes[0].connectionType](activeNodes[0]);
     await core.cleanup(activeNodes.map(node => node.instanceId));
 };
 

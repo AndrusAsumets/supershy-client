@@ -30,7 +30,7 @@ const HOME_PATH = homedir();
 const __DIRNAME = path.dirname(path.fromFileUrl(import.meta.url));
 const UI_PATH = `${__DIRNAME}/ui`;
 const DATA_PATH = `${HOME_PATH}/.supershy-data`;
-const SSH_KEY_PATH = `${DATA_PATH}/.keys`;
+const KEY_PATH = `${DATA_PATH}/.keys`;
 const LOG_PATH = `${DATA_PATH}/logs`;
 const SSH_PATH = `${HOME_PATH}/.ssh`;
 const SSH_KNOWN_HOSTS_PATH = `${SSH_PATH}/known_hosts`;
@@ -96,7 +96,7 @@ export const config: Config = {
     HEARTBEAT_INTERVAL_SEC,
     HOME_PATH,
     DATA_PATH,
-    SSH_KEY_PATH,
+    KEY_PATH,
     UI_PATH,
     SSH_PORT_RANGE,
     SSH_KEY_ALGORITHM,

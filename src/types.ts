@@ -15,6 +15,11 @@ export enum LoopStatus {
 	FINISHED = 'finished',
 }
 
+export enum ConnectionType {
+	SSH = 'ssh',
+	WIREGUARD = 'wireguard',
+}
+
 export enum ConnectionStatus {
 	CONNECTED = 'connected',
 	CONNECTING = 'connecting',
@@ -43,13 +48,14 @@ export interface Node {
 	instanceCountry: string
 	instanceSize: string
 	instanceImage: string
+	connectionType: ConnectionType
 	sshUser: string
 	sshKeyAlgorithm: string
 	sshKeyLength: number;
-	sshKeyPath: string
+	keyPath: string
 	appId: string
 	sshPort: number
-	sshHostKey: string
+	serverPublicKey: string
 	sshLogPath: string
 	jwtSecret: string
 	isDeleted: false
@@ -108,6 +114,7 @@ export interface CreateExoscaleInstance {
 export type InstancePayload = CreateDigitalOceanInstance & CreateHetznerInstance & CreateVultrInstance & CreateExoscaleInstance
 
 export enum Plugin {
+	WIREGUARD_VPN = 'wireguardVpn',
 	SSHUTTLE_VPN = 'sshuttleVpn',
 	HTTP_PROXY = 'httpProxy',
 	SOCKS5_PROXY = 'socks5Proxy',
@@ -170,7 +177,7 @@ export interface Config {
 	CLOUDFLARE_KV_NAMESPACE: string
 	HOME_PATH: string
 	DATA_PATH: string
-	SSH_KEY_PATH: string
+	KEY_PATH: string
 	UI_PATH: string
 	LOG_PATH: string
 	SSH_PATH: string

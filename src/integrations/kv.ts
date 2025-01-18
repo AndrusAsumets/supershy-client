@@ -3,7 +3,7 @@ import * as core from '../core.ts';
 import * as lib from '../lib.ts';
 import * as models from '../models.ts';
 import { logger as _logger } from '../logger.ts';
-import { Node } from '../types.ts';
+import { Node, ConnectionType } from '../types.ts';
 
 const logger = _logger.get();
 const { config } = models;
@@ -26,14 +26,14 @@ export const kv = {
                 return false;
             }
         },
-        hostKey: {
+        key: {
             read: async (
                 node: Node,
                 jwtSecret: string,
-            ) => {
-                logger.info(`Fetching host key for node ${node.nodeUuid}.`);
+            ): Promise<Node> => {
+                logger.info(`Fetching server's public key.`);
 
-                while (!node.sshHostKey) {
+                while (!node.serverPublicKey) {
                     try {
                         const headers = {
                             Authorization: `Bearer ${config().CLOUDFLARE_API_KEY}`,
@@ -44,9 +44,8 @@ export const kv = {
                         const res = await fetch(url, core.useProxy(options));
                         const text = await res.text();
                         text.includes('errors') && !text.includes('key not found') && logger.error({ message: 'kv.cloudflare.hostKey.get error', text });
-                        const decoded = jwt.verify(text, jwtSecret);
-                        node.sshHostKey = decoded.sshHostKey;
-                        logger.info(`Fetched host key for node ${node.nodeUuid}.`);
+                        node.serverPublicKey = jwt.verify(text, jwtSecret).serverPublicKey;
+                        logger.info(`Fetched server's public key.`);
                     } catch (_) {
                         await lib.sleep(1000);
                     }
@@ -54,17 +53,22 @@ export const kv = {
 
                 return node;
             },
-            write: (node: Node) => {
-                const isFoundFromKnownHostsFile = Deno
-                    .readTextFileSync(config().SSH_KNOWN_HOSTS_PATH)
-                    .includes(node.sshHostKey);
+            write: {
+                [ConnectionType.SSH]: (node: Node) => {
+                    const isFoundFromKnownHostsFile = Deno
+                        .readTextFileSync(config().SSH_KNOWN_HOSTS_PATH)
+                        .includes(node.serverPublicKey);
     
-                !isFoundFromKnownHostsFile && Deno.writeTextFileSync(
-                    config().SSH_KNOWN_HOSTS_PATH,
-                    `${node.instanceIp} ssh-${config().SSH_KEY_ALGORITHM} ${node.sshHostKey}\n`,
-                    { append: true },
-                );
-            },
+                    !isFoundFromKnownHostsFile && Deno.writeTextFileSync(
+                        config().SSH_KNOWN_HOSTS_PATH,
+                        `${node.instanceIp} ssh-${config().SSH_KEY_ALGORITHM} ${node.serverPublicKey}\n`,
+                        { append: true },
+                    );
+                },
+                [ConnectionType.WIREGUARD]: (node: Node) => {
+
+                }
+            }
         },
     },
 };
