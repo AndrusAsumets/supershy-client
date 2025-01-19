@@ -3,36 +3,42 @@ import * as models from '../models.ts';
 
 const { config } = models;
 
-export const PREPARE_SSH = (node: Node) => `
-ssh-keygen -t ${node.sshKeyAlgorithm} -b ${node.sshKeyLength} -f ${node.keyPath} -q -N ""
+export const PREPARE = (node: Node) => `
+ssh-keygen -t ${node.sshKeyAlgorithm} -b ${node.sshKeyLength} -f ${node.clientKeyPath}-ssh -q -N ""
+
+wg genkey > ${node.clientKeyPath}-wireguard
+wg pubkey < ${node.clientKeyPath}-wireguard > ${node.clientKeyPath}-wireguard.pub
+`;
+
+export const ENABLE_WIREGUARD = (node: Node) => `
+wireguard_config_dir=${config().WIREGUARD_CONFIG_PATH}
+
+sudo wg-quick down $wireguard_config_dir || true
+sudo rm -rf $wireguard_config_dir
+
+echo [Interface] | sudo tee -a $wireguard_config_dir
+echo PrivateKey = ${Deno.readTextFileSync(node.clientKeyPath + '-wireguard').replace('\n', '')} | sudo tee -a $wireguard_config_dir
+echo Address = 10.10.10.2/24 | sudo tee -a $wireguard_config_dir
+
+echo [Peer] | sudo tee -a $wireguard_config_dir
+echo PublicKey = ${node.serverPublicKey} | sudo tee -a $wireguard_config_dir
+echo Endpoint = ${node.instanceIp}:${node.serverPort} | sudo tee -a $wireguard_config_dir
+echo AllowedIPs = 0.0.0.0/0 | sudo tee -a $wireguard_config_dir
+
+sudo chmod 600 $wireguard_config_dir
+
+# Start wireguard server
+sudo wg-quick up $wireguard_config_dir
 `;
 
 export const ENABLE_SSHUTTLE = (node: Node) => `
-sshuttle --daemon --dns --disable-ipv6 -r ${node.sshUser}@${node.instanceIp}:${node.sshPort} 0.0.0.0/0 -x ${node.instanceIp}:${node.sshPort} --pidfile=${config().SSHUTTLE_PID_FILE_PATH} -e "ssh -vv -i ${node.keyPath} -o StrictHostKeyChecking=yes -E ${node.sshLogPath}"
+sshuttle --daemon --dns --disable-ipv6 -r ${node.sshUser}@${node.instanceIp}:${node.serverPort} 0.0.0.0/0 -x ${node.instanceIp}:${node.serverPort} --pidfile=${config().SSHUTTLE_PID_FILE_PATH} -e "ssh -vv -i ${node.clientKeyPath}-ssh -o StrictHostKeyChecking=yes -E ${node.sshLogPath}"
 `;
 
 export const ENABLE_SSH = (node: Node) => `
 sudo ifconfig utun0 down || true
 
-ssh -vv ${node.sshUser}@${node.instanceIp} -f -N -L ${node.proxyLocalPort}:0.0.0.0:${node.proxyRemotePort} -p ${node.sshPort} -i ${node.keyPath} -o StrictHostKeyChecking=yes -E ${node.sshLogPath}
-`;
-
-export const PREPARE_WIREGUARD = (node: Node) => `
-wireguard_config_dir=${config().DATA_PATH}/wg0.conf
-wg genkey > ${node.keyPath}
-wg pubkey < ${node.keyPath} > ${node.keyPath}.pub
-
-echo '[Interface]' | sudo tee -a $wireguard_config_dir
-echo 'PrivateKey = ${Deno.readTextFileSync(node.keyPath)}' | sudo tee -a $wireguard_config_dir
-echo 'Address = ${node.instanceIp}' | sudo tee -a $wireguard_config_dir
-echo 'DNS = 1.1.1.1' | sudo tee -a $wireguard_config_dir
-echo '[Peer]' | sudo tee -a $wireguard_config_dir
-echo 'Endpoint = :51820' | sudo tee -a $wireguard_config_dir
-echo 'AllowedIPs = 0.0.0.0/0' | sudo tee -a $wireguard_config_dir
-`;
-
-export const ENABLE_WIREGUARD = (node: Node) => `
-
+ssh -vv ${node.sshUser}@${node.instanceIp} -f -N -L ${node.proxyLocalPort}:0.0.0.0:${node.proxyRemotePort} -p ${node.serverPort} -i ${node.clientKeyPath}-ssh -o StrictHostKeyChecking=yes -E ${node.sshLogPath}
 `;
 
 export const ENABLE_LINUX_KILLSWITCH = () => `

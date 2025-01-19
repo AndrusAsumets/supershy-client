@@ -45,11 +45,11 @@ const connect = {
     ) => {
         const platformKey = config().PLATFORM;
         const script = core.parseScript(node, node.pluginsEnabled[0], Side.CLIENT, platformKey, Action.MAIN, Script.ENABLE);
-        integrations.kv.cloudflare.key.write[node.connectionType](node);
+        integrations.kv.cloudflare.key.write(node);
         existsSync(node.sshLogPath) && Deno.removeSync(node.sshLogPath);
         config().CONNECTION_KILLSWITCH && core.enableConnectionKillSwitch();
 
-        logger.info(`Using plugin ${node.pluginsEnabled[0]} to connect to ${node.instanceIp}:${node.sshPort} via ${node.connectionType}.`);
+        logger.info(`Using plugin ${node.pluginsEnabled[0]} while connecting to ${node.instanceIp}:${node.serverPort} via ${node.connectionType}.`);
         models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTING});
         io.emit('/config', config());
 
@@ -65,7 +65,7 @@ const connect = {
                 const hasNetwork = output.includes('pledge: network');
 
                 if (hasNetwork) {
-                    logger.info(`Connected to ${node.instanceIp}:${node.sshPort}.`);
+                    logger.info(`Connected to ${node.instanceIp}:${node.serverPort}.`);
                     node.connectedTime = new Date().toISOString();
                     models.updateNode(node);
                     models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTED});
@@ -75,14 +75,16 @@ const connect = {
                 }
             }
             catch(err) {
-                logger.warn({ message: `Failed to connect to ${node.instanceIp}:${node.sshPort}.`, err });
+                logger.warn({ message: `Failed to connect to ${node.instanceIp}:${node.serverPort}.`, err });
             }
         }
     },
     [ConnectionType.WIREGUARD]: async (
         node: Node,
     ) => {
-
+        const platformKey = config().PLATFORM;
+        const script = core.parseScript(node, node.pluginsEnabled[0], Side.CLIENT, platformKey, Action.MAIN, Script.ENABLE);
+        await integrations.shell.command(script);
     }
 };
 
@@ -152,9 +154,9 @@ const rotate = async () => {
         const sshUser = crypto.randomBytes(16).toString('hex');
         const nodeType = nodeTypes[nodeIndex];
         const instanceName = `${config().APP_ID}-${config().ENV}-${nodeType}-${nodeUuid}`;
-        const keyPath = `${config().KEY_PATH}/${instanceName}`;
-        const sshPortRange: number[] = config().SSH_PORT_RANGE.split(':').map((item: string) => Number(item));
-        const sshPort = lib.randomNumberFromRange(sshPortRange);
+        const clientKeyPath = `${config().KEY_PATH}/${nodeUuid}`;
+        const serverPortRange: number[] = config().SERVER_PORT_RANGE.split(':').map((item: string) => Number(item));
+        const serverPort = lib.randomNumberFromRange(serverPortRange);
         const jwtSecret = crypto.randomBytes(64).toString('hex');
         let node: Node = {
             nodeUuid,
@@ -177,8 +179,8 @@ const rotate = async () => {
             serverPublicKey: '',
             sshKeyAlgorithm: config().SSH_KEY_ALGORITHM,
             sshKeyLength: config().SSH_KEY_LENGTH,
-            keyPath,
-            sshPort,
+            clientKeyPath,
+            serverPort,
             jwtSecret,
             sshLogPath: core.getSshLogPath(nodeUuid),
             isDeleted: false,
@@ -191,8 +193,8 @@ const rotate = async () => {
         !instanceLocationsList.length && logger.info('No locations were found. Are any of the countries enabled for the VPS?');
         const [instanceRegion, instanceCountry, instanceApiBaseUrl]: string[] = lib.shuffle(instanceLocationsList)[0];
         node = {...node, instanceRegion, instanceCountry, instanceApiBaseUrl};
-        const publicKey = await integrations.shell.keygen(node);
-        const instancePublicKeyId = await integrations.compute[instanceProvider].keys.add(node, publicKey, instanceName);
+        const [publicSshKey] = await integrations.shell.keygen(node, Script.PREPARE);
+        const instancePublicKeyId = await integrations.compute[instanceProvider].keys.add(node, publicSshKey, instanceName);
         const script = plugins[enabledPluginKey][Side.SERVER][Platform.LINUX][Action.MAIN][Script.ENABLE](node);
         const userData = core.prepareCloudConfig(script);
         const formattedUserData = integrations.compute[instanceProvider].userData.format(userData);
@@ -232,7 +234,7 @@ const rotate = async () => {
         logger.info(`Created ${instanceProvider} instance.`);
         logger.info(`Found network at ${node.instanceIp}.`);
 
-        node = await integrations.kv.cloudflare.key.read(node, jwtSecret);
+        node.serverPublicKey = await integrations.kv.cloudflare.key.read(node, jwtSecret);
         models.updateNode(node);
         activeNodes.push(node);
         core.setCurrentNodeReserve(io);

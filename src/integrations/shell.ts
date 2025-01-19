@@ -13,13 +13,12 @@ import {
 export const shell = {
     keygen: async (
         node: Node,
-    ) => {
+        scriptKey: Script,
+    ):Promise<string[]> => {
         const platformKey = config().PLATFORM;
-        const script = core.parseScript(node, node.pluginsEnabled[0], Side.CLIENT, platformKey, Action.MAIN, Script.PREPARE);
+        const script = core.parseScript(node, node.pluginsEnabled[0], Side.CLIENT, platformKey, Action.MAIN, scriptKey);
         await shell.command(script);
-        const publicKeyPath = `${node.keyPath}.pub`;
-        const publicKey = Deno.readTextFileSync(publicKeyPath);
-        return publicKey;
+        return [Deno.readTextFileSync(`${node.clientKeyPath}-ssh.pub`), Deno.readTextFileSync(`${node.clientKeyPath}-wireguard.pub`)];
     },
     pkill: async (input: string) => {
         const cmd = 'pkill';

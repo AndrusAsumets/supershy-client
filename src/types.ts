@@ -52,9 +52,9 @@ export interface Node {
 	sshUser: string
 	sshKeyAlgorithm: string
 	sshKeyLength: number;
-	keyPath: string
+	clientKeyPath: string
 	appId: string
-	sshPort: number
+	serverPort: number
 	serverPublicKey: string
 	sshLogPath: string
 	jwtSecret: string
@@ -164,7 +164,7 @@ export interface Config {
 	AUTO_LAUNCH_WEB: boolean
 	PROXY_LOCAL_PORT: number
 	PROXY_REMOTE_PORT: number
-	SSH_PORT_RANGE: string
+	SERVER_PORT_RANGE: string
 	SSH_KEY_ALGORITHM: string
 	SSH_KEY_LENGTH: number
 	DIGITAL_OCEAN_API_KEY: string
@@ -182,6 +182,7 @@ export interface Config {
 	LOG_PATH: string
 	SSH_PATH: string
 	SSH_KNOWN_HOSTS_PATH: string
+	WIREGUARD_CONFIG_PATH: string
 	DB_FILE_PATH: string
 	SSH_LOG_EXTENSION: string
 	SSH_CONNECTION_TIMEOUT_SEC: number

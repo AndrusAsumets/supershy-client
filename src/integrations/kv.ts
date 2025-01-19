@@ -3,7 +3,7 @@ import * as core from '../core.ts';
 import * as lib from '../lib.ts';
 import * as models from '../models.ts';
 import { logger as _logger } from '../logger.ts';
-import { Node, ConnectionType } from '../types.ts';
+import { Node } from '../types.ts';
 
 const logger = _logger.get();
 const { config } = models;
@@ -30,44 +30,40 @@ export const kv = {
             read: async (
                 node: Node,
                 jwtSecret: string,
-            ): Promise<Node> => {
-                logger.info(`Fetching server's public key.`);
+            ): Promise<string> => {
+                logger.info(`Fetching server's ${node.connectionType} public key.`);
+                let key = '';
 
-                while (!node.serverPublicKey) {
+                while (!key) {
                     try {
                         const headers = {
                             Authorization: `Bearer ${config().CLOUDFLARE_API_KEY}`,
                         };
                         const options = { method: 'GET', headers };
                         const url =
-                            `${kv.cloudflare.apiBaseurl}/accounts/${config().CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${config().CLOUDFLARE_KV_NAMESPACE}/values/${node.nodeUuid}`;
+                            `${kv.cloudflare.apiBaseurl}/accounts/${config().CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${config().CLOUDFLARE_KV_NAMESPACE}/values/${node.nodeUuid}-${node.connectionType}`;
                         const res = await fetch(url, core.useProxy(options));
                         const text = await res.text();
-                        text.includes('errors') && !text.includes('key not found') && logger.error({ message: 'kv.cloudflare.hostKey.get error', text });
-                        node.serverPublicKey = jwt.verify(text, jwtSecret).serverPublicKey;
-                        logger.info(`Fetched server's public key.`);
+                        text.includes('errors') && !text.includes('key not found') && logger.error({ message: `kv.cloudflare.hostKey.get error for ${node.connectionType}`, text });
+                        key = jwt.verify(text, jwtSecret).key;
+                        logger.info(`Fetched server's ${node.connectionType} public key.`);
                     } catch (_) {
                         await lib.sleep(1000);
                     }
                 }
 
-                return node;
+                return key;
             },
-            write: {
-                [ConnectionType.SSH]: (node: Node) => {
-                    const isFoundFromKnownHostsFile = Deno
-                        .readTextFileSync(config().SSH_KNOWN_HOSTS_PATH)
-                        .includes(node.serverPublicKey);
-    
-                    !isFoundFromKnownHostsFile && Deno.writeTextFileSync(
-                        config().SSH_KNOWN_HOSTS_PATH,
-                        `${node.instanceIp} ssh-${config().SSH_KEY_ALGORITHM} ${node.serverPublicKey}\n`,
-                        { append: true },
-                    );
-                },
-                [ConnectionType.WIREGUARD]: (node: Node) => {
+            write: (node: Node) => {
+                const isFoundFromKnownHostsFile = Deno
+                    .readTextFileSync(config().SSH_KNOWN_HOSTS_PATH)
+                    .includes(node.serverPublicKey);
 
-                }
+                !isFoundFromKnownHostsFile && Deno.writeTextFileSync(
+                    config().SSH_KNOWN_HOSTS_PATH,
+                    `${node.instanceIp} ssh-${config().SSH_KEY_ALGORITHM} ${node.serverPublicKey}\n`,
+                    { append: true },
+                );
             }
         },
     },

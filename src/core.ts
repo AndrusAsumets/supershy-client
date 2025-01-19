@@ -137,7 +137,7 @@ export const enableConnectionKillSwitch = () => {
     const nodes = models.nodes();
     const args = Object
         .keys(nodes)
-        .map((key: string) => `${nodes[key].instanceIp}:${nodes[key].sshPort}`)
+        .map((key: string) => `${nodes[key].instanceIp}:${nodes[key].serverPort}`)
         .join(',');
     integrations.shell.command(script, args);
     logger.info(`Enabled connection killswitch.`);

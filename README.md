@@ -110,7 +110,7 @@ always keep connecting to the same
 original node), however that would kind of defeat the whole purpose of this
 project.
 
-SSH_PORT_RANGE=Colon separated [from:to] range of numbers for a random
+SERVER_PORT_RANGE=Colon separated [from:to] range of numbers for a random
 selection, defaults to 10000:65535.
 
 DIGITAL_OCEAN_API_KEY

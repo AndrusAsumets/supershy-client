@@ -15,7 +15,7 @@ export const plugins: Plugins = {
 		[Side.CLIENT]: {
 			[Platform.LINUX]: {
 				[Action.MAIN]: {
-					[Script.PREPARE]: (node?: Node) => client.PREPARE_WIREGUARD(node!),
+					[Script.PREPARE]: (node?: Node) => client.PREPARE(node!),
 					[Script.ENABLE]: (node?: Node) => client.ENABLE_WIREGUARD(node!)
 				},
 				[Action.KILLSWITCH]: {
@@ -28,7 +28,6 @@ export const plugins: Plugins = {
 			[Platform.LINUX]: {
 				[Action.MAIN]: {
 					[Script.ENABLE]: (node?: Node) => `
-						${server.ENABLE_MAIN(node!)}
 						${server.ENABLE_WIREGUARD(node!)}
 						${server.ENABLE_WIREGUARD_PHONEHOME(node!)}
 					`
@@ -40,7 +39,7 @@ export const plugins: Plugins = {
 		[Side.CLIENT]: {
 			[Platform.LINUX]: {
 				[Action.MAIN]: {
-					[Script.PREPARE]: (node?: Node) => client.PREPARE_SSH(node!),
+					[Script.PREPARE]: (node?: Node) => client.PREPARE(node!),
 					[Script.ENABLE]: (node?: Node) => client.ENABLE_SSHUTTLE(node!)
 				},
 				[Action.KILLSWITCH]: {
@@ -50,7 +49,7 @@ export const plugins: Plugins = {
 			},
 			[Platform.DARWIN]: {
 				[Action.MAIN]: {
-					[Script.PREPARE]: (node?: Node) => client.PREPARE_SSH(node!),
+					[Script.PREPARE]: (node?: Node) => client.PREPARE(node!),
 					[Script.ENABLE]: (node?: Node) => client.ENABLE_SSHUTTLE(node!)
 				},
 				[Action.KILLSWITCH]: {
@@ -74,7 +73,7 @@ export const plugins: Plugins = {
 		[Side.CLIENT]: {
 			[Platform.LINUX]: {
 				[Action.MAIN]: {
-					[Script.PREPARE]: (node?: Node) => client.PREPARE_SSH(node!),
+					[Script.PREPARE]: (node?: Node) => client.PREPARE(node!),
 					[Script.ENABLE]: (node?: Node) => client.ENABLE_SSH(node!)
 				},
 				[Action.KILLSWITCH]: {
@@ -84,7 +83,7 @@ export const plugins: Plugins = {
 			},
 			[Platform.DARWIN]: {
 				[Action.MAIN]: {
-					[Script.PREPARE]: (node?: Node) => client.PREPARE_SSH(node!),
+					[Script.PREPARE]: (node?: Node) => client.PREPARE(node!),
 					[Script.ENABLE]: (node?: Node) => client.ENABLE_SSH(node!)
 				},
 				[Action.KILLSWITCH]: {
@@ -111,7 +110,7 @@ export const plugins: Plugins = {
 		[Side.CLIENT]: {
 			[Platform.LINUX]: {
 				[Action.MAIN]: {
-					[Script.PREPARE]: (node?: Node) => client.PREPARE_SSH(node!),
+					[Script.PREPARE]: (node?: Node) => client.PREPARE(node!),
 					[Script.ENABLE]: (node?: Node) => client.ENABLE_SSH(node!)
 				},
 				[Action.KILLSWITCH]: {
@@ -121,7 +120,7 @@ export const plugins: Plugins = {
 			},
 			[Platform.DARWIN]: {
 				[Action.MAIN]: {
-					[Script.PREPARE]: (node?: Node) => client.PREPARE_SSH(node!),
+					[Script.PREPARE]: (node?: Node) => client.PREPARE(node!),
 					[Script.ENABLE]: (node?: Node) => client.ENABLE_SSH(node!)
 				},
 				[Action.KILLSWITCH]: {

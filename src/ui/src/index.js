@@ -17,9 +17,7 @@ const visibleActionKeys = {
 const visibleConfigKeys = {
     NODE_RECYCLE_INTERVAL_SEC: { editable: 'number' },
     NODE_RESERVE_COUNT: { editable: 'number' },
-    SSH_PORT_RANGE: { editable: 'string' },
-    SSH_KEY_ALGORITHM: { editable: 'string' },
-    SSH_KEY_LENGTH: { editable: 'number' },
+    SERVER_PORT_RANGE: { editable: 'string' },
     DIGITAL_OCEAN_API_KEY: { editable: 'password' },
     EXOSCALE_API_KEY: { editable: 'password' },
     EXOSCALE_API_SECRET: { editable: 'password' },

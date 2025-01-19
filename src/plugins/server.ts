@@ -25,7 +25,7 @@ sudo sed -i -e "1i PubkeyAuthentication yes" $ssh_config_dir
 sudo sed -i -e "1i AuthenticationMethods publickey" $ssh_config_dir
 sudo sed -i -e "1i AuthorizedKeysFile /home/$\{new_user}/.ssh/authorized_keys" $ssh_config_dir
 sudo sed -i -e "1i PermitRootLogin no" $ssh_config_dir
-echo 'Port ${node.sshPort}' | sudo tee -a $ssh_config_dir
+echo 'Port ${node.serverPort}' | sudo tee -a $ssh_config_dir
 
 sudo systemctl restart ssh
 
@@ -36,8 +36,8 @@ cd portspoof/
 ./configure --sysconfdir=/etc/
 make
 sudo make install
-iptables -t nat -A PREROUTING -i eth0 -p tcp -m tcp --dport 1:${Number(node.sshPort) - 1} -j REDIRECT --to-ports 4444
-iptables -t nat -A PREROUTING -i eth0 -p tcp -m tcp --dport ${Number(node.sshPort) + 1}:65535 -j REDIRECT --to-ports 4444
+iptables -t nat -A PREROUTING -i eth0 -p tcp -m tcp --dport 1:${Number(node.serverPort) - 1} -j REDIRECT --to-ports 4444
+iptables -t nat -A PREROUTING -i eth0 -p tcp -m tcp --dport ${Number(node.serverPort) + 1}:65535 -j REDIRECT --to-ports 4444
 portspoof -c /etc/portspoof.conf -s /etc/portspoof_signatures -D
 
 # fail2ban
@@ -46,7 +46,7 @@ sudo apt install fail2ban -y
 
 echo '[sshd]' | sudo tee -a $fail2ban_config_dir
 echo 'enable = true' | sudo tee -a $fail2ban_config_dir
-echo 'port = ${node.sshPort}' | sudo tee -a $fail2ban_config_dir
+echo 'port = ${node.serverPort}' | sudo tee -a $fail2ban_config_dir
 echo 'sshd_backend = systemd' | sudo tee -a $fail2ban_config_dir
 echo 'mode = aggressive' | sudo tee -a $fail2ban_config_dir
 echo 'bantime = -1' | sudo tee -a $fail2ban_config_dir
@@ -56,7 +56,7 @@ echo 'maxretry = 1' | sudo tee -a $fail2ban_config_dir
 sudo systemctl enable fail2ban
 sudo systemctl start fail2ban
 
-iptables -A INPUT -p tcp --dport ${node.sshPort} -j ACCEPT
+iptables -A INPUT -p tcp --dport ${node.serverPort} -j ACCEPT
 `;
 
 export const ENABLE_HTTP_PROXY = (node: Node) => `
@@ -77,49 +77,52 @@ screen -dm microsocks -p ${node.proxyRemotePort}
 `;
 
 export const ENABLE_WIREGUARD = (node: Node) => `
-wireguard_config_dir=/etc/wireguard/wg0.conf
+wireguard_dir=/etc/wireguard
+wireguard_config_dir=$wireguard_dir/wg0.conf
 
-sudo apt update
-sudo DEBIAN_FRONTEND=noninteractive apt -yq upgrade
-sudo apt install linux-headers-$(uname -r) wget -y
-sudo add-apt-repository ppa:wireguard/wireguard
 sudo apt update
 sudo apt install wireguard -y
 sudo modprobe wireguard
 
-wg genkey > server-private.key
-wg pubkey < server-private.key > server-public.key
+# Keys.
+umask 0744
+sudo wg genkey > $wireguard_dir/server-private.key
+sudo wg pubkey < $wireguard_dir/server-private.key > $wireguard_dir/server-public.key
 
 # Config.
-echo '[Interface]' | sudo tee -a $wireguard_config_dir
-echo 'Address = 10.0.0.1/24' | sudo tee -a $wireguard_config_dir
-echo 'ListenPort = 51820' | sudo tee -a $wireguard_config_dir
-echo PrivateKey = $(cat server-private.key) > $wireguard_config_dir
-echo '[Peer]' | sudo tee -a $wireguard_config_dir
-echo 'PublicKey = ${Deno.readTextFileSync(node.keyPath + '.pub')}' | sudo tee -a $wireguard_config_dir
-echo 'AllowedIPs = 0.0.0.0/0' | sudo tee -a $wireguard_config_dir
+echo [Interface] | sudo tee -a $wireguard_config_dir
+echo Address = 10.10.10.1/24 | sudo tee -a $wireguard_config_dir
+echo ListenPort = ${node.serverPort} | sudo tee -a $wireguard_config_dir
+echo PrivateKey = $(cat $wireguard_dir/server-private.key) | sudo tee -a $wireguard_config_dir
+echo [Peer] | sudo tee -a $wireguard_config_dir
+echo AllowedIPs = 10.10.10.2/32 | sudo tee -a $wireguard_config_dir
+echo PublicKey = ${Deno.readTextFileSync(node.clientKeyPath + '-wireguard.pub').replace('\n', '')} | sudo tee -a $wireguard_config_dir
 
 # Enable IP forwarding.
-echo 'net.ipv4.ip_forward=1' | sudo tee -a /etc/sysctl.conf
+echo net.ipv4.ip_forward=1 | sudo tee -a /etc/sysctl.conf
 sudo sysctl -p
 
 # Allow WireGuard through the firewall.
+sudo iptables -A INPUT -p udp --dport ${node.serverPort} -j ACCEPT
 sudo iptables -A INPUT -i wg0 -j ACCEPT
 sudo iptables -A FORWARD -i wg0 -j ACCEPT
 sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+
+# Start wireguard server
+sudo wg-quick up $wireguard_config_dir
 `;
 
 export const PHONEHOME = (node: Node) => `
-encoded_server_public_key=$(python3 -c 'import sys;import jwt;payload={};payload[\"serverPublicKey\"]=sys.argv[1];print(jwt.encode(payload, sys.argv[2], algorithm=\"HS256\"))' $server_public_key ${node.jwtSecret})
-curl --request PUT -H 'Content-Type=*\/*' --data $encoded_server_public_key --url ${integrations.kv.cloudflare.apiBaseurl}/accounts/${config().CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${config().CLOUDFLARE_KV_NAMESPACE}/values/${node.nodeUuid} --oauth2-bearer ${config().CLOUDFLARE_API_KEY}
+encoded_key=$(python3 -c 'import sys;import jwt;payload={};payload[\"key\"]=sys.argv[1];print(jwt.encode(payload, sys.argv[2], algorithm=\"HS256\"))' $key ${node.jwtSecret})
+curl --request PUT -H 'Content-Type=*\/*' --data $encoded_key --url ${integrations.kv.cloudflare.apiBaseurl}/accounts/${config().CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${config().CLOUDFLARE_KV_NAMESPACE}/values/${node.nodeUuid}-${node.connectionType} --oauth2-bearer ${config().CLOUDFLARE_API_KEY}
 `;
 
 export const ENABLE_SSH_PHONEHOME = (node: Node) => `
-server_public_key=$(cat /etc/ssh/ssh_host_ed25519_key.pub | cut -d ' ' -f 2)
+key=$(cat /etc/ssh/ssh_host_ed25519_key.pub | cut -d ' ' -f 2)
 ${PHONEHOME(node)}
 `;
 
 export const ENABLE_WIREGUARD_PHONEHOME = (node: Node) => `
-server_public_key=$(cat server-private.key)
+key=$(cat $wireguard_dir/server-public.key)
 ${PHONEHOME(node)}
 `;

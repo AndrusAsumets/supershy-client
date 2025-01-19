@@ -15,7 +15,7 @@ const CONNECTION_KILLSWITCH = false;
 const AUTO_LAUNCH_WEB = true;
 const PROXY_LOCAL_PORT = 8888;
 const PROXY_REMOTE_PORT = 8888;
-const SSH_PORT_RANGE: string = '10000:65535';
+const SERVER_PORT_RANGE: string = '10000:65535';
 const SSH_KEY_ALGORITHM = 'ed25519';
 const SSH_KEY_LENGTH = 32768;
 const DIGITAL_OCEAN_API_KEY = '';
@@ -34,8 +34,9 @@ const KEY_PATH = `${DATA_PATH}/.keys`;
 const LOG_PATH = `${DATA_PATH}/logs`;
 const SSH_PATH = `${HOME_PATH}/.ssh`;
 const SSH_KNOWN_HOSTS_PATH = `${SSH_PATH}/known_hosts`;
+const WIREGUARD_CONFIG_PATH = `${DATA_PATH}/wg0.conf`;
 const DB_FILE_PATH = `${DATA_PATH}/.database.${ENV}.json`;
-const SSH_LOG_EXTENSION = '.ssh.log';
+const SSH_LOG_EXTENSION = '-ssh.log';
 const SSH_CONNECTION_TIMEOUT_SEC = 5;
 const SSHUTTLE_PID_FILE_PATH = `${DATA_PATH}/sshuttle.pid`;
 const NODE_TYPES = [...Array(NODE_RESERVE_COUNT + 1).keys().map(() => NodeType.A)];
@@ -98,7 +99,7 @@ export const config: Config = {
     DATA_PATH,
     KEY_PATH,
     UI_PATH,
-    SSH_PORT_RANGE,
+    SERVER_PORT_RANGE,
     SSH_KEY_ALGORITHM,
     SSH_KEY_LENGTH,
     SSH_PATH,
@@ -108,6 +109,7 @@ export const config: Config = {
     WEB_SOCKET_PORT,
     SSHUTTLE_PID_FILE_PATH,
     SSH_KNOWN_HOSTS_PATH,
+    WIREGUARD_CONFIG_PATH,
     DB_FILE_PATH,
     LOG_PATH,
     SSH_LOG_EXTENSION,
