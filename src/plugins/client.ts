@@ -27,7 +27,6 @@ echo [Peer] | sudo tee -a $wireguard_config_dir
 echo PublicKey = ${node.serverPublicKey} | sudo tee -a $wireguard_config_dir
 echo Endpoint = ${node.instanceIp}:${node.serverPort} | sudo tee -a $wireguard_config_dir
 echo AllowedIPs = 0.0.0.0/0 | sudo tee -a $wireguard_config_dir
-echo PersistentKeepalive = 25 | sudo tee -a $wireguard_config_dir
 
 sudo chmod 600 $wireguard_config_dir
 

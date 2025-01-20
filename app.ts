@@ -94,6 +94,9 @@ const connect = {
         const script = core.parseScript(node, node.pluginsEnabled[0], Side.CLIENT, platformKey, Action.MAIN, Script.ENABLE);
         await integrations.shell.command(script);
 
+        models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTING});
+        io.emit('/config', config());
+
         while (config().CONNECTION_STATUS != ConnectionStatus.CONNECTED) {
             await lib.sleep(config().SSH_CONNECTION_TIMEOUT_SEC * 1000);
 
@@ -115,6 +118,7 @@ const connect = {
 
                 if (hasNetwork) {
                     logger.info(`Connected to ${node.instanceIp}:${node.serverPort}.`);
+
                     node.connectedTime = new Date().toISOString();
                     models.updateNode(node);
                     models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTED});
