@@ -80,7 +80,6 @@ export const ENABLE_WIREGUARD = (node: Node) => `
 wireguard_dir=/etc/wireguard
 wireguard_config_dir=$wireguard_dir/wg0.conf
 
-sudo apt update
 sudo apt install wireguard -y
 sudo modprobe wireguard
 
@@ -94,9 +93,12 @@ echo [Interface] | sudo tee -a $wireguard_config_dir
 echo Address = 10.10.10.1/24 | sudo tee -a $wireguard_config_dir
 echo ListenPort = ${node.serverPort} | sudo tee -a $wireguard_config_dir
 echo PrivateKey = $(cat $wireguard_dir/server-private.key) | sudo tee -a $wireguard_config_dir
+echo DNS = 1.1.1.1 | sudo tee -a $wireguard_config_dir
+
 echo [Peer] | sudo tee -a $wireguard_config_dir
 echo AllowedIPs = 10.10.10.2/32 | sudo tee -a $wireguard_config_dir
 echo PublicKey = ${Deno.readTextFileSync(node.clientKeyPath + '-wireguard.pub').replace('\n', '')} | sudo tee -a $wireguard_config_dir
+echo PersistentKeepalive = 25 | sudo tee -a $wireguard_config_dir
 
 # Enable IP forwarding.
 echo net.ipv4.ip_forward=1 | sudo tee -a /etc/sysctl.conf

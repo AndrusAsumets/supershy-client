@@ -43,13 +43,14 @@ const connect = {
     [ConnectionType.SSH]: async (
         node: Node,
     ) => {
+        logger.info(`Using plugin ${node.pluginsEnabled[0]} while connecting to ${node.instanceIp}:${node.serverPort} via ${node.connectionType}.`);
+
         const platformKey = config().PLATFORM;
         const script = core.parseScript(node, node.pluginsEnabled[0], Side.CLIENT, platformKey, Action.MAIN, Script.ENABLE);
         integrations.kv.cloudflare.key.write(node);
         existsSync(node.sshLogPath) && Deno.removeSync(node.sshLogPath);
         config().CONNECTION_KILLSWITCH && core.enableConnectionKillSwitch();
 
-        logger.info(`Using plugin ${node.pluginsEnabled[0]} while connecting to ${node.instanceIp}:${node.serverPort} via ${node.connectionType}.`);
         models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTING});
         io.emit('/config', config());
 
@@ -82,9 +83,54 @@ const connect = {
     [ConnectionType.WIREGUARD]: async (
         node: Node,
     ) => {
+        config().CONNECTION_KILLSWITCH && core.enableConnectionKillSwitch();
+
+        logger.info(`Using plugin ${node.pluginsEnabled[0]} while connecting to ${node.instanceIp}:${node.serverPort} via ${node.connectionType}.`);
+
+        models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTING});
+        io.emit('/config', config());
+
         const platformKey = config().PLATFORM;
         const script = core.parseScript(node, node.pluginsEnabled[0], Side.CLIENT, platformKey, Action.MAIN, Script.ENABLE);
         await integrations.shell.command(script);
+
+        while (config().CONNECTION_STATUS != ConnectionStatus.CONNECTED) {
+            await lib.sleep(config().SSH_CONNECTION_TIMEOUT_SEC * 1000);
+
+            try {
+                const wireguard = await integrations.shell.command('sudo wg show');
+                if (!wireguard.includes('transfer')) {
+                    await lib.sleep(1000);
+                    continue;
+                }
+
+                const hasNetwork = wireguard
+                    .split('\n')
+                    .filter((line: string) => line.includes('transfer'))[0]
+                    .split('received')[0]
+                    .split(' ')
+                    .map((element: string) => Number(element))
+                    .filter((element: number) => element > 0)
+                    .length;
+
+                if (hasNetwork) {
+                    logger.info(`Connected to ${node.instanceIp}:${node.serverPort}.`);
+                    node.connectedTime = new Date().toISOString();
+                    models.updateNode(node);
+                    models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTED});
+                    core.setCurrentNodeReserve(io);
+                    io.emit('/node', node);
+                    io.emit('/config', config());
+                }
+                else {
+                    await lib.sleep(1000);
+                }
+            }
+            catch(err) {
+                await lib.sleep(1000);
+                logger.warn({ message: `Failed to connect to ${node.instanceIp}:${node.serverPort}.`, err });
+            }
+        }
     }
 };
 

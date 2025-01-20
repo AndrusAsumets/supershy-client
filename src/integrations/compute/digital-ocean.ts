@@ -100,7 +100,7 @@ export const digitalOcean = {
                 headers,
             };
             await fetch(`${node.instanceApiBaseUrl}/account/keys/${instancePublicKeyId}`, core.useProxy(options));
-            logger.info(`Deleted digital ocean ssh_key: ${instancePublicKeyId}}.`);
+            logger.info(`Deleted digital ocean ssh_key: ${instancePublicKeyId}.`);
         },
     },
     instances: {

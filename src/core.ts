@@ -159,6 +159,7 @@ export const heartbeat = async () => {
     const hasHeartbeat = await integrations.kv.cloudflare.heartbeat();
     if (!hasHeartbeat) {
         const isLooped = config().LOOP_STATUS == LoopStatus.FINISHED;
+        !isLooped && logger.warn('Heartbeat failure');
         isLooped && await exit('Heartbeat failure');
     }
 };
