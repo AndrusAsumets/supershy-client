@@ -112,8 +112,11 @@ export const resetNetworkInterfaces = async () => {
     await integrations.shell.pkill('0.0.0.0/0');
     await integrations.shell.command(`sudo wg-quick down ${config().WIREGUARD_CONFIG_PATH} || true`);
     await integrations.shell.command(`sudo ifconfig utun0 down || true`);
+};
 
-    await lib.sleep(1000);
+export const resetNetwork = async () => {
+    disableConnectionKillSwitch();
+    await resetNetworkInterfaces();
 };
 
 export const useProxy = (options: any) => {

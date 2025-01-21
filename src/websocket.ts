@@ -6,19 +6,22 @@ import * as models from './models.ts';
 
 const { config } = models;
 
+
 export const start = (io: Server) => {
     io.on('connection', (socket) => {
         io.emit('/started', config().NODE_ENABLED);
         io.emit('/config', config());
         io.emit('/node', models.getLastConnectedNode());
 
-        socket.on('/node/enable', () => {
+        socket.on('/node/enable', async () => {
+            await core.resetNetwork();
             models.updateConfig({...config(), 'NODE_ENABLED': true, CONNECTION_STATUS: ConnectionStatus.DISCONNECTED});
             io.emit('/config', config());
             core.exit('/node/enable', true);
         });
 
-        socket.on('/node/disable', () => {
+        socket.on('/node/disable', async () => {
+            await core.resetNetwork();
             models.updateConfig({...config(), 'NODE_ENABLED': false, CONNECTION_STATUS: ConnectionStatus.DISCONNECTED});
             io.emit('/config', config());
             core.exit('/node/disable', true);

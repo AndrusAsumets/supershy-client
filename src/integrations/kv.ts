@@ -31,7 +31,7 @@ export const kv = {
                 node: Node,
                 jwtSecret: string,
             ): Promise<string> => {
-                logger.info(`Fetching server's ${node.connectionType} public key.`);
+                logger.info(`Fetching server public key.`);
                 let key = '';
 
                 while (!key) {
@@ -46,7 +46,7 @@ export const kv = {
                         const text = await res.text();
                         text.includes('errors') && !text.includes('key not found') && logger.error({ message: `kv.cloudflare.hostKey.get error for ${node.connectionType}`, text });
                         key = jwt.verify(text, jwtSecret).key;
-                        logger.info(`Fetched public key.`);
+                        logger.info(`Fetched server public key.`);
                     } catch (_) {
                         await lib.sleep(1000);
                     }

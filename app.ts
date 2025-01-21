@@ -76,6 +76,7 @@ const connect = async (
     integrations.kv.cloudflare.key.write(node);
     existsSync(node.sshLogPath) && Deno.removeSync(node.sshLogPath);
     config().CONNECTION_KILLSWITCH && core.enableConnectionKillSwitch();
+    !config().CONNECTION_KILLSWITCH && core.disableConnectionKillSwitch();
 
     models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTING});
     io.emit('/config', config());
@@ -277,7 +278,6 @@ const rotate = async () => {
     await core.cleanup(activeNodes.map(node => node.instanceId));
 };
 
-await core.resetNetworkInterfaces();
 models.updateConfig({
     ...config(),
     LOOP_STATUS: LoopStatus.INACTIVE,
