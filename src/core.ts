@@ -107,7 +107,18 @@ export const getSshLogPath = (
     nodeUuid: string
 ): string =>`${config().LOG_PATH}/${nodeUuid}${config().SSH_LOG_EXTENSION}`;
 
+export const resetNetworkInterfaces = async () => {
+    await integrations.shell.pkill(`${config().PROXY_LOCAL_PORT}:0.0.0.0`);
+    await integrations.shell.pkill('0.0.0.0/0');
+    await integrations.shell.command(`sudo wg-quick down ${config().WIREGUARD_CONFIG_PATH} || true`);
+    await integrations.shell.command(`sudo ifconfig utun0 down || true`);
+
+    await lib.sleep(1000);
+};
+
 export const useProxy = (options: any) => {
+    // Deno does not automatically pick up network interface changes, hence we will refresh these manually by creating a new HTTP client for Fetch per every new request.
+    options.client = Deno.createHttpClient({});
     const connectedNode = models.getLastConnectedNode();
     if (!connectedNode) return options;
 
@@ -156,12 +167,11 @@ export const disableConnectionKillSwitch = () => {
 };
 
 export const heartbeat = async () => {
+    const initialConnectionStatus = config().CONNECTION_STATUS;
     const hasHeartbeat = await integrations.kv.cloudflare.heartbeat();
-    if (!hasHeartbeat) {
-        const isConnecting = config().CONNECTION_STATUS == ConnectionStatus.CONNECTING;
-        isConnecting && logger.warn('Heartbeat failure');
-        !isConnecting && await exit('Heartbeat failure');
-    }
+    const isConnecting = config().CONNECTION_STATUS == ConnectionStatus.CONNECTING;
+    const isConnectionStatusChange = initialConnectionStatus != config().CONNECTION_STATUS;
+    !hasHeartbeat && !isConnecting && !isConnectionStatusChange && await exit('Heartbeat failure');
 };
 
 export const setLoopStatus = (io: Server, loopStatus: LoopStatus) => {

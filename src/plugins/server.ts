@@ -114,6 +114,10 @@ sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
 
 # Start wireguard server
 sudo wg-quick up $wireguard_config_dir
+
+# Disable ssh.
+sudo systemctl disable ssh
+sudo systemctl stop ssh
 `;
 
 export const PHONEHOME = (node: Node) => `

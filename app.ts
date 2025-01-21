@@ -43,8 +43,7 @@ const getConnectionStatus = {
     [ConnectionType.SSH]: async (
         node: Node
     ): Promise<boolean> => {
-        await lib.sleep(config().SSH_CONNECTION_TIMEOUT_SEC * 1000);
-        const output = Deno.readTextFileSync(node.sshLogPath);
+        const output = await Deno.readTextFile(node.sshLogPath);
         const hasNetwork = output.includes('pledge: network');
         return hasNetwork;
     },
@@ -81,10 +80,11 @@ const connect = async (
     models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTING});
     io.emit('/config', config());
 
-    await integrations.shell.pkill(`${config().PROXY_LOCAL_PORT}:0.0.0.0`);
-    await integrations.shell.pkill('0.0.0.0/0');
-    await integrations.shell.command(`sudo wg-quick down ${config().WIREGUARD_CONFIG_PATH} || true`);
-    await lib.sleep(1000);
+    await core.resetNetworkInterfaces();
+
+    const connectTimeout = setTimeout(() => {
+        core.exit(`Connect timeout of ${config().CONNECT_TIMEOUT_SEC} seconds exceeded.`);
+    }, config().CONNECT_TIMEOUT_SEC * 1000);
 
     const platformKey = config().PLATFORM;
     const script = core.parseScript(node, node.pluginsEnabled[0], Side.CLIENT, platformKey, Action.MAIN, Script.ENABLE);
@@ -98,7 +98,9 @@ const connect = async (
             const isConnected = await getConnectionStatus[node.connectionType](node);
 
             if (isConnected) {
+                clearTimeout(connectTimeout);
                 logger.info(`Connected to ${node.instanceIp}:${node.serverPort}.`);
+
                 node.connectedTime = new Date().toISOString();
                 models.updateNode(node);
                 models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTED});

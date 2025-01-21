@@ -27,6 +27,7 @@ echo PublicKey = ${node.serverPublicKey} | sudo tee -a $wireguard_config_dir
 echo PresharedKey = ${Deno.readTextFileSync(node.clientKeyPath + '-wireguard.preshared').replace('\n', '')} | sudo tee -a $wireguard_config_dir
 echo Endpoint = ${node.instanceIp}:${node.serverPort} | sudo tee -a $wireguard_config_dir
 echo AllowedIPs = 0.0.0.0/0 | sudo tee -a $wireguard_config_dir
+echo PersistentKeepalive = 25 | sudo tee -a $wireguard_config_dir
 
 sudo chmod 600 $wireguard_config_dir
 
@@ -39,8 +40,6 @@ sshuttle --daemon --dns --disable-ipv6 -r ${node.sshUser}@${node.instanceIp}:${n
 `;
 
 export const ENABLE_SSH = (node: Node) => `
-sudo ifconfig utun0 down || true
-
 ssh -vv ${node.sshUser}@${node.instanceIp} -f -N -L ${node.proxyLocalPort}:0.0.0.0:${node.proxyRemotePort} -p ${node.serverPort} -i ${node.clientKeyPath}-ssh -o StrictHostKeyChecking=yes -E ${node.sshLogPath}
 `;
 
