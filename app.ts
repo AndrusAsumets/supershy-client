@@ -39,101 +39,80 @@ const init = () => {
     setInterval(() => core.heartbeat(), config().HEARTBEAT_INTERVAL_SEC * 1000);
 };
 
-const connect = {
+const getConnectionStatus = {
     [ConnectionType.SSH]: async (
-        node: Node,
-    ) => {
-        logger.info(`Using plugin ${node.pluginsEnabled[0]} while connecting to ${node.instanceIp}:${node.serverPort} via ${node.connectionType}.`);
-
-        const platformKey = config().PLATFORM;
-        const script = core.parseScript(node, node.pluginsEnabled[0], Side.CLIENT, platformKey, Action.MAIN, Script.ENABLE);
-        integrations.kv.cloudflare.key.write(node);
-        existsSync(node.sshLogPath) && Deno.removeSync(node.sshLogPath);
-        config().CONNECTION_KILLSWITCH && core.enableConnectionKillSwitch();
-
-        models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTING});
-        io.emit('/config', config());
-
-        while (config().CONNECTION_STATUS != ConnectionStatus.CONNECTED) {
-            await integrations.shell.pkill(`${config().PROXY_LOCAL_PORT}:0.0.0.0`);
-            await integrations.shell.pkill('0.0.0.0/0');
-            await lib.sleep(1000);
-            await integrations.shell.command(script);
-            await lib.sleep(config().SSH_CONNECTION_TIMEOUT_SEC * 1000);
-
-            try {
-                const output = Deno.readTextFileSync(node.sshLogPath);
-                const hasNetwork = output.includes('pledge: network');
-
-                if (hasNetwork) {
-                    logger.info(`Connected to ${node.instanceIp}:${node.serverPort}.`);
-                    node.connectedTime = new Date().toISOString();
-                    models.updateNode(node);
-                    models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTED});
-                    core.setCurrentNodeReserve(io);
-                    io.emit('/node', node);
-                    io.emit('/config', config());
-                }
-            }
-            catch(err) {
-                logger.warn({ message: `Failed to connect to ${node.instanceIp}:${node.serverPort}.`, err });
-            }
-        }
+        node: Node
+    ): Promise<boolean> => {
+        await lib.sleep(config().SSH_CONNECTION_TIMEOUT_SEC * 1000);
+        const output = Deno.readTextFileSync(node.sshLogPath);
+        const hasNetwork = output.includes('pledge: network');
+        return hasNetwork;
     },
     [ConnectionType.WIREGUARD]: async (
-        node: Node,
-    ) => {
-        config().CONNECTION_KILLSWITCH && core.enableConnectionKillSwitch();
+        _: Node
+    ): Promise<boolean> => {
+        const wireguard = await integrations.shell.command('sudo wg show');
+        if (!wireguard.includes('transfer')) {
+            return false;
+        }
 
-        logger.info(`Using plugin ${node.pluginsEnabled[0]} while connecting to ${node.instanceIp}:${node.serverPort} via ${node.connectionType}.`);
+        const hasNetwork = wireguard
+            .split('\n')
+            .filter((line: string) => line.includes('transfer'))[0]
+            .split('received')[0]
+            .split(' ')
+            .map((element: string) => Number(element))
+            .filter((element: number) => element > 0)
+            .length > 0;
 
-        models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTING});
-        io.emit('/config', config());
+        return hasNetwork;
+    }
+};
 
-        const platformKey = config().PLATFORM;
-        const script = core.parseScript(node, node.pluginsEnabled[0], Side.CLIENT, platformKey, Action.MAIN, Script.ENABLE);
-        await integrations.shell.command(script);
+const connect = async (
+    node: Node,
+) => {
+    logger.info(`Using plugin ${node.pluginsEnabled[0]} while connecting to ${node.instanceIp}:${node.serverPort} via ${node.connectionType}.`);
 
-        models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTING});
-        io.emit('/config', config());
+    integrations.kv.cloudflare.key.write(node);
+    existsSync(node.sshLogPath) && Deno.removeSync(node.sshLogPath);
+    config().CONNECTION_KILLSWITCH && core.enableConnectionKillSwitch();
 
-        while (config().CONNECTION_STATUS != ConnectionStatus.CONNECTED) {
-            await lib.sleep(config().SSH_CONNECTION_TIMEOUT_SEC * 1000);
+    models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTING});
+    io.emit('/config', config());
 
-            try {
-                const wireguard = await integrations.shell.command('sudo wg show');
-                if (!wireguard.includes('transfer')) {
-                    await lib.sleep(1000);
-                    continue;
-                }
+    await integrations.shell.pkill(`${config().PROXY_LOCAL_PORT}:0.0.0.0`);
+    await integrations.shell.pkill('0.0.0.0/0');
+    await integrations.shell.command(`sudo wg-quick down ${config().WIREGUARD_CONFIG_PATH} || true`);
+    await lib.sleep(1000);
 
-                const hasNetwork = wireguard
-                    .split('\n')
-                    .filter((line: string) => line.includes('transfer'))[0]
-                    .split('received')[0]
-                    .split(' ')
-                    .map((element: string) => Number(element))
-                    .filter((element: number) => element > 0)
-                    .length;
+    const platformKey = config().PLATFORM;
+    const script = core.parseScript(node, node.pluginsEnabled[0], Side.CLIENT, platformKey, Action.MAIN, Script.ENABLE);
+    await integrations.shell.command(script);
 
-                if (hasNetwork) {
-                    logger.info(`Connected to ${node.instanceIp}:${node.serverPort}.`);
+    models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTING});
+    io.emit('/config', config());
 
-                    node.connectedTime = new Date().toISOString();
-                    models.updateNode(node);
-                    models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTED});
-                    core.setCurrentNodeReserve(io);
-                    io.emit('/node', node);
-                    io.emit('/config', config());
-                }
-                else {
-                    await lib.sleep(1000);
-                }
+    while (config().CONNECTION_STATUS != ConnectionStatus.CONNECTED) {
+        try {
+            const isConnected = await getConnectionStatus[node.connectionType](node);
+
+            if (isConnected) {
+                logger.info(`Connected to ${node.instanceIp}:${node.serverPort}.`);
+                node.connectedTime = new Date().toISOString();
+                models.updateNode(node);
+                models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTED});
+                core.setCurrentNodeReserve(io);
+                io.emit('/node', node);
+                io.emit('/config', config());
             }
-            catch(err) {
+            else {
                 await lib.sleep(1000);
-                logger.warn({ message: `Failed to connect to ${node.instanceIp}:${node.serverPort}.`, err });
             }
+        }
+        catch(err) {
+            await lib.sleep(1000);
+            logger.warn({ message: `Failed to connect to ${node.instanceIp}:${node.serverPort}.`, err });
         }
     }
 };
@@ -173,7 +152,7 @@ const rotate = async () => {
         : [];
 
     if (initialNode) {
-        await connect[initialNode.connectionType](initialNode);
+        await connect(initialNode);
         activeNodes.push(initialNode);
         const nodeCurrentReserveCount = core.getCurrentNodeReserve().length;
          // Cant reserve negative nodes.
@@ -292,7 +271,7 @@ const rotate = async () => {
         nodeIndex = nodeIndex + 1;
     }
 
-    !initialNode && await connect[activeNodes[0].connectionType](activeNodes[0]);
+    !initialNode && await connect(activeNodes[0]);
     await core.cleanup(activeNodes.map(node => node.instanceId));
 };
 

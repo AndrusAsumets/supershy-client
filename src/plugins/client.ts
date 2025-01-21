@@ -15,8 +15,6 @@ export const ENABLE_WIREGUARD = (node: Node) => `
 wireguard_config_dir=${config().WIREGUARD_CONFIG_PATH}
 
 sudo wg-quick down $wireguard_config_dir || true
-sudo ifconfig wg0 down || true
-sudo ip link set wg0 down || true
 sudo rm -rf $wireguard_config_dir
 
 echo [Interface] | sudo tee -a $wireguard_config_dir

@@ -3,7 +3,7 @@
 import { Server } from 'https://deno.land/x/socket_io@0.2.0/mod.ts';
 import { logger as _logger } from './logger.ts';
 import * as models from './models.ts';
-import { Config, Node, InstanceProvider, LoopStatus, Plugin, Side, Platform, Action, Script } from './types.ts';
+import { Config, Node, InstanceProvider, LoopStatus, ConnectionStatus, Plugin, Side, Platform, Action, Script } from './types.ts';
 import * as lib from './lib.ts';
 import { plugins } from './plugins.ts';
 import { integrations } from './integrations.ts';
@@ -158,9 +158,9 @@ export const disableConnectionKillSwitch = () => {
 export const heartbeat = async () => {
     const hasHeartbeat = await integrations.kv.cloudflare.heartbeat();
     if (!hasHeartbeat) {
-        const isLooped = config().LOOP_STATUS == LoopStatus.FINISHED;
-        !isLooped && logger.warn('Heartbeat failure');
-        isLooped && await exit('Heartbeat failure');
+        const isConnecting = config().CONNECTION_STATUS == ConnectionStatus.CONNECTING;
+        isConnecting && logger.warn('Heartbeat failure');
+        !isConnecting && await exit('Heartbeat failure');
     }
 };
 
