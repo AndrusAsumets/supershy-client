@@ -8,6 +8,7 @@ ssh-keygen -t ${node.sshKeyAlgorithm} -b ${node.sshKeyLength} -f ${node.clientKe
 
 wg genkey > ${node.clientKeyPath}-wireguard
 wg pubkey < ${node.clientKeyPath}-wireguard > ${node.clientKeyPath}-wireguard.pub
+wg genpsk > ${node.clientKeyPath}-wireguard.preshared
 `;
 
 export const ENABLE_WIREGUARD = (node: Node) => `
@@ -25,6 +26,7 @@ echo DNS = 10.10.10.1 | sudo tee -a $wireguard_config_dir
 
 echo [Peer] | sudo tee -a $wireguard_config_dir
 echo PublicKey = ${node.serverPublicKey} | sudo tee -a $wireguard_config_dir
+echo PresharedKey = ${Deno.readTextFileSync(node.clientKeyPath + '-wireguard.preshared').replace('\n', '')} | sudo tee -a $wireguard_config_dir
 echo Endpoint = ${node.instanceIp}:${node.serverPort} | sudo tee -a $wireguard_config_dir
 echo AllowedIPs = 0.0.0.0/0 | sudo tee -a $wireguard_config_dir
 

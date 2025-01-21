@@ -72,9 +72,10 @@ cd supershy-client
 
 ```
 # Linux
-sudo apt install ufw build-essential sshuttle -y
+sudo apt install wireguard sshuttle ufw openresolv -y
 
 # Mac
+brew install wireguard-tools
 brew install sshuttle
 
 # You might also need to add `Defaults timestamp_timeout=-1` to /etc/sudoers, as 
