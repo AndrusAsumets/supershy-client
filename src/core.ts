@@ -3,7 +3,19 @@
 import { Server } from 'https://deno.land/x/socket_io@0.2.0/mod.ts';
 import { logger as _logger } from './logger.ts';
 import * as models from './models.ts';
-import { Config, Node, InstanceProvider, LoopStatus, ConnectionStatus, Plugin, Side, Platform, Action, Script } from './types.ts';
+import {
+    Config,
+    Node,
+    InstanceProvider,
+    LoopStatus,
+    ConnectionType,
+    ConnectionStatus,
+    Plugin,
+    Side,
+    Platform,
+    Action,
+    Script,
+ } from './types.ts';
 import * as lib from './lib.ts';
 import { plugins } from './plugins.ts';
 import { integrations } from './integrations.ts';
@@ -138,6 +150,28 @@ export const useProxy = (options: any) => {
     options.client = Deno.createHttpClient({ proxy: { url } });
 
     return options;
+};
+
+export const getConnectionStatus = {
+    [ConnectionType.SSH]: async (
+        node: Node
+    ): Promise<boolean> => {
+        const output = await Deno.readTextFile(node.sshLogPath);
+        return output.includes('pledge: network');
+    },
+    [ConnectionType.WIREGUARD]: async (
+        _: Node
+    ): Promise<boolean> => {
+        const output = await integrations.shell.command('sudo wg show');
+        return String(output)
+            .split('\n')
+            .filter((line: string) => line.includes('transfer'))[0]
+            .split('received')[0]
+            .split(' ')
+            .map((element: string) => Number(element))
+            .filter((element: number) => element > 0)
+            .length > 0;
+    }
 };
 
 export const enableConnectionKillSwitch = () => {

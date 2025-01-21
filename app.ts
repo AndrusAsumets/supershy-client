@@ -39,35 +39,6 @@ const init = () => {
     setInterval(() => core.heartbeat(), config().HEARTBEAT_INTERVAL_SEC * 1000);
 };
 
-const getConnectionStatus = {
-    [ConnectionType.SSH]: async (
-        node: Node
-    ): Promise<boolean> => {
-        const output = await Deno.readTextFile(node.sshLogPath);
-        const hasNetwork = output.includes('pledge: network');
-        return hasNetwork;
-    },
-    [ConnectionType.WIREGUARD]: async (
-        _: Node
-    ): Promise<boolean> => {
-        const wireguard = await integrations.shell.command('sudo wg show');
-        if (!wireguard.includes('transfer')) {
-            return false;
-        }
-
-        const hasNetwork = wireguard
-            .split('\n')
-            .filter((line: string) => line.includes('transfer'))[0]
-            .split('received')[0]
-            .split(' ')
-            .map((element: string) => Number(element))
-            .filter((element: number) => element > 0)
-            .length > 0;
-
-        return hasNetwork;
-    }
-};
-
 const connect = async (
     node: Node,
 ) => {
@@ -77,18 +48,16 @@ const connect = async (
     existsSync(node.sshLogPath) && Deno.removeSync(node.sshLogPath);
     config().CONNECTION_KILLSWITCH && core.enableConnectionKillSwitch();
     !config().CONNECTION_KILLSWITCH && core.disableConnectionKillSwitch();
+    await core.resetNetworkInterfaces();
 
     models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTING});
     io.emit('/config', config());
-
-    await core.resetNetworkInterfaces();
 
     const connectTimeout = setTimeout(() => {
         core.exit(`Connect timeout of ${config().CONNECT_TIMEOUT_SEC} seconds exceeded.`);
     }, config().CONNECT_TIMEOUT_SEC * 1000);
 
-    const platformKey = config().PLATFORM;
-    const script = core.parseScript(node, node.pluginsEnabled[0], Side.CLIENT, platformKey, Action.MAIN, Script.ENABLE);
+    const script = core.parseScript(node, node.pluginsEnabled[0], Side.CLIENT, config().PLATFORM, Action.MAIN, Script.ENABLE);
     await integrations.shell.command(script);
 
     models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTING});
@@ -96,22 +65,21 @@ const connect = async (
 
     while (config().CONNECTION_STATUS != ConnectionStatus.CONNECTED) {
         try {
-            const isConnected = await getConnectionStatus[node.connectionType](node);
-
-            if (isConnected) {
-                clearTimeout(connectTimeout);
-                logger.info(`Connected to ${node.instanceIp}:${node.serverPort}.`);
-
-                node.connectedTime = new Date().toISOString();
-                models.updateNode(node);
-                models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTED});
-                core.setCurrentNodeReserve(io);
-                io.emit('/node', node);
-                io.emit('/config', config());
-            }
-            else {
+            const isConnected = await core.getConnectionStatus[node.connectionType](node);
+            if (!isConnected) {
                 await lib.sleep(1000);
+                continue;
             }
+
+            clearTimeout(connectTimeout);
+            node.connectedTime = new Date().toISOString();
+            models.updateNode(node);
+            models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTED});
+            core.setCurrentNodeReserve(io);
+            io.emit('/node', node);
+            io.emit('/config', config());
+            logger.info(`Connected to ${node.instanceIp}:${node.serverPort}.`);
+
         }
         catch(err) {
             await lib.sleep(1000);
