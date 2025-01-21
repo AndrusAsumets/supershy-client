@@ -277,6 +277,7 @@ const rotate = async () => {
     await core.cleanup(activeNodes.map(node => node.instanceId));
 };
 
+await core.resetNetworkInterfaces();
 models.updateConfig({
     ...config(),
     LOOP_STATUS: LoopStatus.INACTIVE,

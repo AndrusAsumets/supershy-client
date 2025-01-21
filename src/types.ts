@@ -8,7 +8,6 @@ export type Providers = Record<string, Provider>
 export enum NodeType {
 	A = 'a'
 }
-
 export enum LoopStatus {
 	ACTIVE = 'active',
 	INACTIVE = 'inactive',

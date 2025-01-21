@@ -140,15 +140,15 @@ export const exoscale = {
             return json.reference.id;
         },
         rules: {
-            create: async (node: Node, securityGroupId: string) => {
+            create: async (node: Node, securityGroupId: string, protocol: string) => {
                 const requestType = 'POST';
                 const requestPath = `/security-group/${securityGroupId}/rules`;
                 const requestBody = JSON.stringify({
                     'flow-direction': 'ingress',
                     network: '0.0.0.0/0',
-                    protocol: 'tcp',
-                    'start-port': node.sshPort,
-                    'end-port': node.sshPort,
+                    protocol,
+                    'start-port': node.serverPort,
+                    'end-port': node.serverPort,
                 });
                 const headers = {
                     'Authorization': exoscale.sign(requestType, requestPath, requestBody),
@@ -208,7 +208,8 @@ export const exoscale = {
             const instanceTypes = await exoscale.instanceType.list(node);
             instance['instance-type'].id = instanceTypes.filter((instanceType: any) => instanceType.size == config().EXOSCALE_INSTANCE_SIZE)[0].id;
             const securityGroupId = await exoscale.securityGroup.create(node);
-            await exoscale.securityGroup.rules.create(node, securityGroupId);
+            await exoscale.securityGroup.rules.create(node, securityGroupId, 'tcp');
+            await exoscale.securityGroup.rules.create(node, securityGroupId, 'udp');
             instance['security-groups'].push({ id: securityGroupId });
 
             const templates = await exoscale.globalTemplate.list(node);
@@ -271,7 +272,6 @@ export const exoscale = {
                 };
                 const res = await fetch(`${instanceApiBaseUrl}${requestPath}`, core.useProxy(options));
                 const json = await res.json();
-                !json.instances && logger.error({ message: 'exoscale.instances.list error', json });
                 instancesList.push([json.instances, instanceApiBaseUrl]);
                 index = index + 1;
             }

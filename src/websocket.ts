@@ -18,8 +18,7 @@ export const start = (io: Server) => {
             core.exit('/node/enable', true);
         });
 
-        socket.on('/node/disable', async () => {
-            await core.resetNetworkInterfaces();
+        socket.on('/node/disable', () => {
             models.updateConfig({...config(), 'NODE_ENABLED': false, CONNECTION_STATUS: ConnectionStatus.DISCONNECTED});
             io.emit('/config', config());
             core.exit('/node/disable', true);
