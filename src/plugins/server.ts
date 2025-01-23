@@ -81,7 +81,7 @@ wireguard_config_dir=$wireguard_dir/wg0.conf
 
 # Dependencies.
 sudo apt update
-sudo apt install wireguard bind9 ufw -y
+sudo apt install wireguard bind9 -y
 
 # Enable wireguard.
 sudo modprobe wireguard
@@ -112,7 +112,6 @@ sudo iptables -A INPUT -p udp --dport ${node.serverPort} -j ACCEPT
 sudo iptables -A INPUT -i wg0 -j ACCEPT
 sudo iptables -A FORWARD -i wg0 -j ACCEPT
 sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
-sudo ufw allow ${node.serverPort}/udp
 
 # Start wireguard server
 sudo wg-quick up $wireguard_config_dir
