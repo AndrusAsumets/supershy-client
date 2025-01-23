@@ -41,7 +41,7 @@ const SSHUTTLE_PID_FILE_PATH = `${DATA_PATH}/sshuttle.pid`;
 const NODE_TYPES = [...Array(NODE_RESERVE_COUNT + 1).keys().map(() => NodeType.A)];
 const DIGITAL_OCEAN_INSTANCE_SIZE = 's-1vcpu-512mb-10gb';
 const EXOSCALE_INSTANCE_SIZE = 'micro';
-const HETZNER_SERVER_TYPE = '';
+const HETZNER_SERVER_TYPE = 'cpx11';
 const DIGITAL_OCEAN_INSTANCE_IMAGE = 'debian-12-x64';
 const EXOSCALE_TEMPLATE_NAME = 'Linux Debian 12 (Bookworm) 64-bit';
 const HETZNER_INSTANCE_IMAGE = 'debian-12';
