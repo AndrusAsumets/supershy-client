@@ -49,6 +49,7 @@ const EXOSCALE_DISK_SIZE = 10;
 const INSTANCE_PROVIDERS: InstanceProvider[] = [];
 const INSTANCE_PROVIDERS_DISABLED: InstanceProvider[] = [];
 const HEARTBEAT_INTERVAL_SEC = 10;
+const RESTART_COUNTDOWN_SEC = 10
 const WEB_SERVER_PORT = 8080;
 const WEB_URL = `http://localhost:${WEB_SERVER_PORT}`;
 const WEB_SOCKET_PORT = 8880;
@@ -89,6 +90,7 @@ export const config: Config = {
     INSTANCE_PROVIDERS,
     INSTANCE_PROVIDERS_DISABLED,
     HEARTBEAT_INTERVAL_SEC,
+    RESTART_COUNTDOWN_SEC,
     HOME_PATH,
     DATA_PATH,
     KEY_PATH,

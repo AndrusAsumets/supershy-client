@@ -259,16 +259,34 @@ export const cleanup = async (
     models.removeUsedNodes(instanceIdsToKeep);
 };
 
+export const restartCountDown = async (
+    seconds: number
+) => {
+    while (seconds > 0) {
+        const secondLabel = seconds > 1
+            ? 'seconds'
+            : 'second';
+        logger.info(`Restarting application in ${seconds} ${secondLabel}.`);
+        await lib.sleep(1000);
+        seconds = seconds - 1;
+    }
+};
+
 export const exit = async (
     message: string,
     onPurpose = false
 ) => {
     const nodes = models.nodes();
-    !onPurpose && logger.error(message);
     const hasNodes = Object.keys(nodes).length > 0;
-    onPurpose && hasNodes && await integrations.shell.pkill(`${config().APP_ID}-${config().ENV}`);
-    onPurpose && Object.keys(nodes).forEach(async (nodeUuid: string) => await integrations.shell.pkill(nodeUuid));
-    // Give a little time to kill the process.
-    onPurpose && await lib.sleep(1000);
+
+    if (onPurpose) {
+        hasNodes && await integrations.shell.pkill(`${config().APP_ID}-${config().ENV}`);
+        Object.keys(nodes).forEach(async (nodeUuid: string) => await integrations.shell.pkill(nodeUuid));
+    }
+    else {
+        logger.error(message);
+        await restartCountDown(config().RESTART_COUNTDOWN_SEC);
+    }
+
     throw new Error();
 };
