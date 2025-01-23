@@ -19,8 +19,8 @@ sudo rm -rf $wireguard_config_dir
 
 echo [Interface] | sudo tee -a $wireguard_config_dir
 echo PrivateKey = ${Deno.readTextFileSync(node.clientKeyPath + '-wireguard').replace('\n', '')} | sudo tee -a $wireguard_config_dir
-echo Address = 10.10.10.2/24 | sudo tee -a $wireguard_config_dir
-echo DNS = 10.10.10.1 | sudo tee -a $wireguard_config_dir
+echo Address = 10.0.0.2/24 | sudo tee -a $wireguard_config_dir
+echo DNS = 10.0.0.1 | sudo tee -a $wireguard_config_dir
 
 echo [Peer] | sudo tee -a $wireguard_config_dir
 echo PublicKey = ${node.serverPublicKey} | sudo tee -a $wireguard_config_dir
@@ -61,8 +61,8 @@ sudo ufw default deny incoming
 sudo ufw default deny outgoing
 sudo ufw allow out from any to 127.0.0.0/24
 sudo ufw allow out from any to 0.0.0.0/24
-sudo ufw allow out from any to 10.10.10.1/24
-sudo ufw allow out from any to 10.10.10.2/24
+sudo ufw allow out from any to 10.0.0.1/24
+sudo ufw allow out from any to 10.0.0.2/24
 
 for host in $\{hosts[@]}; do
     eval "sudo ufw allow out from any to $\{host/:/ port }"

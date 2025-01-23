@@ -15,7 +15,6 @@ sudo mkdir -p /home/$new_user/.ssh
 sudo cp /root/.ssh/authorized_keys /home/$new_user/.ssh/authorized_keys
 sudo chmod 755 /home/$new_user/.ssh/authorized_keys
 sudo rm /root/.ssh/authorized_keys
-sudo userdel linuxuser # vultr
 
 echo $new_user | sudo tee -a /etc/allowed_users
 echo 'auth required pam_listfile.so item=user sense=allow file=/etc/allowed_users onerr=fail' | sudo tee -a /etc/pam.d/sshd
@@ -82,7 +81,9 @@ wireguard_config_dir=$wireguard_dir/wg0.conf
 
 # Dependencies.
 sudo apt update
-sudo apt install wireguard bind9 -y
+sudo apt install wireguard bind9 ufw -y
+
+# Enable wireguard.
 sudo modprobe wireguard
 
 # Keys.
@@ -92,13 +93,13 @@ sudo wg pubkey < $wireguard_dir/server-private.key > $wireguard_dir/server-publi
 
 # Config.
 echo [Interface] | sudo tee -a $wireguard_config_dir
-echo Address = 10.10.10.1/24 | sudo tee -a $wireguard_config_dir
+echo Address = 10.0.0.1/24 | sudo tee -a $wireguard_config_dir
 echo ListenPort = ${node.serverPort} | sudo tee -a $wireguard_config_dir
 echo PrivateKey = $(cat $wireguard_dir/server-private.key) | sudo tee -a $wireguard_config_dir
 echo DNS = 1.1.1.1 | sudo tee -a $wireguard_config_dir
 
 echo [Peer] | sudo tee -a $wireguard_config_dir
-echo AllowedIPs = 10.10.10.2/32 | sudo tee -a $wireguard_config_dir
+echo AllowedIPs = 10.0.0.2/32 | sudo tee -a $wireguard_config_dir
 echo PublicKey = ${Deno.readTextFileSync(node.clientKeyPath + '-wireguard.pub').replace('\n', '')} | sudo tee -a $wireguard_config_dir
 echo PresharedKey = ${Deno.readTextFileSync(node.clientKeyPath + '-wireguard.preshared').replace('\n', '')} | sudo tee -a $wireguard_config_dir
 
@@ -111,6 +112,7 @@ sudo iptables -A INPUT -p udp --dport ${node.serverPort} -j ACCEPT
 sudo iptables -A INPUT -i wg0 -j ACCEPT
 sudo iptables -A FORWARD -i wg0 -j ACCEPT
 sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+sudo ufw allow ${node.serverPort}/udp
 
 # Start wireguard server
 sudo wg-quick up $wireguard_config_dir

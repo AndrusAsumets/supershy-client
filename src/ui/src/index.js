@@ -22,7 +22,6 @@ const visibleConfigKeys = {
     EXOSCALE_API_KEY: { editable: 'password' },
     EXOSCALE_API_SECRET: { editable: 'password' },
     HETZNER_API_KEY: { editable: 'password' },
-    VULTR_API_KEY: { editable: 'password' },
     CLOUDFLARE_ACCOUNT_ID: { editable: 'password' },
     CLOUDFLARE_API_KEY: { editable: 'password' },
     CLOUDFLARE_KV_NAMESPACE: { editable: 'password' },
@@ -30,7 +29,7 @@ const visibleConfigKeys = {
     LOG_PATH: { editable: false },
     DB_FILE_PATH: { editable: false },
 };
-const apiKeys = ['DIGITAL_OCEAN_API_KEY', 'HETZNER_API_KEY', 'VULTR_API_KEY', 'EXOSCALE_API_KEY', 'EXOSCALE_API_SECRET'];
+const apiKeys = ['DIGITAL_OCEAN_API_KEY', 'HETZNER_API_KEY', 'EXOSCALE_API_KEY', 'EXOSCALE_API_SECRET'];
 const faviconStatus = {
     'connected': ['❊', 'white'],
     'connecting': ['❊', 'blue'],

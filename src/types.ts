@@ -29,7 +29,6 @@ export enum InstanceProvider {
 	DIGITAL_OCEAN = 'digitalOcean',
 	EXOSCALE = 'exoscale',
 	HETZNER = 'hetzner',
-	VULTR = 'vultr',
 }
 
 export interface Node {
@@ -86,19 +85,6 @@ export interface CreateHetznerInstance {
 	user_data: string
 }
 
-export interface CreateVultrInstance {
-	region: string
-	plan: string
-	label: string
-	os_id: number
-	sshkey_id: [string]
-	user_data: string
-	backups: string
-	enable_ipv6: boolean
-	disable_public_ipv4: boolean
-	user_scheme: string
-}
-
 export interface CreateExoscaleInstance {
 	'name': string
 	'instance-type': Record<string, string>
@@ -110,7 +96,7 @@ export interface CreateExoscaleInstance {
 	'disk-size': number
 }
 
-export type InstancePayload = CreateDigitalOceanInstance & CreateHetznerInstance & CreateVultrInstance & CreateExoscaleInstance
+export type InstancePayload = CreateDigitalOceanInstance & CreateHetznerInstance & CreateExoscaleInstance
 
 export enum Plugin {
 	WIREGUARD_VPN = 'wireguardVpn',
@@ -170,7 +156,6 @@ export interface Config {
 	EXOSCALE_API_KEY: string
 	EXOSCALE_API_SECRET: string
 	HETZNER_API_KEY: string
-	VULTR_API_KEY: string
 	CLOUDFLARE_ACCOUNT_ID: string
 	CLOUDFLARE_API_KEY: string
 	CLOUDFLARE_KV_NAMESPACE: string
@@ -190,11 +175,9 @@ export interface Config {
 	DIGITAL_OCEAN_INSTANCE_SIZE: string
 	EXOSCALE_INSTANCE_SIZE: string
 	HETZNER_SERVER_TYPE: string
-	VULTR_INSTANCE_PLAN: string
 	DIGITAL_OCEAN_INSTANCE_IMAGE: string
 	EXOSCALE_TEMPLATE_NAME: string
 	HETZNER_INSTANCE_IMAGE: string
-	VULTR_INSTANCE_IMAGE: string
 	EXOSCALE_DISK_SIZE: number
 	HEARTBEAT_INTERVAL_SEC: number
 	WEB_SERVER_PORT: number

@@ -5,7 +5,7 @@ Supershy is a DIY VPN with a rotating exit node.
 </p>
 
 During its initiation, the client creates two new VPS instances (let's call them
-First Node and Second Node) inside Digital Ocean, Exoscale, Hetzner and/or Vultr containing
+First Node and Second Node) inside Exoscale, Hetzner and/or Digital Ocean containing
 nothing else but a SSH server. Next up, it creates a SSH
 connection from your machine to the First Node. All of your local TCP (HTTP etc.) 
 traffic will be routed through the instance via sshuttle as though you had been
@@ -57,7 +57,7 @@ connect to the same node twice, therefore reducing risk of a possible MITM attac
 tunnels made by the application itself.
 
 ### Supported VPS
-Digital Ocean, Exoscale, Hetzner, Vultr.
+Exoscale, Hetzner, Digital Ocean.
 
 ### Supported countries
 Australia, Austria, Brazil, Bulgaria, Canada, Chile, Finland, France, Germany, India, Israel, Japan, Korea, Mexico, Netherlands, Poland, Singapore, South Africa, Spain, Sweden, Switzerland, United Kingdom, United States.
@@ -143,12 +143,6 @@ HETZNER_API_KEY
  -> Generate API token.
  -> Click to show.
  -> Click to copy.
-
-VULTR_API_KEY
- -> Open https://my.vultr.com/settings/#settingsapi
- -> Click Allow all IPv4.
- -> Click Allow all IPv6.
- -> Click to copy the API Key.
 
 The client will expect an API_KEY from at least one of the VPS providers,
 but it will pick a random one if multiple were set.
