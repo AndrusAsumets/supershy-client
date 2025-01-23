@@ -61,8 +61,7 @@ sudo ufw default deny incoming
 sudo ufw default deny outgoing
 sudo ufw allow out from any to 127.0.0.0/24
 sudo ufw allow out from any to 0.0.0.0/24
-sudo ufw allow out from any to 10.0.0.1/24
-sudo ufw allow out from any to 10.0.0.2/24
+sudo ufw allow out on wg0 from any to any
 
 for host in $\{hosts[@]}; do
     eval "sudo ufw allow out from any to $\{host/:/ port }"
