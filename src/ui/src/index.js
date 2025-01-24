@@ -6,7 +6,7 @@ const $enablementToggle = document.getElementsByClassName('enablement-toggle')[0
 const $restartToggle = document.getElementsByClassName('restart-toggle')[0];
 const $statusSection = document.getElementsByClassName('section-content status')[0];
 const $tunnelsSection = document.getElementsByClassName('section-content tunnels')[0];
-const $actionsSection = document.getElementsByClassName('section-content actions')[0];
+const $pluginsSection = document.getElementsByClassName('section-content plugins')[0];
 const $providersSection = document.getElementsByClassName('section-content providers')[0];
 const $countriesSection = document.getElementsByClassName('section-content countries')[0];
 const $configSection = document.getElementsByClassName('section-content config')[0];
@@ -285,12 +285,12 @@ const updateTunnels = () => {
 };
 
 const updateActions = () => {
-    $actionsSection.innerText = '';
+    $pluginsSection.innerText = '';
 
     Object.keys(config)
         .sort((a, b) => a.localeCompare(b))
         .forEach((key) => {
-            visibleActionKeys[key] && $actionsSection.append(
+            visibleActionKeys[key] && $pluginsSection.append(
                 constructConfigLine(
                     visibleActionKeys,
                     key,
