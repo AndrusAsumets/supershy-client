@@ -91,9 +91,14 @@ const connect = async (
 
 const loop = async () => {
     setTimeout(async () => {
+        const isRestarting = config().CONNECTION_STATUS == ConnectionStatus.RESTARTING;
+        if (isRestarting) {
+            return;
+        }
+
         const isStillWorking = config().LOOP_STATUS == LoopStatus.ACTIVE;
         isStillWorking
-            ? await core.exit(`Loop timeout reached after passing ${config().NODE_RECYCLE_INTERVAL_SEC} seconds.`)
+            ? await core.exit(`Node rotation timeout reached after passing ${config().NODE_RECYCLE_INTERVAL_SEC} seconds.`)
             : await loop();
     }, config().NODE_RECYCLE_INTERVAL_SEC * 1000);
 

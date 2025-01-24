@@ -329,6 +329,7 @@ export const exit = async (
     }
     else {
         logger.error(message);
+        models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.RESTARTING});
         await restartCountDown(config().RESTART_COUNTDOWN_SEC);
     }
 

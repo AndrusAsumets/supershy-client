@@ -22,6 +22,7 @@ export enum ConnectionType {
 export enum ConnectionStatus {
 	CONNECTED = 'connected',
 	CONNECTING = 'connecting',
+	RESTARTING = 'restarting',
 	DISCONNECTED = 'disconnected',
 }
 
