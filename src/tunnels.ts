@@ -1,17 +1,17 @@
 import {
 	Node,
-	Plugins,
-	Plugin,
+	Tunnels,
+	Tunnel,
 	Side,
 	Platform,
 	Action,
 	Script,
 } from './types.ts';
-import * as client from './plugins/client.ts';
-import * as server from './plugins/server.ts';
+import * as client from './tunnels/client.ts';
+import * as server from './tunnels/server.ts';
 
-export const plugins: Plugins = {
-	[Plugin.WIREGUARD_VPN]: {
+export const tunnels: Tunnels = {
+	[Tunnel.WIREGUARD_VPN]: {
 		[Side.CLIENT]: {
 			[Platform.LINUX]: {
 				[Action.MAIN]: {
@@ -35,7 +35,7 @@ export const plugins: Plugins = {
 			}
 		},
 	},
-	[Plugin.SSHUTTLE_VPN]: {
+	[Tunnel.SSHUTTLE_VPN]: {
 		[Side.CLIENT]: {
 			[Platform.LINUX]: {
 				[Action.MAIN]: {
@@ -69,7 +69,7 @@ export const plugins: Plugins = {
 			}
 		},
 	},
-	[Plugin.HTTP_PROXY]: {
+	[Tunnel.HTTP_PROXY]: {
 		[Side.CLIENT]: {
 			[Platform.LINUX]: {
 				[Action.MAIN]: {
@@ -106,7 +106,7 @@ export const plugins: Plugins = {
 			}
 		},
 	},
-	[Plugin.SOCKS5_PROXY]: {
+	[Tunnel.SOCKS5_PROXY]: {
 		[Side.CLIENT]: {
 			[Platform.LINUX]: {
 				[Action.MAIN]: {

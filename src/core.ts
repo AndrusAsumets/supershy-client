@@ -10,14 +10,14 @@ import {
     LoopStatus,
     ConnectionType,
     ConnectionStatus,
-    Plugin,
+    Tunnel,
     Side,
     Platform,
     Action,
     Script,
  } from './types.ts';
 import * as lib from './lib.ts';
-import { plugins } from './plugins.ts';
+import { tunnels } from './tunnels.ts';
 import { integrations } from './integrations.ts';
 
 const { config } = models;
@@ -25,27 +25,27 @@ const logger = _logger.get();
 
 export const parseScript = (
     node: Node | null,
-    pluginKey: Plugin,
+    tunnelKey: Tunnel,
     sideKey: Side,
     platformKey: Platform,
     actionKey: Action,
     scriptKey: Script
 ): string => {
     const escapeDollarSignOperator = ['\${', '${'];
-    return plugins[pluginKey][sideKey][platformKey][actionKey][scriptKey](node)
+    return tunnels[tunnelKey][sideKey][platformKey][actionKey][scriptKey](node)
         .replaceAll(escapeDollarSignOperator[0], escapeDollarSignOperator[1])
         .replaceAll('\t', '');
 };
 
-export const getAvailablePlugins = (): Plugin[] => {
+export const getAvailableTunnels = (): Tunnel[] => {
     return Object
-        .keys(plugins)
-        .filter((pluginKey: string) => {
-            const sides = plugins[pluginKey];
+        .keys(tunnels)
+        .filter((tunnelKey: string) => {
+            const sides = tunnels[tunnelKey];
             const platforms = sides[Side.CLIENT];
             const actions = platforms[config().PLATFORM];
             return actions;
-        }) as Plugin[];
+        }) as Tunnel[];
 };
 
 export const setInstanceProviders = (
@@ -91,10 +91,11 @@ export const setInstanceCountries = async (
     return config;
 };
 
-export const getEnabledPluginKey = (): Plugin | undefined => {
+export const getEnabledTunnelKey = (): Tunnel | undefined => {
     const connectedNode = models.getLastConnectedNode();
-    if (connectedNode && connectedNode.pluginsEnabled.length) {
-        return connectedNode.pluginsEnabled[0];
+    logger.info({connectedNode})
+    if (connectedNode && connectedNode.tunnelsEnabled.length) {
+        return connectedNode.tunnelsEnabled[0];
     }
 };
 
@@ -136,9 +137,9 @@ export const useProxy = (options: any) => {
     const connectedNode = models.getLastConnectedNode();
     if (!connectedNode) return options;
 
-    const pluginKey = connectedNode.pluginsEnabled[0];
-    const isHttpProxy = pluginKey == Plugin.HTTP_PROXY;
-    const isSocks5Proxy = pluginKey == Plugin.SOCKS5_PROXY;
+    const tunnelKey = connectedNode.tunnelsEnabled[0];
+    const isHttpProxy = tunnelKey == Tunnel.HTTP_PROXY;
+    const isSocks5Proxy = tunnelKey == Tunnel.SOCKS5_PROXY;
     const hasNodeProtocol = isHttpProxy || isSocks5Proxy;
     if (!hasNodeProtocol) return options;
 
@@ -162,6 +163,10 @@ export const getConnectionStatus = {
         _: Node
     ): Promise<boolean> => {
         const output = await integrations.shell.command('sudo wg show');
+        if (!output.includes('received')) {
+            return false;
+        }
+
         return String(output)
             .split('\n')
             .filter((line: string) => line.includes('transfer'))[0]
@@ -174,28 +179,28 @@ export const getConnectionStatus = {
 };
 
 export const enableConnectionKillSwitch = () => {
-    const pluginKey = getEnabledPluginKey();
-    if (!pluginKey) return;
+    const tunnelKey = getEnabledTunnelKey();
+    if (!tunnelKey) return;
 
     const platformKey = config().PLATFORM;
-    const script = parseScript(null, pluginKey, Side.CLIENT, platformKey, Action.KILLSWITCH, Script.ENABLE);
+    const script = parseScript(null, tunnelKey, Side.CLIENT, platformKey, Action.KILLSWITCH, Script.ENABLE);
 
     logger.info(`Enabling connection killswitch.`);
     const nodes = models.nodes();
     const args = Object
         .keys(nodes)
-        .map((key: string) => `${nodes[key].instanceIp}:${nodes[key].serverPort}`)
+        .map((key: string) => `${nodes[key].instanceIp}:${nodes[key].tunnelPort}`)
         .join(',');
     integrations.shell.command(script, args);
     logger.info(`Enabled connection killswitch.`);
 };
 
 export const disableConnectionKillSwitch = () => {
-    const pluginKey = getEnabledPluginKey();
-    if (!pluginKey) return;
+    const tunnelKey = getEnabledTunnelKey();
+    if (!tunnelKey) return;
 
     const platformKey = config().PLATFORM;
-    const script = parseScript(null, pluginKey, Side.CLIENT, platformKey, Action.KILLSWITCH, Script.DISABLE);
+    const script = parseScript(null, tunnelKey, Side.CLIENT, platformKey, Action.KILLSWITCH, Script.DISABLE);
 
     logger.info(`Disabling connection killswitch.`);
     integrations.shell.command(script);

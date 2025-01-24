@@ -36,7 +36,7 @@ export interface Node {
 	nodeType: NodeType
 	proxyLocalPort: number
 	proxyRemotePort: number
-	pluginsEnabled: Plugin[]
+	tunnelsEnabled: Tunnel[]
 	instanceProvider: InstanceProvider
 	instanceApiBaseUrl: string
 	instanceId: string
@@ -52,7 +52,7 @@ export interface Node {
 	sshKeyLength: number;
 	clientKeyPath: string
 	appId: string
-	serverPort: number
+	tunnelPort: number
 	serverPublicKey: string
 	sshLogPath: string
 	jwtSecret: string
@@ -98,7 +98,7 @@ export interface CreateExoscaleInstance {
 
 export type InstancePayload = CreateDigitalOceanInstance & CreateHetznerInstance & CreateExoscaleInstance
 
-export enum Plugin {
+export enum Tunnel {
 	WIREGUARD_VPN = 'wireguardVpn',
 	SSHUTTLE_VPN = 'sshuttleVpn',
 	HTTP_PROXY = 'httpProxy',
@@ -134,7 +134,7 @@ export type Platforms = Record<string, Actions>
 
 export type Sides = Record<string, Platforms>
 
-export type Plugins = Record<string, Sides>
+export type Tunnels = Record<string, Sides>
 
 export interface Config {
 	APP_ID: string
@@ -149,7 +149,7 @@ export interface Config {
 	AUTO_LAUNCH_WEB: boolean
 	PROXY_LOCAL_PORT: number
 	PROXY_REMOTE_PORT: number
-	SERVER_PORT_RANGE: string
+	TUNNEL_PORT_RANGE: string
 	SSH_KEY_ALGORITHM: string
 	SSH_KEY_LENGTH: number
 	DIGITAL_OCEAN_API_KEY: string
@@ -186,8 +186,8 @@ export interface Config {
 	WEB_URL: string
 	WEB_SOCKET_PORT: number
 	NODE_ENABLED: boolean
-	PLUGINS: Plugin[]
-	PLUGINS_ENABLED: Plugin[]
+	TUNNELS: Tunnel[]
+	TUNNELS_ENABLED: Tunnel[]
 	INSTANCE_PROVIDERS: InstanceProvider[]
 	INSTANCE_PROVIDERS_DISABLED: InstanceProvider[]
 	INSTANCE_COUNTRIES: string[]

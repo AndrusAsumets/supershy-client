@@ -22,7 +22,7 @@ import * as webserver from './src/webserver.ts';
 import * as websocket from './src/websocket.ts';
 import { logger as _logger } from './src/logger.ts';
 import * as lib from './src/lib.ts';
-import { plugins } from './src/plugins.ts';
+import { tunnels } from './src/tunnels.ts';
 import { integrations } from './src/integrations.ts';
 const { config } = models;
 const io = new Server({ cors: { origin: '*' }});
@@ -42,7 +42,7 @@ const init = () => {
 const connect = async (
     node: Node,
 ) => {
-    logger.info(`Using plugin ${node.pluginsEnabled[0]} while connecting to ${node.instanceIp}:${node.serverPort} via ${node.connectionType}.`);
+    logger.info(`Using tunnel ${node.tunnelsEnabled[0]} while connecting to ${node.instanceIp}:${node.tunnelPort} via ${node.connectionType}.`);
 
     integrations.kv.cloudflare.key.write(node);
     existsSync(node.sshLogPath) && Deno.removeSync(node.sshLogPath);
@@ -57,7 +57,7 @@ const connect = async (
         core.exit(`Connect timeout of ${config().CONNECT_TIMEOUT_SEC} seconds exceeded.`);
     }, config().CONNECT_TIMEOUT_SEC * 1000);
 
-    const script = core.parseScript(node, node.pluginsEnabled[0], Side.CLIENT, config().PLATFORM, Action.MAIN, Script.ENABLE);
+    const script = core.parseScript(node, node.tunnelsEnabled[0], Side.CLIENT, config().PLATFORM, Action.MAIN, Script.ENABLE);
     await integrations.shell.command(script);
 
     models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTING});
@@ -78,12 +78,12 @@ const connect = async (
             core.setCurrentNodeReserve(io);
             io.emit('/node', node);
             io.emit('/config', config());
-            logger.info(`Connected to ${node.instanceIp}:${node.serverPort}.`);
+            logger.info(`Connected to ${node.instanceIp}:${node.tunnelPort}.`);
             await lib.sleep(config().DNS_PICKUP_DELAY_SEC * 1000);
         }
         catch(err) {
             await lib.sleep(1000);
-            logger.warn({ message: `Failed to connect to ${node.instanceIp}:${node.serverPort}.`, err });
+            logger.warn({ message: `Failed to connect to ${node.instanceIp}:${node.tunnelPort}.`, err });
         }
     }
 };
@@ -92,7 +92,7 @@ const loop = async () => {
     setTimeout(async () => {
         const isStillWorking = config().LOOP_STATUS == LoopStatus.ACTIVE;
         isStillWorking
-            ? await core.exit(`Timeout after passing ${config().NODE_RECYCLE_INTERVAL_SEC} seconds.`)
+            ? await core.exit(`Loop timeout reached after passing ${config().NODE_RECYCLE_INTERVAL_SEC} seconds.`)
             : await loop();
     }, config().NODE_RECYCLE_INTERVAL_SEC * 1000);
 
@@ -145,9 +145,9 @@ const rotate = async () => {
         !instanceProviders.length && logger.warn('None of the VPS providers are enabled.');
         const instanceProvider: InstanceProvider = lib.shuffle(instanceProviders)[0];
         const { instanceSize, instanceImage } = integrations.compute[instanceProvider];
-        const enabledPluginKey = config().PLUGINS_ENABLED[0];
-        !enabledPluginKey && logger.info(`No enabled plugins found.`);
-        const connectionType = enabledPluginKey.toLowerCase().includes('wireguard')
+        const enabledTunnelKey = config().TUNNELS_ENABLED[0];
+        !enabledTunnelKey && logger.info(`No enabled tunnels found.`);
+        const connectionType = enabledTunnelKey.toLowerCase().includes('wireguard')
             ? ConnectionType.WIREGUARD
             : ConnectionType.SSH;
         const nodeUuid = uuidv7();
@@ -155,15 +155,15 @@ const rotate = async () => {
         const nodeType = nodeTypes[nodeIndex];
         const instanceName = `${config().APP_ID}-${config().ENV}-${nodeType}-${nodeUuid}`;
         const clientKeyPath = `${config().KEY_PATH}/${nodeUuid}`;
-        const serverPortRange: number[] = config().SERVER_PORT_RANGE.split(':').map((item: string) => Number(item));
-        const serverPort = lib.randomNumberFromRange(serverPortRange);
+        const tunnelPortRange: number[] = config().TUNNEL_PORT_RANGE.split(':').map((item: string) => Number(item));
+        const tunnelPort = lib.randomNumberFromRange(tunnelPortRange);
         const jwtSecret = crypto.randomBytes(64).toString('hex');
         let node: Node = {
             nodeUuid,
             proxyLocalPort: config().PROXY_LOCAL_PORT,
             proxyRemotePort: config().PROXY_REMOTE_PORT,
             appId: config().APP_ID,
-            pluginsEnabled: [enabledPluginKey],
+            tunnelsEnabled: [enabledTunnelKey],
             connectionType,
             instanceProvider,
             instanceApiBaseUrl: '',
@@ -180,7 +180,7 @@ const rotate = async () => {
             sshKeyAlgorithm: config().SSH_KEY_ALGORITHM,
             sshKeyLength: config().SSH_KEY_LENGTH,
             clientKeyPath,
-            serverPort,
+            tunnelPort,
             jwtSecret,
             sshLogPath: core.getSshLogPath(nodeUuid),
             isDeleted: false,
@@ -195,7 +195,7 @@ const rotate = async () => {
         node = {...node, instanceRegion, instanceCountry, instanceApiBaseUrl};
         const [publicSshKey] = await integrations.shell.keygen(node, Script.PREPARE);
         const instancePublicKeyId = await integrations.compute[instanceProvider].keys.add(node, publicSshKey, instanceName);
-        const script = plugins[enabledPluginKey][Side.SERVER][Platform.LINUX][Action.MAIN][Script.ENABLE](node);
+        const script = tunnels[enabledTunnelKey][Side.SERVER][Platform.LINUX][Action.MAIN][Script.ENABLE](node);
         const userData = core.prepareCloudConfig(script);
         const formattedUserData = integrations.compute[instanceProvider].userData.format(userData);
         const instancePayload: InstancePayload = {
@@ -242,7 +242,7 @@ models.updateConfig({
     ...config(),
     LOOP_STATUS: LoopStatus.INACTIVE,
     CONNECTION_STATUS: ConnectionStatus.DISCONNECTED,
-    PLUGINS: core.getAvailablePlugins()
+    TUNNELS: core.getAvailableTunnels()
 });
 webserver.start();
 websocket.start(io);

@@ -147,8 +147,8 @@ export const exoscale = {
                     'flow-direction': 'ingress',
                     network: '0.0.0.0/0',
                     protocol,
-                    'start-port': node.serverPort,
-                    'end-port': node.serverPort,
+                    'start-port': node.tunnelPort,
+                    'end-port': node.tunnelPort,
                 });
                 const headers = {
                     'Authorization': exoscale.sign(requestType, requestPath, requestBody),

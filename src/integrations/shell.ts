@@ -16,7 +16,7 @@ export const shell = {
         scriptKey: Script,
     ):Promise<string[]> => {
         const platformKey = config().PLATFORM;
-        const script = core.parseScript(node, node.pluginsEnabled[0], Side.CLIENT, platformKey, Action.MAIN, scriptKey);
+        const script = core.parseScript(node, node.tunnelsEnabled[0], Side.CLIENT, platformKey, Action.MAIN, scriptKey);
         await shell.command(script);
         return [Deno.readTextFileSync(`${node.clientKeyPath}-ssh.pub`), Deno.readTextFileSync(`${node.clientKeyPath}-wireguard.pub`)];
     },

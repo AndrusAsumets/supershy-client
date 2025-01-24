@@ -25,7 +25,7 @@ echo DNS = 10.0.0.1 | sudo tee -a $wireguard_config_dir
 echo [Peer] | sudo tee -a $wireguard_config_dir
 echo PublicKey = ${node.serverPublicKey} | sudo tee -a $wireguard_config_dir
 echo PresharedKey = ${Deno.readTextFileSync(node.clientKeyPath + '-wireguard.preshared').replace('\n', '')} | sudo tee -a $wireguard_config_dir
-echo Endpoint = ${node.instanceIp}:${node.serverPort} | sudo tee -a $wireguard_config_dir
+echo Endpoint = ${node.instanceIp}:${node.tunnelPort} | sudo tee -a $wireguard_config_dir
 echo AllowedIPs = 0.0.0.0/0 | sudo tee -a $wireguard_config_dir
 echo PersistentKeepalive = 25 | sudo tee -a $wireguard_config_dir
 
@@ -36,11 +36,11 @@ sudo wg-quick up $wireguard_config_dir
 `;
 
 export const ENABLE_SSHUTTLE = (node: Node) => `
-sshuttle --daemon --dns --disable-ipv6 -r ${node.sshUser}@${node.instanceIp}:${node.serverPort} 0.0.0.0/0 -x ${node.instanceIp}:${node.serverPort} --pidfile=${config().SSHUTTLE_PID_FILE_PATH} -e "ssh -vv -i ${node.clientKeyPath}-ssh -o StrictHostKeyChecking=yes -E ${node.sshLogPath}"
+sshuttle --daemon --dns --disable-ipv6 -r ${node.sshUser}@${node.instanceIp}:${node.tunnelPort} 0.0.0.0/0 -x ${node.instanceIp}:${node.tunnelPort} --pidfile=${config().SSHUTTLE_PID_FILE_PATH} -e "ssh -vv -i ${node.clientKeyPath}-ssh -o StrictHostKeyChecking=yes -E ${node.sshLogPath}"
 `;
 
 export const ENABLE_SSH = (node: Node) => `
-ssh -vv ${node.sshUser}@${node.instanceIp} -f -N -L ${node.proxyLocalPort}:0.0.0.0:${node.proxyRemotePort} -p ${node.serverPort} -i ${node.clientKeyPath}-ssh -o StrictHostKeyChecking=yes -E ${node.sshLogPath}
+ssh -vv ${node.sshUser}@${node.instanceIp} -f -N -L ${node.proxyLocalPort}:0.0.0.0:${node.proxyRemotePort} -p ${node.tunnelPort} -i ${node.clientKeyPath}-ssh -o StrictHostKeyChecking=yes -E ${node.sshLogPath}
 `;
 
 export const ENABLE_LINUX_KILLSWITCH = () => `

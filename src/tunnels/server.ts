@@ -24,7 +24,7 @@ sudo sed -i -e "1i PubkeyAuthentication yes" $ssh_config_dir
 sudo sed -i -e "1i AuthenticationMethods publickey" $ssh_config_dir
 sudo sed -i -e "1i AuthorizedKeysFile /home/$\{new_user}/.ssh/authorized_keys" $ssh_config_dir
 sudo sed -i -e "1i PermitRootLogin no" $ssh_config_dir
-echo 'Port ${node.serverPort}' | sudo tee -a $ssh_config_dir
+echo 'Port ${node.tunnelPort}' | sudo tee -a $ssh_config_dir
 
 sudo systemctl restart ssh
 
@@ -35,8 +35,8 @@ cd portspoof/
 ./configure --sysconfdir=/etc/
 make
 sudo make install
-iptables -t nat -A PREROUTING -i eth0 -p tcp -m tcp --dport 1:${Number(node.serverPort) - 1} -j REDIRECT --to-ports 4444
-iptables -t nat -A PREROUTING -i eth0 -p tcp -m tcp --dport ${Number(node.serverPort) + 1}:65535 -j REDIRECT --to-ports 4444
+iptables -t nat -A PREROUTING -i eth0 -p tcp -m tcp --dport 1:${Number(node.tunnelPort) - 1} -j REDIRECT --to-ports 4444
+iptables -t nat -A PREROUTING -i eth0 -p tcp -m tcp --dport ${Number(node.tunnelPort) + 1}:65535 -j REDIRECT --to-ports 4444
 portspoof -c /etc/portspoof.conf -s /etc/portspoof_signatures -D
 
 # fail2ban
@@ -45,7 +45,7 @@ sudo apt install fail2ban -y
 
 echo '[sshd]' | sudo tee -a $fail2ban_config_dir
 echo 'enable = true' | sudo tee -a $fail2ban_config_dir
-echo 'port = ${node.serverPort}' | sudo tee -a $fail2ban_config_dir
+echo 'port = ${node.tunnelPort}' | sudo tee -a $fail2ban_config_dir
 echo 'sshd_backend = systemd' | sudo tee -a $fail2ban_config_dir
 echo 'mode = aggressive' | sudo tee -a $fail2ban_config_dir
 echo 'bantime = -1' | sudo tee -a $fail2ban_config_dir
@@ -55,7 +55,7 @@ echo 'maxretry = 1' | sudo tee -a $fail2ban_config_dir
 sudo systemctl enable fail2ban
 sudo systemctl start fail2ban
 
-iptables -A INPUT -p tcp --dport ${node.serverPort} -j ACCEPT
+iptables -A INPUT -p tcp --dport ${node.tunnelPort} -j ACCEPT
 `;
 
 export const ENABLE_HTTP_PROXY = (node: Node) => `
@@ -94,7 +94,7 @@ sudo wg pubkey < $wireguard_dir/server-private.key > $wireguard_dir/server-publi
 # Config.
 echo [Interface] | sudo tee -a $wireguard_config_dir
 echo Address = 10.0.0.1/24 | sudo tee -a $wireguard_config_dir
-echo ListenPort = ${node.serverPort} | sudo tee -a $wireguard_config_dir
+echo ListenPort = ${node.tunnelPort} | sudo tee -a $wireguard_config_dir
 echo PrivateKey = $(cat $wireguard_dir/server-private.key) | sudo tee -a $wireguard_config_dir
 echo DNS = 1.1.1.1 | sudo tee -a $wireguard_config_dir
 
@@ -108,7 +108,7 @@ echo net.ipv4.ip_forward=1 | sudo tee -a /etc/sysctl.conf
 sudo sysctl -p
 
 # Allow WireGuard through the firewall.
-sudo iptables -A INPUT -p udp --dport ${node.serverPort} -j ACCEPT
+sudo iptables -A INPUT -p udp --dport ${node.tunnelPort} -j ACCEPT
 sudo iptables -A INPUT -i wg0 -j ACCEPT
 sudo iptables -A FORWARD -i wg0 -j ACCEPT
 sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE

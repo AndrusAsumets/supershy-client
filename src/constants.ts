@@ -1,7 +1,7 @@
 import { homedir } from 'node:os';
 import * as path from 'https://deno.land/std@0.224.0/path/mod.ts';
 import { platform as getPlatform } from 'node:os';
-import { NodeType, Config, InstanceProvider, LoopStatus, ConnectionStatus, Plugin, Platform } from './types.ts';
+import { NodeType, Config, InstanceProvider, LoopStatus, ConnectionStatus, Tunnel, Platform } from './types.ts';
 
 const APP_ID = 'supershy-client';
 const ENV = 'dev';
@@ -15,7 +15,7 @@ const CONNECTION_KILLSWITCH = false;
 const AUTO_LAUNCH_WEB = true;
 const PROXY_LOCAL_PORT = 8888;
 const PROXY_REMOTE_PORT = 8888;
-const SERVER_PORT_RANGE: string = '10000:65535';
+const TUNNEL_PORT_RANGE: string = '10000:65535';
 const SSH_KEY_ALGORITHM = 'ed25519';
 const SSH_KEY_LENGTH = 32768;
 const DIGITAL_OCEAN_API_KEY = '';
@@ -55,8 +55,8 @@ const WEB_SERVER_PORT = 8080;
 const WEB_URL = `http://localhost:${WEB_SERVER_PORT}`;
 const WEB_SOCKET_PORT = 8880;
 const NODE_ENABLED = false;
-const PLUGINS: Plugin[] = [];
-const PLUGINS_ENABLED: Plugin[] = [Plugin.SSHUTTLE_VPN];
+const TUNNELS: Tunnel[] = [];
+const TUNNELS_ENABLED: Tunnel[] = [Tunnel.SSHUTTLE_VPN];
 const INSTANCE_COUNTRIES: string[] = [];
 const INSTANCE_COUNTRIES_DISABLED: string[] = [];
 
@@ -97,7 +97,7 @@ export const config: Config = {
     DATA_PATH,
     KEY_PATH,
     UI_PATH,
-    SERVER_PORT_RANGE,
+    TUNNEL_PORT_RANGE,
     SSH_KEY_ALGORITHM,
     SSH_KEY_LENGTH,
     SSH_PATH,
@@ -112,8 +112,8 @@ export const config: Config = {
     LOG_PATH,
     SSH_LOG_EXTENSION,
     NODE_TYPES,
-    PLUGINS,
-    PLUGINS_ENABLED,
+    TUNNELS,
+    TUNNELS_ENABLED,
     INSTANCE_COUNTRIES,
     INSTANCE_COUNTRIES_DISABLED,
 };
