@@ -61,6 +61,7 @@ const connect = async (
     await integrations.shell.command(script);
 
     models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTING});
+    core.abortOngoingHeartbeats();
     io.emit('/config', config());
 
     while (config().CONNECTION_STATUS != ConnectionStatus.CONNECTED) {
@@ -79,7 +80,6 @@ const connect = async (
             io.emit('/node', node);
             io.emit('/config', config());
             logger.info(`Connected to ${node.instanceIp}:${node.tunnelPort}.`);
-            await lib.sleep(config().DNS_PICKUP_DELAY_SEC * 1000);
         }
         catch(err) {
             await lib.sleep(1000);

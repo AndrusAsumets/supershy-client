@@ -11,21 +11,6 @@ const { config } = models;
 export const kv = {
     cloudflare: {
         apiBaseurl: 'https://api.cloudflare.com/client/v4',
-        heartbeat: async (): Promise<boolean> => {
-            try {
-                const options = {
-                    method: 'GET',
-                    signal: AbortSignal.timeout(config().HEARTBEAT_INTERVAL_SEC * 1000),
-                };
-                const res = await fetch(kv.cloudflare.apiBaseurl, core.useProxy(options));
-                await res.json();
-                logger.info('Heartbeat.');
-                return true;
-            }
-            catch(_) {
-                return false;
-            }
-        },
         key: {
             read: async (
                 node: Node,

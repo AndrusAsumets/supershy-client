@@ -23,6 +23,9 @@ import { integrations } from './integrations.ts';
 const { config } = models;
 const logger = _logger.get();
 
+let heartbeatControllers: AbortController[] = [];
+let heartbeatTimeouts: number[] = [];
+
 export const parseScript = (
     node: Node | null,
     tunnelKey: Tunnel,
@@ -69,7 +72,7 @@ const getEnabledInstanceProviders = (): InstanceProvider[] => {
 export const setInstanceCountries = async (
     config: Config
 ): Promise<Config> => {
-    const hasHeartbeat = await integrations.kv.cloudflare.heartbeat();
+    const hasHeartbeat = await heartbeat();
     if (!hasHeartbeat) {
         return config;
     }
@@ -93,7 +96,6 @@ export const setInstanceCountries = async (
 
 export const getEnabledTunnelKey = (): Tunnel | undefined => {
     const connectedNode = models.getLastConnectedNode();
-    logger.info({connectedNode})
     if (connectedNode && connectedNode.tunnelsEnabled.length) {
         return connectedNode.tunnelsEnabled[0];
     }
@@ -131,17 +133,25 @@ export const resetNetwork = async () => {
     await resetNetworkInterfaces();
 };
 
-export const useProxy = (options: any) => {
+export const useProxy = (
+    options: any,
+) => {
     // Deno does not automatically pick up network interface changes, hence we will refresh these manually by creating a new HTTP client for Fetch per every new request.
     options.client = Deno.createHttpClient({});
+
+    const controller = new AbortController();
+    options.signal = controller.signal;
+    heartbeatControllers.push(controller);
+
     const connectedNode = models.getLastConnectedNode();
     if (!connectedNode) return options;
 
     const tunnelKey = connectedNode.tunnelsEnabled[0];
+    const isConnected = config().CONNECTION_STATUS == ConnectionStatus.CONNECTED;
     const isHttpProxy = tunnelKey == Tunnel.HTTP_PROXY;
     const isSocks5Proxy = tunnelKey == Tunnel.SOCKS5_PROXY;
-    const hasNodeProtocol = isHttpProxy || isSocks5Proxy;
-    if (!hasNodeProtocol) return options;
+    const hasNodeProtocol = (isHttpProxy || isSocks5Proxy);
+    if (!isConnected || !hasNodeProtocol) return options;
 
     const protocol = isHttpProxy
         ? 'http'
@@ -207,12 +217,41 @@ export const disableConnectionKillSwitch = () => {
     logger.info(`Disabled connection killswitch.`);
 };
 
-export const heartbeat = async () => {
-    const initialConnectionStatus = config().CONNECTION_STATUS;
-    const hasHeartbeat = await integrations.kv.cloudflare.heartbeat();
-    const isConnecting = config().CONNECTION_STATUS == ConnectionStatus.CONNECTING;
-    const isConnectionStatusChange = initialConnectionStatus != config().CONNECTION_STATUS;
-    !hasHeartbeat && !isConnecting && !isConnectionStatusChange && await exit('Heartbeat failure');
+export const heartbeat = async (): Promise<boolean> => {
+    try {
+        const isConnecting = config().CONNECTION_STATUS == ConnectionStatus.CONNECTING;
+        if (isConnecting) {
+            return false;
+        }
+
+        const timeout = setTimeout(() => {
+            exit(`Heartbeat timeout of ${config().HEARTBEAT_INTERVAL_SEC} seconds exceeded.`);
+        }, config().HEARTBEAT_INTERVAL_SEC * 1000);
+        heartbeatTimeouts.push(timeout);
+
+        const options = {
+            method: 'GET',
+        };
+        const res = await fetch(integrations.kv.cloudflare.apiBaseurl, useProxy(options));
+        clearTimeout(timeout);
+        await res.json();
+        logger.info('Heartbeat.');
+    }
+    catch(_) {
+        return false;
+    }
+
+    return true;
+};
+
+export const abortOngoingHeartbeats = () => {
+    heartbeatControllers.forEach((controller: AbortController) => {
+        try { controller.abort() }
+        catch(_) { _ };
+    });
+    heartbeatTimeouts.forEach((timeout: number) => clearTimeout(timeout));
+    heartbeatControllers = [];
+    heartbeatTimeouts = [];
 };
 
 export const setLoopStatus = (io: Server, loopStatus: LoopStatus) => {

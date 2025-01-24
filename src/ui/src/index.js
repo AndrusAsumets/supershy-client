@@ -11,7 +11,7 @@ const $providersSection = document.getElementsByClassName('section-content provi
 const $countriesSection = document.getElementsByClassName('section-content countries')[0];
 const $configSection = document.getElementsByClassName('section-content config')[0];
 const $logSection = document.getElementsByClassName('section-content log')[0];
-const visibleActionKeys = {
+const visiblePluginKeys = {
     CONNECTION_KILLSWITCH: { editable: 'boolean' },
 };
 const visibleConfigKeys = {
@@ -290,13 +290,13 @@ const updateActions = () => {
     Object.keys(config)
         .sort((a, b) => a.localeCompare(b))
         .forEach((key) => {
-            visibleActionKeys[key] && $pluginsSection.append(
+            visiblePluginKeys[key] && $pluginsSection.append(
                 constructConfigLine(
-                    visibleActionKeys,
+                    visiblePluginKeys,
                     key,
                     config[key],
                     '/config/save',
-                    visibleActionKeys[key].editable,
+                    visiblePluginKeys[key].editable,
                 )
             );
         });
