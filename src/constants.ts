@@ -56,7 +56,7 @@ const WEB_URL = `http://localhost:${WEB_SERVER_PORT}`;
 const WEB_SOCKET_PORT = 8880;
 const NODE_ENABLED = false;
 const TUNNELS: Tunnel[] = [];
-const TUNNELS_ENABLED: Tunnel[] = [Tunnel.SSHUTTLE_VPN];
+const TUNNELS_ENABLED: Tunnel[] = [Tunnel.WIREGUARD];
 const INSTANCE_COUNTRIES: string[] = [];
 const INSTANCE_COUNTRIES_DISABLED: string[] = [];
 

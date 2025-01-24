@@ -99,8 +99,8 @@ export interface CreateExoscaleInstance {
 export type InstancePayload = CreateDigitalOceanInstance & CreateHetznerInstance & CreateExoscaleInstance
 
 export enum Tunnel {
-	WIREGUARD_VPN = 'wireguardVpn',
-	SSHUTTLE_VPN = 'sshuttleVpn',
+	WIREGUARD = 'wireguard',
+	SSHUTTLE = 'sshuttle',
 	HTTP_PROXY = 'httpProxy',
 	SOCKS5_PROXY = 'socks5Proxy',
 }

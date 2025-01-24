@@ -11,7 +11,7 @@ import * as client from './tunnels/client.ts';
 import * as server from './tunnels/server.ts';
 
 export const tunnels: Tunnels = {
-	[Tunnel.WIREGUARD_VPN]: {
+	[Tunnel.WIREGUARD]: {
 		[Side.CLIENT]: {
 			[Platform.LINUX]: {
 				[Action.MAIN]: {
@@ -35,7 +35,7 @@ export const tunnels: Tunnels = {
 			}
 		},
 	},
-	[Tunnel.SSHUTTLE_VPN]: {
+	[Tunnel.SSHUTTLE]: {
 		[Side.CLIENT]: {
 			[Platform.LINUX]: {
 				[Action.MAIN]: {
