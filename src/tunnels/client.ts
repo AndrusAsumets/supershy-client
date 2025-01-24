@@ -43,7 +43,7 @@ export const ENABLE_SSH = (node: Node) => `
 ssh -vv ${node.sshUser}@${node.instanceIp} -f -N -L ${node.proxyLocalPort}:0.0.0.0:${node.proxyRemotePort} -p ${node.tunnelPort} -i ${node.clientKeyPath}-ssh -o StrictHostKeyChecking=yes -E ${node.sshLogPath}
 `;
 
-export const ENABLE_LINUX_KILLSWITCH = () => `
+export const ENABLE_LINUX_KILLSWITCH = (commands = '') => `
 raw_hosts=$1
 IFS=',' read -r -a hosts <<< $raw_hosts
 
@@ -59,9 +59,8 @@ done
 
 sudo ufw default deny incoming
 sudo ufw default deny outgoing
-sudo ufw allow out from any to 127.0.0.0/24
-sudo ufw allow out from any to 0.0.0.0/24
-sudo ufw allow out on wg0 from any to any
+
+${commands}
 
 for host in $\{hosts[@]}; do
     eval "sudo ufw allow out from any to $\{host/:/ port }"

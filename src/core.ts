@@ -72,11 +72,6 @@ const getEnabledInstanceProviders = (): InstanceProvider[] => {
 export const setInstanceCountries = async (
     config: Config
 ): Promise<Config> => {
-    const hasHeartbeat = await heartbeat();
-    if (!hasHeartbeat) {
-        return config;
-    }
-
     const instanceProviders = getEnabledInstanceProviders();
     config.INSTANCE_COUNTRIES = [];
 
@@ -94,11 +89,13 @@ export const setInstanceCountries = async (
     return config;
 };
 
-export const getEnabledTunnelKey = (): Tunnel | undefined => {
+export const getEnabledTunnelKey = (): Tunnel => {
     const connectedNode = models.getLastConnectedNode();
     if (connectedNode && connectedNode.tunnelsEnabled.length) {
         return connectedNode.tunnelsEnabled[0];
     }
+
+    return config().TUNNELS_ENABLED[0];
 };
 
 export const prepareCloudConfig = (
@@ -122,14 +119,13 @@ export const getSshLogPath = (
 ): string =>`${config().LOG_PATH}/${nodeUuid}${config().SSH_LOG_EXTENSION}`;
 
 export const resetNetworkInterfaces = async () => {
-    await integrations.shell.pkill(`${config().PROXY_LOCAL_PORT}:0.0.0.0`);
-    await integrations.shell.pkill('0.0.0.0/0');
+    await integrations.shell.pkill('0.0.0.0');
     await integrations.shell.command(`sudo wg-quick down ${config().WIREGUARD_CONFIG_PATH} || true`);
     await integrations.shell.command(`sudo ifconfig utun0 down || true`);
 };
 
 export const resetNetwork = async () => {
-    disableConnectionKillSwitch();
+    await disableConnectionKillSwitch();
     await resetNetworkInterfaces();
 };
 
@@ -142,7 +138,6 @@ export const useProxy = (
     const controller = new AbortController();
     options.signal = controller.signal;
     heartbeatControllers.push(controller);
-
     const connectedNode = models.getLastConnectedNode();
     if (!connectedNode) return options;
 
@@ -188,10 +183,8 @@ export const getConnectionStatus = {
     }
 };
 
-export const enableConnectionKillSwitch = () => {
+export const enableConnectionKillSwitch = async () => {
     const tunnelKey = getEnabledTunnelKey();
-    if (!tunnelKey) return;
-
     const platformKey = config().PLATFORM;
     const script = parseScript(null, tunnelKey, Side.CLIENT, platformKey, Action.KILLSWITCH, Script.ENABLE);
 
@@ -201,26 +194,29 @@ export const enableConnectionKillSwitch = () => {
         .keys(nodes)
         .map((key: string) => `${nodes[key].instanceIp}:${nodes[key].tunnelPort}`)
         .join(',');
-    integrations.shell.command(script, args);
+    await integrations.shell.command(script, args);
     logger.info(`Enabled connection killswitch.`);
 };
 
-export const disableConnectionKillSwitch = () => {
+export const disableConnectionKillSwitch = async () => {
     const tunnelKey = getEnabledTunnelKey();
-    if (!tunnelKey) return;
-
     const platformKey = config().PLATFORM;
     const script = parseScript(null, tunnelKey, Side.CLIENT, platformKey, Action.KILLSWITCH, Script.DISABLE);
 
     logger.info(`Disabling connection killswitch.`);
-    integrations.shell.command(script);
+    await integrations.shell.command(script);
     logger.info(`Disabled connection killswitch.`);
+};
+
+export const enableOrDisableConnectionKillSwitch = async () => {
+    config().CONNECTION_KILLSWITCH && await enableConnectionKillSwitch();
+    !config().CONNECTION_KILLSWITCH && await disableConnectionKillSwitch();
 };
 
 export const heartbeat = async (): Promise<boolean> => {
     try {
-        const isConnecting = config().CONNECTION_STATUS == ConnectionStatus.CONNECTING;
-        if (isConnecting) {
+        const isConnected = config().CONNECTION_STATUS == ConnectionStatus.CONNECTED;
+        if (!isConnected) {
             return false;
         }
 
@@ -280,6 +276,16 @@ export const cleanup = async (
     let index = 0;
     while (index < instanceProviders.length) {
         const instanceProvider: InstanceProvider = instanceProviders[index];
+        (await integrations.compute[instanceProvider].keys.list())
+            .forEach(async(instancesList: any[]) => {
+                const [keys, instanceApiBaseUrl] = instancesList;
+
+                if (keys) {
+                    const deletableKeys = keys.map((key: any) => key.id || key.name);
+                    await integrations.compute[instanceProvider].keys.delete(deletableKeys, instanceApiBaseUrl);
+                }
+            });
+
         (await integrations.compute[instanceProvider].instances.list())
             .forEach(async(instancesList: any[]) => {
                 const [instances, instanceApiBaseUrl] = instancesList;
@@ -322,6 +328,11 @@ export const exit = async (
 ) => {
     const nodes = models.nodes();
     const hasNodes = Object.keys(nodes).length > 0;
+
+    const isRestarting = config().CONNECTION_STATUS == ConnectionStatus.RESTARTING;
+    if (isRestarting) {
+        return;
+    }
 
     if (onPurpose) {
         hasNodes && await integrations.shell.pkill(`${config().APP_ID}-${config().ENV}`);

@@ -19,7 +19,9 @@ export const tunnels: Tunnels = {
 					[Script.ENABLE]: (node?: Node) => client.ENABLE_WIREGUARD(node!)
 				},
 				[Action.KILLSWITCH]: {
-					[Script.ENABLE]: () => client.ENABLE_LINUX_KILLSWITCH(),
+					[Script.ENABLE]: () => client.ENABLE_LINUX_KILLSWITCH(
+						`sudo ufw allow out on wg0 from any to any`
+					),
 					[Script.DISABLE]: () => client.DISABLE_LINUX_KILLSWITCH(),
 				}
 			},
@@ -43,7 +45,12 @@ export const tunnels: Tunnels = {
 					[Script.ENABLE]: (node?: Node) => client.ENABLE_SSHUTTLE(node!)
 				},
 				[Action.KILLSWITCH]: {
-					[Script.ENABLE]: () => client.ENABLE_LINUX_KILLSWITCH(),
+					[Script.ENABLE]: () => client.ENABLE_LINUX_KILLSWITCH(
+						`
+							sudo ufw allow out from any to 127.0.0.0/24
+							sudo ufw allow out from any to 0.0.0.0/24
+						`
+					),
 					[Script.DISABLE]: () => client.DISABLE_LINUX_KILLSWITCH(),
 				}
 			},

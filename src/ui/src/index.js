@@ -266,9 +266,11 @@ const updateStatus = () => {
 };
 
 const updateTunnels = () => {
-    $tunnelsSection.innerText = '';
+    $tunnelsSection.innerText = config.CONNECTION_KILLSWITCH
+        ? 'Disable CONNECTION_KILLSWITCH first in order to change tunnels.'
+        : '';
 
-    config.TUNNELS
+    !config.CONNECTION_KILLSWITCH && config.TUNNELS
         .forEach((key) => {
             $tunnelsSection.append(
                 constructGenericLine(

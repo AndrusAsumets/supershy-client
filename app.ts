@@ -42,12 +42,11 @@ const init = () => {
 const connect = async (
     node: Node,
 ) => {
-    logger.info(`Using tunnel ${node.tunnelsEnabled[0]} while connecting to ${node.instanceIp}:${node.tunnelPort} via ${node.connectionType}.`);
+    logger.info(`Using ${node.tunnelsEnabled[0]} tunnel while connecting to ${node.instanceIp}:${node.tunnelPort} via ${node.connectionType}.`);
 
+    await core.enableOrDisableConnectionKillSwitch();
     integrations.kv.cloudflare.key.write(node);
     existsSync(node.sshLogPath) && Deno.removeSync(node.sshLogPath);
-    config().CONNECTION_KILLSWITCH && core.enableConnectionKillSwitch();
-    !config().CONNECTION_KILLSWITCH && core.disableConnectionKillSwitch();
     await core.resetNetworkInterfaces();
 
     models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTING});
@@ -80,7 +79,6 @@ const connect = async (
             io.emit('/node', node);
             io.emit('/config', config());
             logger.info(`Connected to ${node.instanceIp}:${node.tunnelPort}.`);
-            await lib.sleep(config().DNS_PICKUP_DELAY_SEC * 1000);
         }
         catch(err) {
             await lib.sleep(1000);
@@ -151,9 +149,8 @@ const rotate = async () => {
         !instanceProviders.length && logger.warn('None of the VPS providers are enabled.');
         const instanceProvider: InstanceProvider = lib.shuffle(instanceProviders)[0];
         const { instanceSize, instanceImage } = integrations.compute[instanceProvider];
-        const enabledTunnelKey = config().TUNNELS_ENABLED[0];
-        !enabledTunnelKey && logger.info(`No enabled tunnels found.`);
-        const connectionType = enabledTunnelKey.toLowerCase().includes('wireguard')
+        const tunnelKey = config().TUNNELS_ENABLED[0];
+        const connectionType = tunnelKey.toLowerCase().includes('wireguard')
             ? ConnectionType.WIREGUARD
             : ConnectionType.SSH;
         const nodeUuid = uuidv7();
@@ -169,7 +166,7 @@ const rotate = async () => {
             proxyLocalPort: config().PROXY_LOCAL_PORT,
             proxyRemotePort: config().PROXY_REMOTE_PORT,
             appId: config().APP_ID,
-            tunnelsEnabled: [enabledTunnelKey],
+            tunnelsEnabled: [tunnelKey],
             connectionType,
             instanceProvider,
             instanceApiBaseUrl: '',
@@ -201,7 +198,7 @@ const rotate = async () => {
         node = {...node, instanceRegion, instanceCountry, instanceApiBaseUrl};
         const [publicSshKey] = await integrations.shell.keygen(node, Script.PREPARE);
         const instancePublicKeyId = await integrations.compute[instanceProvider].keys.add(node, publicSshKey, instanceName);
-        const script = tunnels[enabledTunnelKey][Side.SERVER][Platform.LINUX][Action.MAIN][Script.ENABLE](node);
+        const script = tunnels[tunnelKey][Side.SERVER][Platform.LINUX][Action.MAIN][Script.ENABLE](node);
         const userData = core.prepareCloudConfig(script);
         const formattedUserData = integrations.compute[instanceProvider].userData.format(userData);
         const instancePayload: InstancePayload = {
@@ -236,7 +233,6 @@ const rotate = async () => {
         models.updateNode(node);
         activeNodes.push(node);
         core.setCurrentNodeReserve(io);
-        await integrations.compute[instanceProvider].keys.delete(node, instancePublicKeyId);
         nodeIndex = nodeIndex + 1;
     }
 
@@ -250,6 +246,7 @@ models.updateConfig({
     CONNECTION_STATUS: ConnectionStatus.DISCONNECTED,
     TUNNELS: core.getAvailableTunnels()
 });
+await core.enableOrDisableConnectionKillSwitch();
 webserver.start();
 websocket.start(io);
 config().AUTO_LAUNCH_WEB && open(config().WEB_URL);

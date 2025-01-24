@@ -36,8 +36,7 @@ export const start = (io: Server) => {
             const isConnectionKillswitchDiff = prevConfig.CONNECTION_KILLSWITCH != config().CONNECTION_KILLSWITCH;
 
             (isInstanceProvidersDiff || isInstanceProvidersDisabledDiff) && models.updateConfig(await core.setInstanceCountries(config()));
-            (isConnectionKillswitchDiff && config().CONNECTION_KILLSWITCH == true) && core.enableConnectionKillSwitch();
-            (isConnectionKillswitchDiff && config().CONNECTION_KILLSWITCH == false) && core.disableConnectionKillSwitch();
+            isConnectionKillswitchDiff && core.enableOrDisableConnectionKillSwitch();
 
             io.emit('/config', config());
         });

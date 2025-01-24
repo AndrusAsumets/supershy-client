@@ -181,7 +181,6 @@ export interface Config {
 	HETZNER_INSTANCE_IMAGE: string
 	EXOSCALE_DISK_SIZE: number
 	HEARTBEAT_INTERVAL_SEC: number
-	DNS_PICKUP_DELAY_SEC: number
 	RESTART_COUNTDOWN_SEC: number
 	WEB_SERVER_PORT: number
 	WEB_URL: string
