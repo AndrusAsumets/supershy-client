@@ -4,6 +4,18 @@ import { integrations } from '../integrations.ts';
 
 const { config } = models;
 
+export const PORTSPOOF = (node: Node) => `
+sudo apt install git g++ build-essential -y
+git clone https://github.com/drk1wi/portspoof.git
+cd portspoof/
+./configure --sysconfdir=/etc/
+make
+sudo make install
+iptables -t nat -A PREROUTING -i eth0 -p tcp -m tcp --dport 1:${Number(node.tunnelPort) - 1} -j REDIRECT --to-ports 4444
+iptables -t nat -A PREROUTING -i eth0 -p tcp -m tcp --dport ${Number(node.tunnelPort) + 1}:65535 -j REDIRECT --to-ports 4444
+portspoof -c /etc/portspoof.conf -s /etc/portspoof_signatures -D
+`;
+
 export const ENABLE_MAIN = (node: Node) => `
 new_user=${node.sshUser}
 ssh_config_dir=/etc/ssh/sshd_config
@@ -25,19 +37,10 @@ sudo sed -i -e "1i AuthenticationMethods publickey" $ssh_config_dir
 sudo sed -i -e "1i AuthorizedKeysFile /home/$\{new_user}/.ssh/authorized_keys" $ssh_config_dir
 sudo sed -i -e "1i PermitRootLogin no" $ssh_config_dir
 echo 'Port ${node.tunnelPort}' | sudo tee -a $ssh_config_dir
-
 sudo systemctl restart ssh
 
-# Port spoof.
-sudo apt install git g++ build-essential -y
-git clone https://github.com/drk1wi/portspoof.git
-cd portspoof/
-./configure --sysconfdir=/etc/
-make
-sudo make install
-iptables -t nat -A PREROUTING -i eth0 -p tcp -m tcp --dport 1:${Number(node.tunnelPort) - 1} -j REDIRECT --to-ports 4444
-iptables -t nat -A PREROUTING -i eth0 -p tcp -m tcp --dport ${Number(node.tunnelPort) + 1}:65535 -j REDIRECT --to-ports 4444
-portspoof -c /etc/portspoof.conf -s /etc/portspoof_signatures -D
+# portspoof
+${PORTSPOOF(node)}
 
 # fail2ban
 sudo apt update
@@ -79,6 +82,10 @@ export const ENABLE_WIREGUARD = (node: Node) => `
 wireguard_dir=/etc/wireguard
 wireguard_config_dir=$wireguard_dir/wg0.conf
 
+# Disable ssh.
+sudo systemctl disable ssh
+sudo systemctl stop ssh
+
 # Dependencies.
 sudo apt update
 sudo apt install wireguard bind9 -y
@@ -116,9 +123,8 @@ sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
 # Start wireguard server
 sudo wg-quick up $wireguard_config_dir
 
-# Disable ssh.
-sudo systemctl disable ssh
-sudo systemctl stop ssh
+# portspoof
+${PORTSPOOF(node)}
 `;
 
 export const PHONEHOME = (node: Node) => `

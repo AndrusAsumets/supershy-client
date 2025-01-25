@@ -11,8 +11,8 @@ export const start = (io: Server) => {
         io.emit('/started', config().APP_ENABLED);
         io.emit('/config', config());
         io.emit('/node', models.getLastConnectedNode());
-        socket.on('/node/enable', async () => await core.reset(io, 'reset', true, false));
-        socket.on('/node/disable', async () => await core.reset(io, 'reset', false, false));
+        socket.on('/node/enable', async () => await core.reset(io, '/node/enable', true, false));
+        socket.on('/node/disable', async () => await core.reset(io, '/node/disable', false, false));
         socket.on('/config/save', async (newConfig: Config) => await core.saveConfig(io, newConfig));
     });
 
