@@ -3,6 +3,7 @@ import * as path from 'https://deno.land/std@0.224.0/path/mod.ts';
 import { platform as getPlatform } from 'node:os';
 import { NodeType, Config, InstanceProvider, LoopStatus, ConnectionStatus, Tunnel, Platform } from './types.ts';
 
+const APP_ENABLED = false;
 const APP_ID = 'supershy-client';
 const ENV = 'dev';
 const PLATFORM = getPlatform() as Platform;
@@ -11,7 +12,7 @@ const NODE_RESERVE_COUNT = 1;
 const NODE_CURRENT_RESERVE_COUNT = 0;
 const LOOP_STATUS = LoopStatus.INACTIVE;
 const CONNECTION_STATUS = ConnectionStatus.DISCONNECTED;
-const CONNECTION_KILLSWITCH = false;
+const TUNNEL_KILLSWITCH = false;
 const AUTO_LAUNCH_WEB = true;
 const PROXY_LOCAL_PORT = 8888;
 const PROXY_REMOTE_PORT = 8888;
@@ -49,18 +50,16 @@ const EXOSCALE_DISK_SIZE = 10;
 const INSTANCE_PROVIDERS: InstanceProvider[] = [];
 const INSTANCE_PROVIDERS_DISABLED: InstanceProvider[] = [];
 const HEARTBEAT_INTERVAL_SEC = 10;
-const RESTART_COUNTDOWN_SEC = 10;
 const WEB_SERVER_PORT = 8080;
 const WEB_URL = `http://localhost:${WEB_SERVER_PORT}`;
 const WEB_SOCKET_PORT = 8880;
-const NODE_ENABLED = false;
 const TUNNELS: Tunnel[] = [];
 const TUNNELS_ENABLED: Tunnel[] = [Tunnel.WIREGUARD];
 const INSTANCE_COUNTRIES: string[] = [];
 const INSTANCE_COUNTRIES_DISABLED: string[] = [];
 
 export const config: Config = {
-    CONNECTION_KILLSWITCH,
+    TUNNEL_KILLSWITCH,
     LOOP_STATUS,
     CONNECTION_STATUS,
     NODE_RECYCLE_INTERVAL_SEC,
@@ -82,7 +81,7 @@ export const config: Config = {
     EXOSCALE_TEMPLATE_NAME,
     HETZNER_INSTANCE_IMAGE,
     EXOSCALE_DISK_SIZE,
-    NODE_ENABLED,
+    APP_ENABLED,
     AUTO_LAUNCH_WEB,
     APP_ID,
     ENV,
@@ -90,7 +89,6 @@ export const config: Config = {
     INSTANCE_PROVIDERS,
     INSTANCE_PROVIDERS_DISABLED,
     HEARTBEAT_INTERVAL_SEC,
-    RESTART_COUNTDOWN_SEC,
     HOME_PATH,
     DATA_PATH,
     KEY_PATH,

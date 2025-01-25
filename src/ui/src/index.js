@@ -12,7 +12,7 @@ const $countriesSection = document.getElementsByClassName('section-content count
 const $configSection = document.getElementsByClassName('section-content config')[0];
 const $logSection = document.getElementsByClassName('section-content log')[0];
 const visiblePluginKeys = {
-    CONNECTION_KILLSWITCH: { editable: 'boolean' },
+    TUNNEL_KILLSWITCH: { editable: 'boolean' },
 };
 const visibleConfigKeys = {
     NODE_RECYCLE_INTERVAL_SEC: { editable: 'number' },
@@ -266,11 +266,9 @@ const updateStatus = () => {
 };
 
 const updateTunnels = () => {
-    $tunnelsSection.innerText = config.CONNECTION_KILLSWITCH
-        ? 'Disable CONNECTION_KILLSWITCH first in order to change tunnels.'
-        : '';
+    $tunnelsSection.innerText = '';
 
-    !config.CONNECTION_KILLSWITCH && config.TUNNELS
+    config.TUNNELS
         .forEach((key) => {
             $tunnelsSection.append(
                 constructGenericLine(

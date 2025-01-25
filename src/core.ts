@@ -125,7 +125,7 @@ export const resetNetworkInterfaces = async () => {
 };
 
 export const resetNetwork = async () => {
-    await disableConnectionKillSwitch();
+    await disableTunnelKillSwitch();
     await resetNetworkInterfaces();
 };
 
@@ -183,45 +183,51 @@ export const getConnectionStatus = {
     }
 };
 
-export const enableConnectionKillSwitch = async () => {
+export const enableTunnelKillSwitch = async () => {
     const tunnelKey = getEnabledTunnelKey();
     const platformKey = config().PLATFORM;
     const script = parseScript(null, tunnelKey, Side.CLIENT, platformKey, Action.KILLSWITCH, Script.ENABLE);
 
-    logger.info(`Enabling connection killswitch.`);
+    const hasConnectedNode = models.getLastConnectedNode();
+    if (!hasConnectedNode) {
+        return;
+    }
+
+    logger.info(`Enabling tunnel killswitch.`);
     const nodes = models.nodes();
     const args = Object
         .keys(nodes)
         .map((key: string) => `${nodes[key].instanceIp}:${nodes[key].tunnelPort}`)
         .join(',');
     await integrations.shell.command(script, args);
-    logger.info(`Enabled connection killswitch.`);
+    logger.info(`Enabled tunnel killswitch.`);
 };
 
-export const disableConnectionKillSwitch = async () => {
+export const disableTunnelKillSwitch = async () => {
     const tunnelKey = getEnabledTunnelKey();
     const platformKey = config().PLATFORM;
     const script = parseScript(null, tunnelKey, Side.CLIENT, platformKey, Action.KILLSWITCH, Script.DISABLE);
 
-    logger.info(`Disabling connection killswitch.`);
+    logger.info(`Disabling tunnel killswitch.`);
     await integrations.shell.command(script);
-    logger.info(`Disabled connection killswitch.`);
+    logger.info(`Disabled tunnel killswitch.`);
 };
 
-export const enableOrDisableConnectionKillSwitch = async () => {
-    config().CONNECTION_KILLSWITCH && await enableConnectionKillSwitch();
-    !config().CONNECTION_KILLSWITCH && await disableConnectionKillSwitch();
+export const enableOrDisableTunnelKillSwitch = async () => {
+    config().TUNNEL_KILLSWITCH && await enableTunnelKillSwitch();
+    !config().TUNNEL_KILLSWITCH && await disableTunnelKillSwitch();
 };
 
 export const heartbeat = async (): Promise<boolean> => {
     try {
+        const isAppEnabled = config().APP_ENABLED;
         const isConnected = config().CONNECTION_STATUS == ConnectionStatus.CONNECTED;
-        if (!isConnected) {
+        if (!isAppEnabled || !isConnected) {
             return false;
         }
 
         const timeout = setTimeout(() => {
-            exit(`Heartbeat timeout of ${config().HEARTBEAT_INTERVAL_SEC} seconds exceeded.`);
+            exit(null, `Heartbeat timeout of ${config().HEARTBEAT_INTERVAL_SEC} seconds exceeded.`);
         }, config().HEARTBEAT_INTERVAL_SEC * 1000);
         heartbeatTimeouts.push(timeout);
 
@@ -268,7 +274,7 @@ export const setCurrentNodeReserve = (io: Server) => {
     io.emit('/config', config());
 };
 
-export const cleanup = async (
+export const cleanupCompute = async (
     instanceIdsToKeep: string[] = []
 ) => {
     const instanceProviders = Object.values(InstanceProvider);
@@ -322,27 +328,45 @@ export const restartCountDown = async (
     }
 };
 
-export const exit = async (
-    message: string,
-    onPurpose = false
+export const saveConfig = async (
+    io: Server,
+    newConfig: Config,
 ) => {
-    const nodes = models.nodes();
-    const hasNodes = Object.keys(nodes).length > 0;
+    const prevConfig: Config = JSON.parse(JSON.stringify(config()));
+    models.updateConfig(setInstanceProviders(newConfig));
 
-    const isRestarting = config().CONNECTION_STATUS == ConnectionStatus.RESTARTING;
-    if (isRestarting) {
-        return;
-    }
+    const isInstanceProvidersDiff = prevConfig.INSTANCE_PROVIDERS.length != config().INSTANCE_PROVIDERS.length;
+    const isInstanceProvidersDisabledDiff = prevConfig.INSTANCE_PROVIDERS_DISABLED.length != config().INSTANCE_PROVIDERS_DISABLED.length;
+    const isTunnelKillswitchDiff = prevConfig.TUNNEL_KILLSWITCH != config().TUNNEL_KILLSWITCH;
+    const isTunnelsEnabledDiff = prevConfig.TUNNELS_ENABLED[0] != config().TUNNELS_ENABLED[0];
 
-    if (onPurpose) {
-        hasNodes && await integrations.shell.pkill(`${config().APP_ID}-${config().ENV}`);
-        Object.keys(nodes).forEach(async (nodeUuid: string) => await integrations.shell.pkill(nodeUuid));
-    }
-    else {
-        logger.error(message);
-        models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.RESTARTING});
-        await restartCountDown(config().RESTART_COUNTDOWN_SEC);
-    }
+    (isInstanceProvidersDiff || isInstanceProvidersDisabledDiff) && models.updateConfig(await setInstanceCountries(config()));
+    isTunnelKillswitchDiff && enableOrDisableTunnelKillSwitch();
+    isTunnelsEnabledDiff && await reset(io, '/change/tunnel', true, prevConfig.TUNNEL_KILLSWITCH);
 
+    io.emit('/config', config());
+};
+
+export const reset = async (
+    io: Server,
+    message: string,
+    isAppEnabled: boolean,
+    isTunnelKillswitchEnabled: boolean,
+) => {
+    models.updateConfig({...config(), APP_ENABLED: isAppEnabled, TUNNEL_KILLSWITCH: isTunnelKillswitchEnabled});
+    abortOngoingHeartbeats();
+    models.clearNodes();
+    await resetNetwork();
+    await cleanupCompute();
+    exit(io, message);
+};
+
+export const exit = (
+    io: Server | null,
+    message: string,
+) => {
+    logger.warn(message);
+    models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.DISCONNECTED});
+    io?.emit('/config', config());
     throw new Error();
 };

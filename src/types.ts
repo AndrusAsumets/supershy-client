@@ -22,7 +22,6 @@ export enum ConnectionType {
 export enum ConnectionStatus {
 	CONNECTED = 'connected',
 	CONNECTING = 'connecting',
-	RESTARTING = 'restarting',
 	DISCONNECTED = 'disconnected',
 }
 
@@ -144,9 +143,9 @@ export interface Config {
 	LOOP_STATUS: LoopStatus
 	CONNECTION_STATUS: ConnectionStatus
 	NODE_RECYCLE_INTERVAL_SEC: number
-	NODE_RESERVE_COUNT: number;
+	NODE_RESERVE_COUNT: number
 	NODE_CURRENT_RESERVE_COUNT: number
-	CONNECTION_KILLSWITCH: boolean
+	TUNNEL_KILLSWITCH: boolean
 	AUTO_LAUNCH_WEB: boolean
 	PROXY_LOCAL_PORT: number
 	PROXY_REMOTE_PORT: number
@@ -181,11 +180,10 @@ export interface Config {
 	HETZNER_INSTANCE_IMAGE: string
 	EXOSCALE_DISK_SIZE: number
 	HEARTBEAT_INTERVAL_SEC: number
-	RESTART_COUNTDOWN_SEC: number
 	WEB_SERVER_PORT: number
 	WEB_URL: string
 	WEB_SOCKET_PORT: number
-	NODE_ENABLED: boolean
+	APP_ENABLED: boolean
 	TUNNELS: Tunnel[]
 	TUNNELS_ENABLED: Tunnel[]
 	INSTANCE_PROVIDERS: InstanceProvider[]

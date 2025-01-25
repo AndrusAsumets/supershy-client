@@ -41,10 +41,10 @@ const init = () => {
 
 const connect = async (
     node: Node,
-) => {
+): Promise<Node> => {
     logger.info(`Using ${node.tunnelsEnabled[0]} tunnel while connecting to ${node.instanceIp}:${node.tunnelPort} via ${node.connectionType}.`);
 
-    await core.enableOrDisableConnectionKillSwitch();
+    config().TUNNEL_KILLSWITCH && await core.enableTunnelKillSwitch();
     integrations.kv.cloudflare.key.write(node);
     existsSync(node.sshLogPath) && Deno.removeSync(node.sshLogPath);
     await core.resetNetworkInterfaces();
@@ -53,7 +53,7 @@ const connect = async (
     io.emit('/config', config());
 
     const connectTimeout = setTimeout(() => {
-        core.exit(`Connect timeout of ${config().CONNECT_TIMEOUT_SEC} seconds exceeded.`);
+        core.exit(io, `Connect timeout of ${config().CONNECT_TIMEOUT_SEC} seconds exceeded.`);
     }, config().CONNECT_TIMEOUT_SEC * 1000);
 
     const script = core.parseScript(node, node.tunnelsEnabled[0], Side.CLIENT, config().PLATFORM, Action.MAIN, Script.ENABLE);
@@ -85,18 +85,15 @@ const connect = async (
             logger.warn({ message: `Failed to connect to ${node.instanceIp}:${node.tunnelPort}.`, err });
         }
     }
+
+    return node;
 };
 
 const loop = async () => {
     setTimeout(async () => {
-        const isRestarting = config().CONNECTION_STATUS == ConnectionStatus.RESTARTING;
-        if (isRestarting) {
-            return;
-        }
-
         const isStillWorking = config().LOOP_STATUS == LoopStatus.ACTIVE;
         isStillWorking
-            ? await core.exit(`Node rotation timeout reached after passing ${config().NODE_RECYCLE_INTERVAL_SEC} seconds.`)
+            ? core.exit(io, `Node rotation timeout reached after passing ${config().NODE_RECYCLE_INTERVAL_SEC} seconds.`)
             : await loop();
     }, config().NODE_RECYCLE_INTERVAL_SEC * 1000);
 
@@ -115,13 +112,13 @@ const loop = async () => {
         );
     } catch (err) {
         logger.error(err);
-        await core.exit('Loop failure.');
+        core.exit(io, 'Loop failure.');
     }
 };
 
 const rotate = async () => {
     const activeNodes: Node[] = [];
-    const initialNode = models.getInitialNode();
+    let initialNode = models.getInitialNode();
     const nodeTypes: NodeType[] = !initialNode
         ? config().NODE_TYPES
         : [];
@@ -233,11 +230,13 @@ const rotate = async () => {
         models.updateNode(node);
         activeNodes.push(node);
         core.setCurrentNodeReserve(io);
+        if (!initialNode) {
+            initialNode = await connect(node);
+        }
         nodeIndex = nodeIndex + 1;
     }
 
-    !initialNode && await connect(activeNodes[0]);
-    await core.cleanup(activeNodes.map(node => node.instanceId));
+    await core.cleanupCompute(activeNodes.map(node => node.instanceId));
 };
 
 models.updateConfig({
@@ -246,9 +245,10 @@ models.updateConfig({
     CONNECTION_STATUS: ConnectionStatus.DISCONNECTED,
     TUNNELS: core.getAvailableTunnels()
 });
-await core.enableOrDisableConnectionKillSwitch();
 webserver.start();
 websocket.start(io);
+await core.resetNetworkInterfaces();
+!config().TUNNEL_KILLSWITCH && await core.disableTunnelKillSwitch();
 config().AUTO_LAUNCH_WEB && open(config().WEB_URL);
 config().AUTO_LAUNCH_WEB && models.updateConfig({...config(), AUTO_LAUNCH_WEB: false});
-config().NODE_ENABLED && init();
+config().APP_ENABLED && init();

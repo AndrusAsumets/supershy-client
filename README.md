@@ -177,9 +177,6 @@ CLOUDFLARE_API_KEY
 ```
 # Enable supershy
  -> Click Enable on supershy's UI.
-
-Depending on VPS, the first launch might take up to 5 minutes
-to have both Nodes prepared, so please be patient.
 ```
 
 ```

@@ -170,7 +170,7 @@ export const digitalOcean = {
                     headers,
                 };
                 await fetch(`${instanceApiBaseUrl}/droplets/${id}`, core.useProxy(options));
-                logger.info(`Deleted digital ocean instance: ${id}.`);
+                logger.info(`Deleted Digital Ocean instance: ${id}.`);
                 index = index + 1;
             }
         },
