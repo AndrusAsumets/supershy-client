@@ -4,6 +4,15 @@ import { integrations } from '../integrations.ts';
 
 const { config } = models;
 
+export const BASIC_USER = (node: Node) => `
+new_user=${node.sshUser}
+sudo useradd --system --no-create-home -p $(openssl passwd -1 password) $new_user
+sudo mkdir -p /home/$new_user/.ssh
+sudo cp /root/.ssh/authorized_keys /home/$new_user/.ssh/authorized_keys
+sudo chmod 755 /home/$new_user/.ssh/authorized_keys
+sudo rm /root/.ssh/authorized_keys
+`;
+
 export const PORTSPOOF = (node: Node) => `
 sudo apt install git g++ build-essential -y
 git clone https://github.com/drk1wi/portspoof.git
@@ -22,11 +31,7 @@ ssh_config_dir=/etc/ssh/sshd_config
 fail2ban_config_dir=/etc/fail2ban/jail.local
 
 # Create basic user.
-sudo useradd --system --no-create-home -p $(openssl passwd -1 password) $new_user
-sudo mkdir -p /home/$new_user/.ssh
-sudo cp /root/.ssh/authorized_keys /home/$new_user/.ssh/authorized_keys
-sudo chmod 755 /home/$new_user/.ssh/authorized_keys
-sudo rm /root/.ssh/authorized_keys
+${BASIC_USER(node)}
 
 echo $new_user | sudo tee -a /etc/allowed_users
 echo 'auth required pam_listfile.so item=user sense=allow file=/etc/allowed_users onerr=fail' | sudo tee -a /etc/pam.d/sshd
@@ -79,6 +84,9 @@ screen -dm microsocks -p ${node.proxyRemotePort}
 `;
 
 export const ENABLE_WIREGUARD = (node: Node) => `
+# Create basic user.
+${BASIC_USER(node)}
+
 wireguard_dir=/etc/wireguard
 wireguard_config_dir=$wireguard_dir/wg0.conf
 
