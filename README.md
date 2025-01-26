@@ -76,10 +76,10 @@ brew install wireguard-tools
 brew install sshuttle
 
 # You might also want to add the following lines to /etc/sudoers, as by default 
-OSX is designed to kept forgetting sudo password every 5 minutes (which is needed 
-by both WireGuard and sshuttle).
-`user ALL=NOPASSWD: sudo /opt/homebrew/bin/wg`
-`user ALL=NOPASSWD: sudo /opt/homebrew/bin/wg-quick`
+#OSX is designed to kept forgetting sudo password every 5 minutes (which is required
+#by both WireGuard and sshuttle).
+user ALL=NOPASSWD: sudo /opt/homebrew/bin/wg
+user ALL=NOPASSWD: sudo /opt/homebrew/bin/wg-quick
 ```
 
 ```
