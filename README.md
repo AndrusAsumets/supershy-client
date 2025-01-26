@@ -6,10 +6,8 @@ Supershy is a DIY VPN with a rotating exit node.
 
 During its initiation, the client creates two new VPS instances (let's call them
 First Node and Second Node) inside Exoscale, Hetzner and/or Digital Ocean containing
-nothing else but a SSH server. Next up, it creates a SSH
-connection from your machine to the First Node. All of your local TCP (HTTP etc.) 
-traffic will be routed through the instance via sshuttle as though you had been
-connected to a VPN.
+nothing else but a WireGuard or a SSH server (depending on which tunnel you pick).
+Next up, it creates a WireGuard tunnel from your machine to the First Node.
 After 30 minutes, the client will automatically connect to the Second Node, then 
 creates a new fresh First Node instance for future use, and then eventually 
 sunsets the original First Node by destrying it for good. The cycle of renewing 
@@ -18,10 +16,8 @@ have the client running. This way you can get stay pretty private, but still
 enjoy decent internet speeds.
 
 Each time a new instance is created, a phonehome call is made from it to
-Cloudflare KV containing instance's public host key, which will be then queried
-by supershy, and henceforth added to your SSH's known_hosts file. When SSH
-client is connecting to the SSH server, StrictHostKeyChecking=yes will be set. 
-This adds a layer of security against possible MITM attacks.
+Cloudflare KV containing instance's WireGuard public key (or host key for SSH), 
+which will be then queried by supershy.
 
 The logic behind jumping from one exit node to another is that it helps you to
 keep your communications safe. Should anyone try to pinpoint you using your exit
@@ -47,20 +43,21 @@ give something back to the humanity as kindness seems to be in short supply
 these days everywhere.
 
 ### Features
-* DIY sshuttle VPN (and/or HTTP/SOCKS5 proxies) through multiple VPS providers.
+* DIY WireGuard or sshuttle VPN (and/or HTTP/SOCKS5 proxies) through multiple VPS 
+providers.
 * Periodically changes VPS nodes and thus your exit IPs.
 * Has a web-based UI.
-* Includes a connection killswitch toggle for Linux.
+* Includes a tunnel killswitch for Linux.
 * Has an option to create n number of reserve nodes for making sure you do not
 connect to the same node twice, therefore reducing risk of a possible MITM attack.
-* Redirects all its own traffic (i.e, VPS and CloudFlare API calls) through SSH
-tunnels made by the application itself.
+* While in proxy mode, the app will redirect all its own traffic (i.e, VPS and 
+CloudFlare API calls) through tunnels made by itself.
+
+### Tunnels
+WireGuard, sshuttle, HTTP proxy, SOCKS5 proxy.
 
 ### Supported VPS
 Exoscale, Hetzner, Digital Ocean.
-
-### Supported countries
-Australia, Austria, Brazil, Bulgaria, Canada, Chile, Finland, France, Germany, India, Israel, Japan, Korea, Mexico, Netherlands, Poland, Singapore, South Africa, Spain, Sweden, Switzerland, United Kingdom, United States.
 
 ## Installation
 
@@ -78,9 +75,11 @@ sudo apt install wireguard sshuttle ufw openresolv -y
 brew install wireguard-tools
 brew install sshuttle
 
-# You might also need to add `Defaults timestamp_timeout=-1` to /etc/sudoers, as 
-# by default OSX seems to keep forgetting sudo password every 5 minutes (which is 
-# needed by sshuttle).
+# You might also want to add the following lines to /etc/sudoers, as by default 
+OSX is designed to kept forgetting sudo password every 5 minutes (which is needed 
+by both WireGuard and sshuttle).
+`user ALL=NOPASSWD: sudo /opt/homebrew/bin/wg`
+`user ALL=NOPASSWD: sudo /opt/homebrew/bin/wg-quick`
 ```
 
 ```

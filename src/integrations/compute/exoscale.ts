@@ -28,7 +28,7 @@ export const exoscale = {
         requestPath: string,
         requestBody: any = '',
     ) => {
-        const expirationEpoch = Math.floor(new Date().getTime() / 1000) + config().HEARTBEAT_INTERVAL_SEC;
+        const expirationEpoch = Math.floor(new Date().getTime() / 1000) + config().EXOSCALE_REQUEST_EXPIRATION_SEC;
         const message = `${requestType} /v2${requestPath}\n${requestBody}\n\n\n${expirationEpoch}`;
         const signature = crypto.createHmac('sha256', config().EXOSCALE_API_SECRET).update(message).digest('base64');
         const authorization = `EXO2-HMAC-SHA256 credential=${config().EXOSCALE_API_KEY},expires=${expirationEpoch},signature=${signature}`;

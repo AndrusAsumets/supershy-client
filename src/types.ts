@@ -180,6 +180,7 @@ export interface Config {
 	HETZNER_INSTANCE_IMAGE: string
 	EXOSCALE_DISK_SIZE: number
 	HEARTBEAT_INTERVAL_SEC: number
+	EXOSCALE_REQUEST_EXPIRATION_SEC: number
 	WEB_SERVER_PORT: number
 	WEB_URL: string
 	WEB_SOCKET_PORT: number

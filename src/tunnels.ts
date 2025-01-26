@@ -25,6 +25,16 @@ export const tunnels: Tunnels = {
 					[Script.DISABLE]: () => client.DISABLE_LINUX_KILLSWITCH(),
 				}
 			},
+			[Platform.DARWIN]: {
+				[Action.MAIN]: {
+					[Script.PREPARE]: (node?: Node) => client.PREPARE(node!),
+					[Script.ENABLE]: (node?: Node) => client.ENABLE_WIREGUARD(node!)
+				},
+				[Action.KILLSWITCH]: {
+					[Script.ENABLE]: () => client.ENABLE_DARWIN_KILLSWITCH(),
+					[Script.DISABLE]: () => client.DISABLE_DARWIN_KILLSWITCH(),
+				}
+			},
 		},
 		[Side.SERVER]: {
 			[Platform.LINUX]: {
