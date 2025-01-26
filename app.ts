@@ -245,9 +245,9 @@ models.updateConfig({
     CONNECTION_STATUS: ConnectionStatus.DISCONNECTED,
     TUNNELS: core.getAvailableTunnels()
 });
+await core.resetNetworkInterfaces();
 webserver.start();
 websocket.start(io);
-await core.resetNetworkInterfaces();
 !config().TUNNEL_KILLSWITCH && await core.disableTunnelKillSwitch();
 config().AUTO_LAUNCH_WEB && open(config().WEB_URL);
 config().AUTO_LAUNCH_WEB && models.updateConfig({...config(), AUTO_LAUNCH_WEB: false});

@@ -72,6 +72,11 @@ const getEnabledInstanceProviders = (): InstanceProvider[] => {
 export const setInstanceCountries = async (
     config: Config
 ): Promise<Config> => {
+    const hasHeartbeat = await heartbeat();
+    if (!hasHeartbeat) {
+        return config;
+    }
+
     const instanceProviders = getEnabledInstanceProviders();
     config.INSTANCE_COUNTRIES = [];
 
