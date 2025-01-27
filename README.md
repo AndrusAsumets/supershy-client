@@ -117,7 +117,7 @@ DIGITAL_OCEAN_API_KEY
  -> Generate New Token.
  -> Regions: read.
  -> Droplet: create, read, delete.
- -> ssh_key: create, delete.
+ -> ssh_key: create, read, delete.
  -> Click to copy the API key.
 
 EXOSCALE_API_KEY & EXOSCALE_API_SECRET
