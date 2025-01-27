@@ -28,7 +28,7 @@ export const exoscale = {
         requestPath: string,
         requestBody: any = '',
     ) => {
-        const expirationEpoch = Math.floor(new Date().getTime() / 1000) + config().HEARTBEAT_INTERVAL_SEC;
+        const expirationEpoch = Math.floor(new Date().getTime() / 1000) + config().EXOSCALE_REQUEST_EXPIRATION_SEC;
         const message = `${requestType} /v2${requestPath}\n${requestBody}\n\n\n${expirationEpoch}`;
         const signature = crypto.createHmac('sha256', config().EXOSCALE_API_SECRET).update(message).digest('base64');
         const authorization = `EXO2-HMAC-SHA256 credential=${config().EXOSCALE_API_KEY},expires=${expirationEpoch},signature=${signature}`;
@@ -86,21 +86,50 @@ export const exoscale = {
             !json['id'] && logger.error({ message: 'exoscale.keys.add error', json });
             return name;
         },
-        delete: async (node: Node, instancePublicKeyId: string) => {
-            const requestType = 'DELETE';
-            const requestPath = `/ssh-key/${instancePublicKeyId}`;
-            const headers = {
-                'Authorization': exoscale.sign(requestType, requestPath),
-                'Content-Type': 'application/json',
-            };
-            const options = {
-                method: requestType,
-                headers,
-            };
-            const res = await fetch(`${node.instanceApiBaseUrl}${requestPath}`, core.useProxy(options));
-            const json = await res.json();
-            !json.id && logger.error({ message: 'exoscale.keys.delete error', json });
-            logger.info(`Deleted exoscale ssh_key: ${instancePublicKeyId}.`);
+        list: async (): Promise<any[][]> => {
+            const keysList = [];
+
+            let index = 0;
+            while (index < exoscale.instanceZones.length) {
+                const zone = exoscale.instanceZones[index];
+                const instanceApiBaseUrl = exoscale.instanceApiBaseUrl.replace('[API_BASE_URL]', zone);
+                const requestType = 'GET';
+                const requestPath = '/ssh-key';
+                const headers = {
+                    'Authorization': exoscale.sign(requestType, requestPath),
+                    'Content-Type': 'application/json',
+                };
+                const options = {
+                    method: requestType,
+                    headers,
+                };
+                const res = await fetch(`${instanceApiBaseUrl}${requestPath}`, core.useProxy(options));
+                const json = await res.json();
+                keysList.push([json['ssh-keys'], instanceApiBaseUrl]);
+                index = index + 1;
+            }
+
+            return keysList;
+        },
+        delete: async (ids: string[], instanceApiBaseUrl: string) => {
+            let index = 0;
+            while (index < ids.length) {
+                const id = ids[index];
+                const requestType = 'DELETE';
+                const requestPath = `/ssh-key/${id}`;
+                const headers = {
+                    'Authorization': exoscale.sign(requestType, requestPath),
+                    'Content-Type': 'application/json',
+                };
+                const options = {
+                    method: requestType,
+                    headers,
+                };
+                const res = await fetch(`${instanceApiBaseUrl}${requestPath}`, core.useProxy(options));
+                const json = await res.json();
+                json.id && logger.info(`Deleted Exoscale key: ${id}.`);
+                index = index + 1;
+            }
         },
     },
     instanceType: {
@@ -140,15 +169,15 @@ export const exoscale = {
             return json.reference.id;
         },
         rules: {
-            create: async (node: Node, securityGroupId: string) => {
+            create: async (node: Node, securityGroupId: string, protocol: string) => {
                 const requestType = 'POST';
                 const requestPath = `/security-group/${securityGroupId}/rules`;
                 const requestBody = JSON.stringify({
                     'flow-direction': 'ingress',
                     network: '0.0.0.0/0',
-                    protocol: 'tcp',
-                    'start-port': node.sshPort,
-                    'end-port': node.sshPort,
+                    protocol,
+                    'start-port': node.tunnelPort,
+                    'end-port': node.tunnelPort,
                 });
                 const headers = {
                     'Authorization': exoscale.sign(requestType, requestPath, requestBody),
@@ -208,7 +237,8 @@ export const exoscale = {
             const instanceTypes = await exoscale.instanceType.list(node);
             instance['instance-type'].id = instanceTypes.filter((instanceType: any) => instanceType.size == config().EXOSCALE_INSTANCE_SIZE)[0].id;
             const securityGroupId = await exoscale.securityGroup.create(node);
-            await exoscale.securityGroup.rules.create(node, securityGroupId);
+            await exoscale.securityGroup.rules.create(node, securityGroupId, 'tcp');
+            await exoscale.securityGroup.rules.create(node, securityGroupId, 'udp');
             instance['security-groups'].push({ id: securityGroupId });
 
             const templates = await exoscale.globalTemplate.list(node);
@@ -271,7 +301,6 @@ export const exoscale = {
                 };
                 const res = await fetch(`${instanceApiBaseUrl}${requestPath}`, core.useProxy(options));
                 const json = await res.json();
-                !json.instances && logger.error({ message: 'exoscale.instances.list error', json });
                 instancesList.push([json.instances, instanceApiBaseUrl]);
                 index = index + 1;
             }
@@ -280,7 +309,6 @@ export const exoscale = {
         },
         delete: async (ids: string[], instanceApiBaseUrl: string) => {
             let index = 0;
-
             while (index < ids.length) {
                 const id = ids[index];
                 const requestType = 'DELETE';
@@ -296,7 +324,7 @@ export const exoscale = {
                 const res = await fetch(`${instanceApiBaseUrl}${requestPath}`, core.useProxy(options));
                 const json = await res.json();
                 !json.id && logger.error({ message: 'exoscale.instances.delete error', json });
-                logger.info(`Deleted exoscale instance: ${id}.`);
+                json.id && logger.info(`Deleted Exoscale instance: ${id}.`);
                 index = index + 1;
             }
         },

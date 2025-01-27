@@ -18,8 +18,8 @@ export const nodes = (): Nodes => {
 export const updateNode = (
     node: Node
 ) => {
-    const nodies = db.data[DatabaseKey.NODES] as Nodes;
-    nodies[node.nodeUuid] = node;
+    const nodes = db.data[DatabaseKey.NODES] as Nodes;
+    nodes[node.nodeUuid] = node;
     db.write();
 };
 
@@ -28,7 +28,7 @@ export const getInitialNode = () => {
         .keys(nodes())
         .sort()
         .map((nodeUuid: string) => nodes()[nodeUuid])
-        .filter((node: Node) => !node.connectionString)
+        .filter((node: Node) => !node.connectedTime)
         .filter((node: Node) => !node.isDeleted)[0];
 
     // Reuse, but only when fresh ones are out.
@@ -66,5 +66,10 @@ export const updateConfig = (
     config: Config
 ) => {
     db.data[DatabaseKey.CONFIG] = config;
+    db.write();
+};
+
+export const clearNodes = () => {
+    db.data[DatabaseKey.NODES] = {};
     db.write();
 };

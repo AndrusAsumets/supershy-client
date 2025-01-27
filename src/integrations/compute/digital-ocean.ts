@@ -90,17 +90,32 @@ export const digitalOcean = {
             !json['ssh_key'] && logger.error({ message: 'digitalOcean.keys.add error', json });
             return json['ssh_key']['id'];
         },
-        delete: async (node: Node, instancePublicKeyId: string) => {
+        list: async (): Promise<any[][]> => {
             const headers = {
-                Authorization: `Bearer ${config().DIGITAL_OCEAN_API_KEY}`,
                 'Content-Type': 'application/json',
+                Authorization: `Bearer ${config().DIGITAL_OCEAN_API_KEY}`
             };
-            const options = {
-                method: 'DELETE',
-                headers,
-            };
-            await fetch(`${node.instanceApiBaseUrl}/account/keys/${instancePublicKeyId}`, core.useProxy(options));
-            logger.info(`Deleted digital ocean ssh_key: ${instancePublicKeyId}}.`);
+            const options = { method: 'GET', headers };
+            const res = await fetch(`${digitalOcean.instanceApiBaseUrl}/account/keys`, core.useProxy(options));
+            const json = await res.json();
+            return [[json['ssh_keys'], digitalOcean.instanceApiBaseUrl]];
+        },
+        delete: async (ids: string[], instanceApiBaseUrl: string) => {
+            let index = 0;
+            while (index < ids.length) {
+                const id = ids[index];
+                const headers = {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${config().DIGITAL_OCEAN_API_KEY}`
+                };
+                const options = {
+                    method: 'DELETE',
+                    headers,
+                };
+                await fetch(`${instanceApiBaseUrl}/account/keys/${id}`, core.useProxy(options));
+                logger.info(`Deleted Digital Ocean key: ${id}.`);
+                index = index + 1;
+            }
         },
     },
     instances: {
@@ -155,7 +170,7 @@ export const digitalOcean = {
                     headers,
                 };
                 await fetch(`${instanceApiBaseUrl}/droplets/${id}`, core.useProxy(options));
-                logger.info(`Deleted digital ocean instance: ${id}.`);
+                logger.info(`Deleted Digital Ocean instance: ${id}.`);
                 index = index + 1;
             }
         },

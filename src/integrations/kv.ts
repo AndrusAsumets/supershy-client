@@ -11,60 +11,45 @@ const { config } = models;
 export const kv = {
     cloudflare: {
         apiBaseurl: 'https://api.cloudflare.com/client/v4',
-        heartbeat: async (): Promise<boolean> => {
-            try {
-                const options = {
-                    method: 'GET',
-                    signal: AbortSignal.timeout(config().HEARTBEAT_INTERVAL_SEC * 1000),
-                };
-                const res = await fetch(kv.cloudflare.apiBaseurl, core.useProxy(options));
-                await res.json();
-                logger.info('Heartbeat.');
-                return true;
-            }
-            catch(_) {
-                return false;
-            }
-        },
-        hostKey: {
+        key: {
             read: async (
                 node: Node,
                 jwtSecret: string,
-            ) => {
-                logger.info(`Fetching host key for node ${node.nodeUuid}.`);
+            ): Promise<string> => {
+                logger.info(`Fetching ${node.connectionType} public key.`);
+                let key = '';
 
-                while (!node.sshHostKey) {
+                while (!key) {
                     try {
                         const headers = {
                             Authorization: `Bearer ${config().CLOUDFLARE_API_KEY}`,
                         };
                         const options = { method: 'GET', headers };
                         const url =
-                            `${kv.cloudflare.apiBaseurl}/accounts/${config().CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${config().CLOUDFLARE_KV_NAMESPACE}/values/${node.nodeUuid}`;
+                            `${kv.cloudflare.apiBaseurl}/accounts/${config().CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${config().CLOUDFLARE_KV_NAMESPACE}/values/${node.nodeUuid}-${node.connectionType}`;
                         const res = await fetch(url, core.useProxy(options));
                         const text = await res.text();
-                        text.includes('errors') && !text.includes('key not found') && logger.error({ message: 'kv.cloudflare.hostKey.get error', text });
-                        const decoded = jwt.verify(text, jwtSecret);
-                        node.sshHostKey = decoded.sshHostKey;
-                        logger.info(`Fetched host key for node ${node.nodeUuid}.`);
+                        text.includes('errors') && !text.includes('key not found') && logger.error({ message: `kv.cloudflare.hostKey.get error for ${node.connectionType}`, text });
+                        key = jwt.verify(text, jwtSecret).key;
+                        logger.info(`Fetched ${node.connectionType} public key.`);
                     } catch (_) {
                         await lib.sleep(1000);
                     }
                 }
 
-                return node;
+                return key;
             },
             write: (node: Node) => {
                 const isFoundFromKnownHostsFile = Deno
                     .readTextFileSync(config().SSH_KNOWN_HOSTS_PATH)
-                    .includes(node.sshHostKey);
-    
+                    .includes(node.serverPublicKey);
+
                 !isFoundFromKnownHostsFile && Deno.writeTextFileSync(
                     config().SSH_KNOWN_HOSTS_PATH,
-                    `${node.instanceIp} ssh-${config().SSH_KEY_ALGORITHM} ${node.sshHostKey}\n`,
+                    `${node.instanceIp} ssh-${config().SSH_KEY_ALGORITHM} ${node.serverPublicKey}\n`,
                     { append: true },
                 );
-            },
+            }
         },
     },
 };

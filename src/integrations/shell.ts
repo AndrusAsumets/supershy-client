@@ -1,6 +1,5 @@
 import { bash } from 'https://deno.land/x/bash/mod.ts';
 import * as core from '../core.ts';
-import * as lib from '../lib.ts';
 import * as models from '../models.ts';
 
 const { config } = models;
@@ -12,27 +11,14 @@ import {
 } from '../types.ts';
 
 export const shell = {
-    sshKeygen: async (
+    keygen: async (
         node: Node,
-    ) => {
+        scriptKey: Script,
+    ):Promise<string[]> => {
         const platformKey = config().PLATFORM;
-        const script = core.parseScript(node, node.pluginsEnabled[0], Side.CLIENT, platformKey, Action.MAIN, Script.PREPARE);
-        const args = `${node.sshKeyPath} ${config().SSH_KEY_ALGORITHM} ${config().SSH_KEY_LENGTH}`;
-        await shell.command(script, args);
-        const publicKeyPath = `${node.sshKeyPath}.pub`;
-
-        while (true) {
-            try {
-                const file = Deno.readTextFileSync(publicKeyPath);
-                if (file) {
-                    return file;
-                }
-            }
-            catch(_) {
-                _;
-            }
-            await lib.sleep(1000);
-        }
+        const script = core.parseScript(node, node.tunnelsEnabled[0], Side.CLIENT, platformKey, Action.MAIN, scriptKey);
+        await shell.command(script);
+        return [Deno.readTextFileSync(`${node.clientKeyPath}-ssh.pub`), Deno.readTextFileSync(`${node.clientKeyPath}-wireguard.pub`)];
     },
     pkill: async (input: string) => {
         const cmd = 'pkill';

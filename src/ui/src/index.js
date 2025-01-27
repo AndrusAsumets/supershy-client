@@ -5,26 +5,23 @@ const socket = io('ws://localhost:8880', {
 const $enablementToggle = document.getElementsByClassName('enablement-toggle')[0];
 const $restartToggle = document.getElementsByClassName('restart-toggle')[0];
 const $statusSection = document.getElementsByClassName('section-content status')[0];
+const $tunnelsSection = document.getElementsByClassName('section-content tunnels')[0];
 const $pluginsSection = document.getElementsByClassName('section-content plugins')[0];
-const $actionsSection = document.getElementsByClassName('section-content actions')[0];
 const $providersSection = document.getElementsByClassName('section-content providers')[0];
 const $countriesSection = document.getElementsByClassName('section-content countries')[0];
 const $configSection = document.getElementsByClassName('section-content config')[0];
 const $logSection = document.getElementsByClassName('section-content log')[0];
-const visibleActionKeys = {
-    CONNECTION_KILLSWITCH: { editable: 'boolean' },
+const visiblePluginKeys = {
+    TUNNEL_KILLSWITCH: { editable: 'boolean' },
 };
 const visibleConfigKeys = {
     NODE_RECYCLE_INTERVAL_SEC: { editable: 'number' },
     NODE_RESERVE_COUNT: { editable: 'number' },
-    SSH_PORT_RANGE: { editable: 'string' },
-    SSH_KEY_ALGORITHM: { editable: 'string' },
-    SSH_KEY_LENGTH: { editable: 'number' },
+    TUNNEL_PORT_RANGE: { editable: 'string' },
     DIGITAL_OCEAN_API_KEY: { editable: 'password' },
     EXOSCALE_API_KEY: { editable: 'password' },
     EXOSCALE_API_SECRET: { editable: 'password' },
     HETZNER_API_KEY: { editable: 'password' },
-    VULTR_API_KEY: { editable: 'password' },
     CLOUDFLARE_ACCOUNT_ID: { editable: 'password' },
     CLOUDFLARE_API_KEY: { editable: 'password' },
     CLOUDFLARE_KV_NAMESPACE: { editable: 'password' },
@@ -32,7 +29,7 @@ const visibleConfigKeys = {
     LOG_PATH: { editable: false },
     DB_FILE_PATH: { editable: false },
 };
-const apiKeys = ['DIGITAL_OCEAN_API_KEY', 'HETZNER_API_KEY', 'VULTR_API_KEY', 'EXOSCALE_API_KEY', 'EXOSCALE_API_SECRET'];
+const apiKeys = ['DIGITAL_OCEAN_API_KEY', 'HETZNER_API_KEY', 'EXOSCALE_API_KEY', 'EXOSCALE_API_SECRET'];
 const faviconStatus = {
     'connected': ['❊', 'white'],
     'connecting': ['❊', 'blue'],
@@ -252,7 +249,7 @@ const updateStatus = () => {
         status.push(['IPv4', node.instanceIp]);
         status.push(['Country', COUNTRY_CODES[node.instanceCountry]]);
         status.push(['VPS', capitalize(node.instanceProvider)]);
-        status.push(['Plugin', capitalize(node.pluginsEnabled[0])]);
+        status.push(['Tunnel', capitalize(node.tunnelsEnabled[0])]);
         status.push(['Nodes in reserve', `${config.NODE_CURRENT_RESERVE_COUNT} / ${config.NODE_RESERVE_COUNT}`]);
     }
 
@@ -268,18 +265,18 @@ const updateStatus = () => {
     changeFavicon(faviconStatus[config.CONNECTION_STATUS]);
 };
 
-const updatePlugins = () => {
-    $pluginsSection.innerText = '';
+const updateTunnels = () => {
+    $tunnelsSection.innerText = '';
 
-    config.PLUGINS
+    config.TUNNELS
         .forEach((key) => {
-            $pluginsSection.append(
+            $tunnelsSection.append(
                 constructGenericLine(
                     key,
-                    config['PLUGINS_ENABLED'].includes(key)
+                    config['TUNNELS_ENABLED'].includes(key)
                         ? 'Enabled'
                         : 'Disabled',
-                    'PLUGINS_ENABLED',
+                    'TUNNELS_ENABLED',
                     '/config/save',
                     false,
                 )
@@ -288,18 +285,18 @@ const updatePlugins = () => {
 };
 
 const updateActions = () => {
-    $actionsSection.innerText = '';
+    $pluginsSection.innerText = '';
 
     Object.keys(config)
         .sort((a, b) => a.localeCompare(b))
         .forEach((key) => {
-            visibleActionKeys[key] && $actionsSection.append(
+            visiblePluginKeys[key] && $pluginsSection.append(
                 constructConfigLine(
-                    visibleActionKeys,
+                    visiblePluginKeys,
                     key,
                     config[key],
                     '/config/save',
-                    visibleActionKeys[key].editable,
+                    visiblePluginKeys[key].editable,
                 )
             );
         });
@@ -366,7 +363,7 @@ const updateConfig = () => {
 };
 
 const updateAll = () => {
-    updatePlugins();
+    updateTunnels();
     updateStatus();
     updateActions();
     updateConfig();
