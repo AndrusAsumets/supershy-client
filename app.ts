@@ -200,13 +200,10 @@ const rotate = async () => {
         const formattedUserData = integrations.compute[instanceProvider].userData.format(userData);
         const instancePayload: InstancePayload = {
             datacenter: instanceRegion,
-            region: instanceRegion,
             image: instanceImage,
             name: instanceName,
-            size: instanceSize,
             'instance-type': {},
             server_type: instanceSize,
-            ssh_keys: [instancePublicKeyId],
             'ssh-key': { name: instancePublicKeyId },
             user_data: formattedUserData,
             'user-data': formattedUserData,
