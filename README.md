@@ -76,8 +76,8 @@ brew install wireguard-tools
 brew install sshuttle
 
 # You might also want to add the following line to /etc/sudoers, as by default 
-# OSX is designed to be kept forgetting sudo password every 5 minutes (which is required
-# by both WireGuard and sshuttle).
+# OSX is designed to be kept forgetting sudo password every 5 minutes (which
+# is required by both WireGuard and sshuttle).
 echo "Defaults timestamp_timeout=-1" | sudo tee -a /etc/sudoers
 ```
 
