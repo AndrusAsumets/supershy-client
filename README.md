@@ -211,6 +211,18 @@ deno task stop
 tail -f ~/.supershy-data/logs/*.log
 ```
 
+```
+# Debug
+I ran into a fringe issue of WireGuard not releasing DNS on MacOS. If it happens
+to you, then got to System Preferences -> Network, select your main network interface, 
+and then manually change DNS back from 10.0.0.1 to 192.168.0.1.
+```
+
+```
+# Uninstall
+sudo rm ~/.supershy-data/
+```
+
 Safe travels!
 
 Andrus
