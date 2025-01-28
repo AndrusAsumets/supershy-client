@@ -5,7 +5,7 @@ Supershy is a DIY VPN with a rotating exit node.
 </p>
 
 During its initiation, the client creates two new VPS instances (let's call them
-First Node and Second Node) inside Exoscale, Hetzner and/or Digital Ocean containing
+First Node and Second Node) inside Exoscale and/or Hetzner containing
 nothing else but a WireGuard or a SSH server (depending on which tunnel you pick).
 Next up, it creates a WireGuard tunnel from your machine to the First Node.
 After 30 minutes, the client will automatically connect to the Second Node, then 
@@ -57,7 +57,7 @@ CloudFlare API calls) through tunnels made by itself.
 WireGuard, sshuttle, HTTP proxy, SOCKS5 proxy.
 
 ### Supported VPS
-Exoscale, Hetzner, Digital Ocean.
+Exoscale, Hetzner.
 
 ## Installation
 
@@ -111,14 +111,6 @@ project.
 
 TUNNEL_PORT_RANGE=Colon separated [from:to] range of numbers for a random
 selection, defaults to 10000:65535.
-
-DIGITAL_OCEAN_API_KEY
- -> Open https://cloud.digitalocean.com/account/api/tokens
- -> Generate New Token.
- -> Regions: read.
- -> Droplet: create, read, delete.
- -> ssh_key: create, read, delete.
- -> Click to copy the API key.
 
 EXOSCALE_API_KEY & EXOSCALE_API_SECRET
  -> Open https://portal.exoscale.com

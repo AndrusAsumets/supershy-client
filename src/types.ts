@@ -26,7 +26,6 @@ export enum ConnectionStatus {
 }
 
 export enum InstanceProvider {
-	DIGITAL_OCEAN = 'digitalOcean',
 	EXOSCALE = 'exoscale',
 	HETZNER = 'hetzner',
 }
@@ -68,15 +67,6 @@ export enum DatabaseKey {
 	CONFIG = 'config'
 }
 
-export interface CreateDigitalOceanInstance {
-	region: string
-	name: string
-	size: string
-	image: string
-	ssh_keys: [string]
-	user_data: string
-}
-
 export interface CreateHetznerInstance {
 	datacenter: string
 	image: string
@@ -96,7 +86,7 @@ export interface CreateExoscaleInstance {
 	'disk-size': number
 }
 
-export type InstancePayload = CreateDigitalOceanInstance & CreateHetznerInstance & CreateExoscaleInstance
+export type InstancePayload = CreateHetznerInstance & CreateExoscaleInstance
 
 export enum Tunnel {
 	WIREGUARD = 'wireguard',
@@ -152,7 +142,6 @@ export interface Config {
 	TUNNEL_PORT_RANGE: string
 	SSH_KEY_ALGORITHM: string
 	SSH_KEY_LENGTH: number
-	DIGITAL_OCEAN_API_KEY: string
 	EXOSCALE_API_KEY: string
 	EXOSCALE_API_SECRET: string
 	HETZNER_API_KEY: string
@@ -172,10 +161,8 @@ export interface Config {
 	CONNECT_TIMEOUT_SEC: number
 	SSHUTTLE_PID_FILE_PATH: string
 	NODE_TYPES: NodeType[]
-	DIGITAL_OCEAN_INSTANCE_SIZE: string
 	EXOSCALE_INSTANCE_SIZE: string
 	HETZNER_SERVER_TYPE: string
-	DIGITAL_OCEAN_INSTANCE_IMAGE: string
 	EXOSCALE_TEMPLATE_NAME: string
 	HETZNER_INSTANCE_IMAGE: string
 	EXOSCALE_DISK_SIZE: number

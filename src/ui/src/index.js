@@ -18,7 +18,6 @@ const visibleConfigKeys = {
     NODE_RECYCLE_INTERVAL_SEC: { editable: 'number' },
     NODE_RESERVE_COUNT: { editable: 'number' },
     TUNNEL_PORT_RANGE: { editable: 'string' },
-    DIGITAL_OCEAN_API_KEY: { editable: 'password' },
     EXOSCALE_API_KEY: { editable: 'password' },
     EXOSCALE_API_SECRET: { editable: 'password' },
     HETZNER_API_KEY: { editable: 'password' },
@@ -29,7 +28,7 @@ const visibleConfigKeys = {
     LOG_PATH: { editable: false },
     DB_FILE_PATH: { editable: false },
 };
-const apiKeys = ['DIGITAL_OCEAN_API_KEY', 'HETZNER_API_KEY', 'EXOSCALE_API_KEY', 'EXOSCALE_API_SECRET'];
+const apiKeys = ['HETZNER_API_KEY', 'EXOSCALE_API_KEY', 'EXOSCALE_API_SECRET'];
 const faviconStatus = {
     'connected': ['❊', 'white'],
     'connecting': ['❊', 'blue'],

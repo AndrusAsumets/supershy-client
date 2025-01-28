@@ -21,8 +21,8 @@ export const exoscale = {
         'at-vie-2',
         'bg-sof-1',
     ],
-    instanceSize: config().DIGITAL_OCEAN_INSTANCE_SIZE,
-    instanceImage: config().DIGITAL_OCEAN_INSTANCE_IMAGE,
+    instanceSize: '',
+    instanceImage: '',
     sign: (
         requestType: string,
         requestPath: string,
