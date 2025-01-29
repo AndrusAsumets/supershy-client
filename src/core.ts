@@ -276,7 +276,8 @@ export const setCurrentNodeReserve = (io: Server) => {
 export const cleanupCompute = async (
     instanceIdsToKeep: string[] = []
 ) => {
-    const instanceProviders = Object.values(InstanceProvider);
+    const instanceProviders = config().INSTANCE_PROVIDERS
+        .filter((instanceProvider: InstanceProvider) => !config().INSTANCE_COUNTRIES_DISABLED.includes(instanceProvider));
 
     let index = 0;
     while (index < instanceProviders.length) {
