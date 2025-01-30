@@ -34,6 +34,7 @@ const LOG_PATH = `${DATA_PATH}/logs`;
 const SSH_PATH = `${HOME_PATH}/.ssh`;
 const SSH_KNOWN_HOSTS_PATH = `${SSH_PATH}/known_hosts`;
 const WIREGUARD_CONFIG_PATH = `${DATA_PATH}/wg0.conf`;
+const WIREGUARD_HOST = '10.0.0.1';
 const DB_FILE_PATH = `${DATA_PATH}/.database.${ENV}.json`;
 const SSH_LOG_EXTENSION = '-ssh.log';
 const CONNECT_TIMEOUT_SEC = 30;
@@ -100,6 +101,7 @@ export const config: Config = {
     SSHUTTLE_PID_FILE_PATH,
     SSH_KNOWN_HOSTS_PATH,
     WIREGUARD_CONFIG_PATH,
+    WIREGUARD_HOST,
     DB_FILE_PATH,
     LOG_PATH,
     SSH_LOG_EXTENSION,

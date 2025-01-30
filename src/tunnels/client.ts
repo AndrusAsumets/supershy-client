@@ -20,7 +20,7 @@ sudo rm -rf $wireguard_config_dir
 echo [Interface] | sudo tee -a $wireguard_config_dir
 echo PrivateKey = ${Deno.readTextFileSync(node.clientKeyPath + '-wireguard').replace('\n', '')} | sudo tee -a $wireguard_config_dir
 echo Address = 10.0.0.2/24 | sudo tee -a $wireguard_config_dir
-echo DNS = 10.0.0.1 | sudo tee -a $wireguard_config_dir
+echo DNS = ${node.wireguardHost} | sudo tee -a $wireguard_config_dir
 
 echo [Peer] | sudo tee -a $wireguard_config_dir
 echo PublicKey = ${node.serverPublicKey} | sudo tee -a $wireguard_config_dir

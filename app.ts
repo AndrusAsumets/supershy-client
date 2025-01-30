@@ -3,6 +3,7 @@ import { v7 as uuidv7 } from 'npm:uuid';
 import { Server } from 'https://deno.land/x/socket_io@0.2.0/mod.ts';
 import { open } from 'https://deno.land/x/open@v1.0.0/index.ts';
 import { existsSync } from 'https://deno.land/std@0.224.0/fs/mod.ts';
+import dns from 'node:dns/promises';
 import {
     LoopStatus,
     ConnectionType,
@@ -72,6 +73,7 @@ const connect = async (
             }
 
             clearTimeout(connectTimeout);
+            node.connectionType == ConnectionType.WIREGUARD && dns.setServers([node.wireguardHost]);
             node.connectedTime = new Date().toISOString();
             models.updateNode(node);
             models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTED});
@@ -175,6 +177,7 @@ const rotate = async () => {
             instanceSize,
             instanceImage,
             nodeType,
+            wireguardHost: config().WIREGUARD_HOST,
             sshUser,
             serverPublicKey: '',
             sshKeyAlgorithm: config().SSH_KEY_ALGORITHM,

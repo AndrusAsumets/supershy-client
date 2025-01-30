@@ -108,7 +108,7 @@ sudo wg pubkey < $wireguard_dir/server-private.key > $wireguard_dir/server-publi
 
 # Config.
 echo [Interface] | sudo tee -a $wireguard_config_dir
-echo Address = 10.0.0.1/24 | sudo tee -a $wireguard_config_dir
+echo Address = ${node.wireguardHost}/24 | sudo tee -a $wireguard_config_dir
 echo ListenPort = ${node.tunnelPort} | sudo tee -a $wireguard_config_dir
 echo PrivateKey = $(cat $wireguard_dir/server-private.key) | sudo tee -a $wireguard_config_dir
 echo DNS = 1.1.1.1 | sudo tee -a $wireguard_config_dir

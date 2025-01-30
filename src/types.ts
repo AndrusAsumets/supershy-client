@@ -46,6 +46,7 @@ export interface Node {
 	instanceSize: string
 	instanceImage: string
 	connectionType: ConnectionType
+	wireguardHost: string
 	sshUser: string
 	sshKeyAlgorithm: string
 	sshKeyLength: number;
@@ -156,6 +157,7 @@ export interface Config {
 	SSH_PATH: string
 	SSH_KNOWN_HOSTS_PATH: string
 	WIREGUARD_CONFIG_PATH: string
+	WIREGUARD_HOST: string
 	DB_FILE_PATH: string
 	SSH_LOG_EXTENSION: string
 	CONNECT_TIMEOUT_SEC: number
