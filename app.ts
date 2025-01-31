@@ -98,12 +98,13 @@ const connect = async (
 };
 
 const loop = async () => {
+    const nodeRecycleIntervalSec = config().NODE_RECYCLE_INTERVAL_SEC;
     setTimeout(async () => {
         const isStillWorking = config().LOOP_STATUS == LoopStatus.ACTIVE;
         isStillWorking
-            ? core.exit(io, `Node rotation timeout reached after passing ${config().NODE_RECYCLE_INTERVAL_SEC} seconds.`)
+            ? core.exit(io, `Node rotation timeout reached after passing ${nodeRecycleIntervalSec} seconds.`)
             : await loop();
-    }, config().NODE_RECYCLE_INTERVAL_SEC * 1000);
+    }, nodeRecycleIntervalSec * 1000);
 
     try {
         core.setLoopStatus(io, LoopStatus.ACTIVE);
