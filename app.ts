@@ -252,7 +252,6 @@ models.updateConfig({
     TUNNELS: core.getAvailableTunnels()
 });
 await core.resetNetworkInterfaces();
-await lib.sleep(1000);
 webserver.start();
 websocket.start(io);
 !config().TUNNEL_KILLSWITCH && await core.disableTunnelKillSwitch();
