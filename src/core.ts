@@ -246,10 +246,8 @@ export const heartbeat = async (): Promise<boolean> => {
 };
 
 export const abortOngoingHeartbeats = () => {
-    heartbeatControllers.forEach((controller: AbortController) => {
-        try { controller.abort() }
-        catch(_) { _ };
-    });
+    try { heartbeatControllers.forEach((controller: AbortController) => controller.abort()) }
+    catch(_) { _ };
     heartbeatTimeouts.forEach((timeout: number) => clearTimeout(timeout));
     heartbeatControllers = [];
     heartbeatTimeouts = [];
@@ -282,32 +280,39 @@ export const cleanupCompute = async (
     let index = 0;
     while (index < instanceProviders.length) {
         const instanceProvider: InstanceProvider = instanceProviders[index];
-        (await integrations.compute[instanceProvider].keys.list())
-            .forEach(async(instancesList: any[]) => {
-                const [keys, instanceApiBaseUrl] = instancesList;
 
-                if (keys) {
-                    const deletableKeys = keys.map((key: any) => key.id || key.name);
-                    await integrations.compute[instanceProvider].keys.delete(deletableKeys, instanceApiBaseUrl);
-                }
-            });
+        const instanceProviderList = await integrations.compute[instanceProvider].instances.list();
+        let instanceProviderIndex = 0;
+        while (instanceProviderIndex < instanceProviderList.length) {
+            const [instances, instanceApiBaseUrl] = instanceProviderList[instanceProviderIndex];
 
-        (await integrations.compute[instanceProvider].instances.list())
-            .forEach(async(instancesList: any[]) => {
-                const [instances, instanceApiBaseUrl] = instancesList;
+            if (instances) {
+                const deletableInstances = instances
+                    .filter((instance: any) => {
+                        if ('name' in instance && instance.name.includes(`${config().APP_ID}-${config().ENV}`)) return true;
+                        if ('label' in instance && instance.label.includes(`${config().APP_ID}-${config().ENV}`)) return true;
+                    })
+                    .map((instance: any) => String(instance.id))
+                    .filter((instanceId: any) => !instanceIdsToKeep.includes(instanceId));
 
-                if (instances) {
-                    const deletableInstances = instances
-                        .filter((instance: any) => {
-                            if ('name' in instance && instance.name.includes(`${config().APP_ID}-${config().ENV}`)) return true;
-                            if ('label' in instance && instance.label.includes(`${config().APP_ID}-${config().ENV}`)) return true;
-                        })
-                        .map((instance: any) => String(instance.id))
-                        .filter((instanceId: any) => !instanceIdsToKeep.includes(instanceId));
+                await integrations.compute[instanceProvider].instances.delete(deletableInstances, instanceApiBaseUrl);
+            }
 
-                    await integrations.compute[instanceProvider].instances.delete(deletableInstances, instanceApiBaseUrl);
-                }
-            });
+            instanceProviderIndex = instanceProviderIndex + 1;
+        }
+
+        const instanceKeyList = await integrations.compute[instanceProvider].keys.list();
+        let instanceKeyIndex = 0;
+        while (instanceKeyIndex < instanceKeyList.length) {
+            const [keys, instanceApiBaseUrl] = instanceKeyList[instanceKeyIndex];
+
+            if (keys) {
+                const deletableKeys = keys.map((key: any) => key.id || key.name);
+                await integrations.compute[instanceProvider].keys.delete(deletableKeys, instanceApiBaseUrl);
+            }
+
+            instanceKeyIndex = instanceKeyIndex + 1;
+        }
 
         index = index + 1;
     }
@@ -368,5 +373,5 @@ export const exit = (
     logger.warn(message);
     models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.DISCONNECTED});
     io?.emit('/config', config());
-    throw new Error();
+    Deno.exit(1);
 };
