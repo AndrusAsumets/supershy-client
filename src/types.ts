@@ -161,6 +161,7 @@ export interface Config {
 	DB_FILE_PATH: string
 	SSH_LOG_EXTENSION: string
 	CONNECT_TIMEOUT_SEC: number
+	POST_CONNECT_DELAY_SEC: number
 	SSHUTTLE_PID_FILE_PATH: string
 	NODE_TYPES: NodeType[]
 	EXOSCALE_INSTANCE_SIZE: string

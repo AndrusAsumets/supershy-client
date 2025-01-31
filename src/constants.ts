@@ -38,6 +38,7 @@ const WIREGUARD_HOST = '10.0.0.1';
 const DB_FILE_PATH = `${DATA_PATH}/.database.${ENV}.json`;
 const SSH_LOG_EXTENSION = '-ssh.log';
 const CONNECT_TIMEOUT_SEC = 30;
+const POST_CONNECT_DELAY_SEC = 5;
 const SSHUTTLE_PID_FILE_PATH = `${DATA_PATH}/sshuttle.pid`;
 const NODE_TYPES = [...Array(NODE_RESERVE_COUNT + 1).keys().map(() => NodeType.A)];
 const EXOSCALE_INSTANCE_SIZE = 'micro';
@@ -95,6 +96,7 @@ export const config: Config = {
     SSH_KEY_LENGTH,
     SSH_PATH,
     CONNECT_TIMEOUT_SEC,
+    POST_CONNECT_DELAY_SEC,
     WEB_SERVER_PORT,
     WEB_URL,
     WEB_SOCKET_PORT,

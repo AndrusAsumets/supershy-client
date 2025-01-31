@@ -43,6 +43,7 @@ const init = () => {
 const connect = async (
     node: Node,
 ): Promise<Node> => {
+    const isWireguard = node.connectionType == ConnectionType.WIREGUARD;
     logger.info(`Using ${node.tunnelsEnabled[0]} tunnel while connecting to ${node.instanceIp}:${node.tunnelPort} via ${node.connectionType}.`);
 
     config().TUNNEL_KILLSWITCH && await core.enableTunnelKillSwitch();
@@ -73,7 +74,6 @@ const connect = async (
             }
 
             clearTimeout(connectTimeout);
-            node.connectionType == ConnectionType.WIREGUARD && dns.setServers([node.wireguardHost]);
             node.connectedTime = new Date().toISOString();
             models.updateNode(node);
             models.updateConfig({...config(), CONNECTION_STATUS: ConnectionStatus.CONNECTED});
@@ -81,6 +81,12 @@ const connect = async (
             io.emit('/node', node);
             io.emit('/config', config());
             logger.info(`Connected to ${node.instanceIp}:${node.tunnelPort}.`);
+
+            // It might take a bit for Deno to catch up with the network interface change, therefore we have a wee break.
+            if (isWireguard) {
+                dns.setServers([node.wireguardHost]);
+                await lib.sleep(config().POST_CONNECT_DELAY_SEC * 1000);
+            }
         }
         catch(err) {
             await lib.sleep(1000);
