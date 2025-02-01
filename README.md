@@ -92,6 +92,15 @@ deno task start
 ```
 
 ```
+# Supershy's UI can then be accessed locally from:
+http://localhost:8080
+
+# or by via its desktop client:
+sudo npm install electron@35.0.0-alpha.5 -g
+deno task start:desktop
+```
+
+```
 # Supershy's UI can then be accessed locally from: http://localhost:8080
 ```
 

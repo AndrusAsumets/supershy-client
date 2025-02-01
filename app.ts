@@ -1,7 +1,6 @@
 import * as crypto from 'node:crypto';
 import { v7 as uuidv7 } from 'npm:uuid';
 import { Server } from 'https://deno.land/x/socket_io@0.2.0/mod.ts';
-import { open } from 'https://deno.land/x/open@v1.0.0/index.ts';
 import { existsSync } from 'https://deno.land/std@0.224.0/fs/mod.ts';
 import dns from 'node:dns/promises';
 import {
@@ -256,6 +255,4 @@ await core.resetNetworkInterfaces();
 webserver.start();
 websocket.start(io);
 !config().TUNNEL_KILLSWITCH && await core.disableTunnelKillSwitch();
-config().AUTO_LAUNCH_WEB && open(config().WEB_URL);
-config().AUTO_LAUNCH_WEB && models.updateConfig({...config(), AUTO_LAUNCH_WEB: false});
 config().APP_ENABLED && init();
