@@ -12,7 +12,6 @@ app
             webPreferences: {
                 nodeIntegration: true,
                 contextIsolation: false,
-                spellcheck: false,
             },
         });
 
