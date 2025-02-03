@@ -137,7 +137,6 @@ export interface Config {
 	NODE_RESERVE_COUNT: number
 	NODE_CURRENT_RESERVE_COUNT: number
 	TUNNEL_KILLSWITCH: boolean
-	AUTO_LAUNCH_WEB: boolean
 	PROXY_LOCAL_PORT: number
 	PROXY_REMOTE_PORT: number
 	TUNNEL_PORT_RANGE: string

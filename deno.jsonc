@@ -1,6 +1,7 @@
 {
     "tasks": {
         "start": "deno task stop | sleep 1 && bash supershy.sh",
+        "start:desktop": "electron desktop.js",
         "stop": "pkill -f supershy.sh",
         "compile-macos-x86_64": "deno compile --target x86_64-apple-darwin --allow-all --include src/ui --output supershyd app.ts",
         "compile-macos-arm64": "deno compile --target aarch64-apple-darwin --allow-all --include src/ui --output supershyd app.ts",

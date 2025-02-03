@@ -24,7 +24,6 @@ const visibleConfigKeys = {
     CLOUDFLARE_ACCOUNT_ID: { editable: 'password' },
     CLOUDFLARE_API_KEY: { editable: 'password' },
     CLOUDFLARE_KV_NAMESPACE: { editable: 'password' },
-    WEB_SERVER_PORT: { editable: 'number' },
     LOG_PATH: { editable: false },
     DB_FILE_PATH: { editable: false },
 };
@@ -218,7 +217,7 @@ const changeFavicon = (args) => {
     canvas.height = size;
     canvas.width = size;
     const ctx = canvas.getContext('2d');
-    ctx.font = `${size}px serif`;
+    ctx.font = `${size * 1.3}px serif`;
     ctx.fillStyle = color;
     ctx.fillText(icon, 0, size);
 
@@ -228,10 +227,11 @@ const changeFavicon = (args) => {
     link.rel = 'shortcut icon';
     link.href = canvas.toDataURL();
     document.head.appendChild(link);
+    'ipcRenderer' in window && window.ipcRenderer.send('favicon', canvas.toDataURL());
 };
 
 const updateStatus = () => {
-    $statusSection.innerText = '';
+    $statusSection.replaceChildren();
 
     const status = [[
         'Connection',
@@ -265,7 +265,7 @@ const updateStatus = () => {
 };
 
 const updateTunnels = () => {
-    $tunnelsSection.innerText = '';
+    $tunnelsSection.replaceChildren();
 
     config.TUNNELS
         .forEach((key) => {
@@ -284,7 +284,7 @@ const updateTunnels = () => {
 };
 
 const updateActions = () => {
-    $pluginsSection.innerText = '';
+    $pluginsSection.replaceChildren();
 
     Object.keys(config)
         .sort((a, b) => a.localeCompare(b))
@@ -308,9 +308,9 @@ const hideByPlatform = (platform) => {
 };
 
 const updateConfig = () => {
-    $providersSection.innerText = '';
-    $countriesSection.innerText = '';
-    $configSection.innerText = '';
+    $providersSection.replaceChildren();
+    $countriesSection.replaceChildren();
+    $configSection.replaceChildren();
 
     const hasApiKey = apiKeys
         .filter((apiKey) => config[apiKey])
@@ -412,3 +412,5 @@ $enablementToggle
 
 $restartToggle
     .addEventListener('click', () => start());
+
+changeFavicon(faviconStatus.disconnected);
