@@ -18,7 +18,6 @@ app
         // Wayland does not support for it, hence it's not available for Linux anymore.
         'skipTaskbar' in window && window.skipTaskbar(true);
         window.setMenu(null);
-        window.minimize();
         window.setBackgroundColor('black');
         window.loadURL('http://0.0.0.0:8080/');
 
