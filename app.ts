@@ -249,6 +249,7 @@ const rotate = async () => {
             server_type: instanceSize,
             plan: instanceSize,
             'ssh-key': { name: instancePublicKeyId },
+            ssh_keys: [instancePublicKeyId],
             user_data: formattedUserData,
             'user-data': formattedUserData,
             login_user: loginUser,

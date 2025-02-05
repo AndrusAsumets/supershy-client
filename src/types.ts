@@ -75,6 +75,7 @@ export interface CreateHetznerInstance {
 	name: string
 	server_type: string
 	user_data: string
+	ssh_keys: string[]
 }
 
 export interface CreateExoscaleInstance {
