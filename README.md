@@ -57,7 +57,7 @@ CloudFlare API calls) through tunnels made by itself.
 WireGuard, sshuttle, HTTP proxy, SOCKS5 proxy.
 
 ### Supported VPS
-Exoscale, Hetzner.
+Exoscale (Switzerland), Hetzner (Germany), Upcloud (Finland).
 
 ## Installation
 
