@@ -40,11 +40,7 @@ export const kv = {
                 return key;
             },
             write: (node: Node) => {
-                const isFoundFromKnownHostsFile = Deno
-                    .readTextFileSync(config().SSH_KNOWN_HOSTS_PATH)
-                    .includes(node.serverPublicKey);
-
-                !isFoundFromKnownHostsFile && Deno.writeTextFileSync(
+                Deno.writeTextFileSync(
                     config().SSH_KNOWN_HOSTS_PATH,
                     `${node.instanceIp} ssh-${config().SSH_KEY_ALGORITHM} ${node.serverPublicKey}\n`,
                     { append: true },

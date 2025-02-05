@@ -46,6 +46,7 @@ const connect = async (
     logger.info(`Using ${node.tunnelsEnabled[0]} tunnel while connecting to ${node.instanceIp}:${node.tunnelPort} via ${node.connectionType}.`);
 
     config().TUNNEL_KILLSWITCH && await core.enableTunnelKillSwitch();
+    await integrations.shell.command(`ssh-keygen -f ${config().SSH_KNOWN_HOSTS_PATH} -R ${node.instanceIp}`);
     integrations.kv.cloudflare.key.write(node);
     existsSync(node.sshLogPath) && Deno.removeSync(node.sshLogPath);
     await core.resetNetworkInterfaces();
