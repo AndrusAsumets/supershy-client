@@ -40,7 +40,7 @@ const DB_FILE_PATH = `${DATA_PATH}/.database.${ENV}.json`;
 const SSH_LOG_EXTENSION = '-ssh.log';
 const CONNECT_TIMEOUT_SEC = 30;
 const POST_CONNECT_DELAY_SEC = 5;
-const UPCLOUD_DELETE_DELAY_SEC = 30;
+const UPCLOUD_DELETE_DELAY_SEC = 10;
 const SSHUTTLE_PID_FILE_PATH = `${DATA_PATH}/sshuttle.pid`;
 const NODE_TYPES = [...Array(NODE_RESERVE_COUNT + 1).keys().map(() => NodeType.A)];
 const EXOSCALE_INSTANCE_SIZE = 'micro';
