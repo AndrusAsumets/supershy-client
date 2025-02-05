@@ -158,7 +158,6 @@ UPCLOUD_API_KEY & UPCLOUD_API_SECRET
 # Upcloud quota offers only 2 two instances by default, which might not be
 enough. To increase the quota, email their support.
 
-
 The client will expect an API_KEY from at least one of the VPS providers,
 but it will pick a random one if multiple were set.
 
