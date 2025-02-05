@@ -50,6 +50,8 @@ providers.
 connect to the same node twice, therefore reducing risk of a possible MITM attack.
 * While in proxy mode, the app will redirect all its own traffic (i.e, VPS and 
 CloudFlare API calls) through tunnels made by itself.
+* Heartbeats VPS' API in 10 second intervals, and in the case of a failure, will
+automatically disconnect from the current Node, and connect to next Node in the queue.
 
 ### Tunnels
 WireGuard, sshuttle, HTTP proxy, SOCKS5 proxy.
