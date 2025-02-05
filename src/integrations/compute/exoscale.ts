@@ -23,6 +23,7 @@ export const exoscale = {
     ],
     instanceSize: '',
     instanceImage: '',
+    getInstanceImage: async () => '',
     sign: (
         requestType: string,
         requestPath: string,

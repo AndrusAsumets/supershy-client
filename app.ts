@@ -153,7 +153,8 @@ const rotate = async () => {
             .filter((instanceProvider: InstanceProvider) => !config().INSTANCE_PROVIDERS_DISABLED.includes(instanceProvider));
         !instanceProviders.length && logger.warn('None of the VPS providers are enabled.');
         const instanceProvider: InstanceProvider = lib.shuffle(instanceProviders)[0];
-        const { instanceSize, instanceImage } = integrations.compute[instanceProvider];
+        const { instanceSize } = integrations.compute[instanceProvider];
+        const instanceImage = await integrations.compute[instanceProvider].getInstanceImage();
         const tunnelKey = config().TUNNELS_ENABLED[0];
         const connectionType = tunnelKey.toLowerCase().includes('wireguard')
             ? ConnectionType.WIREGUARD

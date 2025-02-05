@@ -13,10 +13,30 @@ const { config } = models;
 export const upcloud = {
     instanceApiBaseUrl: 'https://api.upcloud.com/1.3',
     instanceSize: config().UPCLOUD_SERVER_TYPE,
-    instanceImage: config().UPCLOUD_INSTANCE_IMAGE,
+    getInstanceImage: async () => {
+        const storages = await upcloud.storage.list();
+        const storageUuid = storages.filter((storage: any) => storage.title == config().UPCLOUD_INSTANCE_IMAGE)[0].uuid;
+        return storageUuid;
+    },
     userData: {
         format: (userData: string) => {
             return userData;
+        }
+    },
+    storage: {
+        list: async () => {
+            const basic = new Buffer(`${config().UPCLOUD_API_KEY}:${config().UPCLOUD_API_SECRET}`).toString('base64');
+            const headers = {
+                'Content-Type': 'application/json',
+                Authorization: `Basic ${basic}`
+            };
+            const options = { method: 'GET', headers };
+            const res = await fetch(`${upcloud.instanceApiBaseUrl}/storage`, core.useProxy(options));
+            const json = await res.json();
+            json.error && logger.error({ message: 'upcloud.storage.list error', json });
+            const storages = json
+                .storages.storage;
+            return storages;
         }
     },
     regions: {
