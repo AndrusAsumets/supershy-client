@@ -1,5 +1,3 @@
-Supershy is a DIY VPN with a rotating exit node.
-
 <p align="center">
   <img width="480" src="/src/ui/assets/videos/supershy-recording-5.gif">
 </p>
