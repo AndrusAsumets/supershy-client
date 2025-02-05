@@ -96,7 +96,8 @@ sudo systemctl stop ssh
 
 # Dependencies.
 sudo apt update
-sudo apt install wireguard iptables openresolv bind9 -y
+sudo apt install wireguard iptables bind9 -y
+${node.instanceProvider == 'upcloud' ? 'sudo apt install openresolv -y' : '' }
 
 # Enable wireguard.
 sudo modprobe wireguard
