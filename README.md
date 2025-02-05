@@ -90,7 +90,7 @@ deno task start
 ```
 
 ```
-# Supershy's UI can then be directly accessed either by a browser:
+# Supershy's UI can then be accessed locally either by a browser:
 http://localhost:8080
 
 # or through its desktop client:
