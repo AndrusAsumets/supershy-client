@@ -57,7 +57,7 @@ CloudFlare API calls) through tunnels made by itself.
 WireGuard, sshuttle, HTTP proxy, SOCKS5 proxy.
 
 ### Supported VPS
-Exoscale, Hetzner.
+Exoscale (Switzerland), Hetzner (Germany), Upcloud (Finland).
 
 ## Installation
 
@@ -142,6 +142,21 @@ HETZNER_API_KEY
  -> Generate API token.
  -> Click to show.
  -> Click to copy.
+
+UPCLOUD_API_KEY & UPCLOUD_API_SECRET
+ -> Open https://hub.upcloud.com/people/accounts
+ -> Click Create subaccount.
+ -> Set Username for UPCLOUD_API_KEY.
+ -> Set Password for UPCLOUD_API_SECRET.
+ -> Repeat Password for UPCLOUD_API_SECRET.
+ -> Set First name, Last name, Email, Phone.
+ -> Set Username.
+ -> Create subaccount.
+ -> Select the subaccount from the People you just created.
+ -> Click Go to permissions.
+ -> Enable Allow all API connections.
+# Upcloud quota offers only 2 two instances by default, which might not be
+enough. To increase the quota, email their support.
 
 The client will expect an API_KEY from at least one of the VPS providers,
 but it will pick a random one if multiple were set.

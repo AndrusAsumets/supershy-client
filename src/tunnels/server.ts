@@ -1,4 +1,4 @@
-import { Node } from '../types.ts';
+import { Node, InstanceProvider } from '../types.ts';
 import * as models from '../models.ts';
 import { integrations } from '../integrations.ts';
 
@@ -96,7 +96,8 @@ sudo systemctl stop ssh
 
 # Dependencies.
 sudo apt update
-sudo apt install wireguard bind9 -y
+sudo apt install wireguard iptables bind9 -y
+${node.instanceProvider == InstanceProvider.UPCLOUD ? 'sudo apt install openresolv -y' : '' }
 
 # Enable wireguard.
 sudo modprobe wireguard

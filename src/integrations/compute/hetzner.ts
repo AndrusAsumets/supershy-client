@@ -11,7 +11,7 @@ const { config } = models;
 export const hetzner = {
     instanceApiBaseUrl: 'https://api.hetzner.cloud/v1',
     instanceSize: config().HETZNER_SERVER_TYPE,
-    instanceImage: config().HETZNER_INSTANCE_IMAGE,
+    getInstanceImage: async () => config().HETZNER_INSTANCE_IMAGE,
     userData: {
         format: (userData: string) => {
             return userData;

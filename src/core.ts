@@ -57,6 +57,7 @@ export const setInstanceProviders = (
     config.INSTANCE_PROVIDERS = [];
     config.EXOSCALE_API_KEY && config.EXOSCALE_API_SECRET && config.INSTANCE_PROVIDERS.push(InstanceProvider.EXOSCALE);
     config.HETZNER_API_KEY && config.INSTANCE_PROVIDERS.push(InstanceProvider.HETZNER);
+    config.UPCLOUD_API_KEY && config.UPCLOUD_API_SECRET && config.INSTANCE_PROVIDERS.push(InstanceProvider.UPCLOUD);
     return config;
 };
 
@@ -221,7 +222,8 @@ export const heartbeat = async (): Promise<boolean> => {
     try {
         const isAppEnabled = config().APP_ENABLED;
         const isConnected = config().CONNECTION_STATUS == ConnectionStatus.CONNECTED;
-        if (!isAppEnabled || !isConnected) {
+        const initialNode = models.getInitialNode();
+        if (!isAppEnabled || !isConnected || !initialNode) {
             return false;
         }
 
@@ -233,9 +235,11 @@ export const heartbeat = async (): Promise<boolean> => {
         const options = {
             method: 'GET',
         };
-        const res = await fetch(integrations.kv.cloudflare.apiBaseurl, useProxy(options));
+        const protocol = 'https://';
+        const url = `${protocol}${initialNode.instanceApiBaseUrl.replace(protocol, '').split('/')[0]}`;
+        await fetch(url, useProxy(options));
+
         clearTimeout(timeout);
-        await res.json();
         logger.info('Heartbeat.');
     }
     catch(_) {
@@ -285,14 +289,20 @@ export const cleanupCompute = async (
         let instanceProviderIndex = 0;
         while (instanceProviderIndex < instanceProviderList.length) {
             const [instances, instanceApiBaseUrl] = instanceProviderList[instanceProviderIndex];
-
             if (instances) {
                 const deletableInstances = instances
                     .filter((instance: any) => {
                         if ('name' in instance && instance.name.includes(`${config().APP_ID}-${config().ENV}`)) return true;
                         if ('label' in instance && instance.label.includes(`${config().APP_ID}-${config().ENV}`)) return true;
+                        if ('title' in instance && instance.title.includes(`${config().APP_ID}-${config().ENV}`)) return true;
                     })
-                    .map((instance: any) => String(instance.id))
+                    .map((instance: any) => {
+                        if (!('id' in instance) && instance.uuid) {
+                            instance.id = instance.uuid;
+                        }
+                        return instance;
+                    })
+                    .map((instance: any) => instance && String(instance.id))
                     .filter((instanceId: any) => !instanceIdsToKeep.includes(instanceId));
 
                 await integrations.compute[instanceProvider].instances.delete(deletableInstances, instanceApiBaseUrl);

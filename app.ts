@@ -46,6 +46,7 @@ const connect = async (
     logger.info(`Using ${node.tunnelsEnabled[0]} tunnel while connecting to ${node.instanceIp}:${node.tunnelPort} via ${node.connectionType}.`);
 
     config().TUNNEL_KILLSWITCH && await core.enableTunnelKillSwitch();
+    await integrations.shell.command(`ssh-keygen -f ${config().SSH_KNOWN_HOSTS_PATH} -R ${node.instanceIp}`);
     integrations.kv.cloudflare.key.write(node);
     existsSync(node.sshLogPath) && Deno.removeSync(node.sshLogPath);
     await core.resetNetworkInterfaces();
@@ -153,7 +154,8 @@ const rotate = async () => {
             .filter((instanceProvider: InstanceProvider) => !config().INSTANCE_PROVIDERS_DISABLED.includes(instanceProvider));
         !instanceProviders.length && logger.warn('None of the VPS providers are enabled.');
         const instanceProvider: InstanceProvider = lib.shuffle(instanceProviders)[0];
-        const { instanceSize, instanceImage } = integrations.compute[instanceProvider];
+        const { instanceSize } = integrations.compute[instanceProvider];
+        const instanceImage = await integrations.compute[instanceProvider].getInstanceImage();
         const tunnelKey = config().TUNNELS_ENABLED[0];
         const connectionType = tunnelKey.toLowerCase().includes('wireguard')
             ? ConnectionType.WIREGUARD
@@ -207,19 +209,61 @@ const rotate = async () => {
         const script = tunnels[tunnelKey][Side.SERVER][Platform.LINUX][Action.MAIN][Script.ENABLE](node);
         const userData = core.prepareCloudConfig(script);
         const formattedUserData = integrations.compute[instanceProvider].userData.format(userData);
+        const loginUser = {
+            username: 'root',
+            ssh_keys: {
+                ssh_key: [publicSshKey]
+            }
+        };
+        const networking = {
+            interfaces: {
+                interface: [
+                    {
+                        ip_addresses: {
+                            ip_address: [
+                                {
+                                    family: 'IPv4'
+                                }
+                            ]
+                        },
+                        type: 'public'
+                    },
+                ]
+            }
+        };
+        const storageDevices = {
+            storage_device: [
+                {
+                    action: 'clone',
+                    storage: instanceImage,
+                    title: instanceName
+                }
+            ]
+        };
         const instancePayload: InstancePayload = {
             datacenter: instanceRegion,
+            zone: instanceRegion,
             image: instanceImage,
+            title: instanceName,
             name: instanceName,
             'instance-type': {},
             server_type: instanceSize,
+            plan: instanceSize,
             'ssh-key': { name: instancePublicKeyId },
+            ssh_keys: [instancePublicKeyId],
             user_data: formattedUserData,
             'user-data': formattedUserData,
+            login_user: loginUser,
             'public-ip-assignment': 'inet4',
             'security-groups': [],
             'template': {},
             'disk-size': config().EXOSCALE_DISK_SIZE,
+            firewall: 'off',
+            hostname: 'host.name',
+            metadata: 'yes',
+            networking,
+            simple_backup: 'no',
+            storage_devices: storageDevices,
         };
         logger.info(`Creating ${instanceProvider} instance.`);
         logger.info(instancePayload);
