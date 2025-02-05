@@ -222,7 +222,8 @@ export const heartbeat = async (): Promise<boolean> => {
     try {
         const isAppEnabled = config().APP_ENABLED;
         const isConnected = config().CONNECTION_STATUS == ConnectionStatus.CONNECTED;
-        if (!isAppEnabled || !isConnected) {
+        const initialNode = models.getInitialNode();
+        if (!isAppEnabled || !isConnected || !initialNode) {
             return false;
         }
 
@@ -234,9 +235,11 @@ export const heartbeat = async (): Promise<boolean> => {
         const options = {
             method: 'GET',
         };
-        const res = await fetch(integrations.kv.cloudflare.apiBaseurl, useProxy(options));
+        const protocol = 'https://';
+        const url = `${protocol}${initialNode.instanceApiBaseUrl.replace(protocol, '').split('/')[0]}`;
+        await fetch(url, useProxy(options));
+
         clearTimeout(timeout);
-        await res.json();
         logger.info('Heartbeat.');
     }
     catch(_) {
