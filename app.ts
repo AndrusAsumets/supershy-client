@@ -207,19 +207,60 @@ const rotate = async () => {
         const script = tunnels[tunnelKey][Side.SERVER][Platform.LINUX][Action.MAIN][Script.ENABLE](node);
         const userData = core.prepareCloudConfig(script);
         const formattedUserData = integrations.compute[instanceProvider].userData.format(userData);
+        const loginUser = {
+            username: 'root',
+            ssh_keys: {
+                ssh_key: [publicSshKey]
+            }
+        };
+        const networking = {
+            interfaces: {
+                interface: [
+                    {
+                        ip_addresses: {
+                            ip_address: [
+                                {
+                                    family: 'IPv4'
+                                }
+                            ]
+                        },
+                        type: 'public'
+                    },
+                ]
+            }
+        };
+        const storageDevices = {
+            storage_device: [
+                {
+                    action: 'clone',
+                    storage: instanceImage,
+                    title: instanceName
+                }
+            ]
+        };
         const instancePayload: InstancePayload = {
             datacenter: instanceRegion,
+            zone: instanceRegion,
             image: instanceImage,
+            title: instanceName,
             name: instanceName,
             'instance-type': {},
             server_type: instanceSize,
+            plan: instanceSize,
             'ssh-key': { name: instancePublicKeyId },
             user_data: formattedUserData,
             'user-data': formattedUserData,
+            login_user: loginUser,
             'public-ip-assignment': 'inet4',
             'security-groups': [],
             'template': {},
             'disk-size': config().EXOSCALE_DISK_SIZE,
+            firewall: 'off',
+            hostname: 'host.name',
+            metadata: 'yes',
+            networking,
+            simple_backup: 'no',
+            storage_devices: storageDevices,
         };
         logger.info(`Creating ${instanceProvider} instance.`);
         logger.info(instancePayload);

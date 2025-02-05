@@ -96,7 +96,7 @@ sudo systemctl stop ssh
 
 # Dependencies.
 sudo apt update
-sudo apt install wireguard bind9 -y
+sudo apt install wireguard iptables openresolv bind9 -y
 
 # Enable wireguard.
 sudo modprobe wireguard

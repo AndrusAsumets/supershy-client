@@ -28,6 +28,7 @@ export enum ConnectionStatus {
 export enum InstanceProvider {
 	EXOSCALE = 'exoscale',
 	HETZNER = 'hetzner',
+	UPCLOUD = 'upcloud',
 }
 
 export interface Node {
@@ -87,7 +88,43 @@ export interface CreateExoscaleInstance {
 	'disk-size': number
 }
 
-export type InstancePayload = CreateHetznerInstance & CreateExoscaleInstance
+export interface CreateUpcloudInstance {
+	title: string,
+	hostname: string,
+	zone: string,
+	login_user: {
+		username: string,
+		ssh_keys: {
+			ssh_key: string[]
+		}
+	},
+	firewall: string,
+	metadata: string,
+	networking: {
+		interfaces: {
+			interface: {
+				ip_addresses: {
+					ip_address: {
+						'family': string
+					}[]
+				},
+				type: string
+			}[]
+		}
+	},
+	plan: string,
+	simple_backup: string
+	storage_devices: {
+		storage_device: {
+			action: string
+			storage: string
+			title: string
+		}[]
+	},
+	user_data: string,
+}
+
+export type InstancePayload = CreateHetznerInstance & CreateExoscaleInstance & CreateUpcloudInstance
 
 export enum Tunnel {
 	WIREGUARD = 'wireguard',
@@ -145,6 +182,8 @@ export interface Config {
 	EXOSCALE_API_KEY: string
 	EXOSCALE_API_SECRET: string
 	HETZNER_API_KEY: string
+	UPCLOUD_API_KEY: string
+	UPCLOUD_API_SECRET: string
 	CLOUDFLARE_ACCOUNT_ID: string
 	CLOUDFLARE_API_KEY: string
 	CLOUDFLARE_KV_NAMESPACE: string
@@ -161,13 +200,16 @@ export interface Config {
 	SSH_LOG_EXTENSION: string
 	CONNECT_TIMEOUT_SEC: number
 	POST_CONNECT_DELAY_SEC: number
+	UPCLOUD_DELETE_DELAY_SEC: number
 	SSHUTTLE_PID_FILE_PATH: string
 	NODE_TYPES: NodeType[]
 	EXOSCALE_INSTANCE_SIZE: string
 	HETZNER_SERVER_TYPE: string
 	EXOSCALE_TEMPLATE_NAME: string
 	HETZNER_INSTANCE_IMAGE: string
+	UPCLOUD_INSTANCE_IMAGE: string
 	EXOSCALE_DISK_SIZE: number
+	UPCLOUD_SERVER_TYPE: string
 	HEARTBEAT_INTERVAL_SEC: number
 	EXOSCALE_REQUEST_EXPIRATION_SEC: number
 	WEB_SERVER_PORT: number
