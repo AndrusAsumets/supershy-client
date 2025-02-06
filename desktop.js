@@ -15,7 +15,7 @@ app
             },
         });
 
-        // Wayland does not support for it, hence it's not available for Linux anymore.
+        // Wayland does not support it anymore, hence it's not available for Linux anymore.
         'skipTaskbar' in window && window.skipTaskbar(true);
         window.setMenu(null);
         window.setBackgroundColor('black');
