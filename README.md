@@ -44,7 +44,7 @@ these days everywhere.
 * DIY WireGuard or sshuttle VPN (and/or HTTP/SOCKS5 proxies) through multiple VPS 
 providers.
 * Periodically changes VPS nodes and thus your exit IPs.
-* Has a web-based UI.
+* Has a web and desktop-based UI.
 * Includes a tunnel killswitch for Linux.
 * Has an option to create n number of reserve nodes for making sure you do not
 connect to the same node twice, therefore reducing risk of a possible MITM attack.
