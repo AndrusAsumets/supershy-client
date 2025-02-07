@@ -101,10 +101,6 @@ deno task start:desktop
 ```
 
 ```
-# Supershy's UI can then be accessed locally from: http://localhost:8080
-```
-
-```
 # Update Config through the supershy's UI.
 NODE_RECYCLE_INTERVAL_SEC=How often you would like to recycle the exit nodes
 in seconds, defaults to 1800.
