@@ -330,19 +330,6 @@ export const cleanupCompute = async (
     models.removeUsedNodes(instanceIdsToKeep);
 };
 
-export const restartCountDown = async (
-    seconds: number
-) => {
-    while (seconds > 0) {
-        const secondLabel = seconds > 1
-            ? 'seconds'
-            : 'second';
-        logger.info(`Restarting application in ${seconds} ${secondLabel}.`);
-        await lib.sleep(1000);
-        seconds = seconds - 1;
-    }
-};
-
 export const saveConfig = async (
     io: Server,
     newConfig: Config,
