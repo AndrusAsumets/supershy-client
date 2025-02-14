@@ -1,4 +1,5 @@
-supershy-client has been migrated to Codeberg: [[https://codeberg.org/andrusasumets/supershy-client](https://codeberg.org/supershy/supershy-client)](https://codeberg.org/supershy/supershy-client)
+supershy-client has been migrated to Codeberg: https://codeberg.org/andrusasumets/supershy-client
+
 
 <p align="center">
   <img width="480" src="/src/ui/assets/videos/supershy-recording-5.gif">
