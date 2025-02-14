@@ -1,3 +1,5 @@
+supershy-client has been moved to: https://codeberg.org/andrusasumets/supershy-client
+
 <p align="center">
   <img width="480" src="/src/ui/assets/videos/supershy-recording-5.gif">
 </p>
