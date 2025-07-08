@@ -1,5 +1,9 @@
 supershy-client has been migrated to Codeberg: https://codeberg.org/supershy/supershy-client
 
+All the code found in this repository is out-dated, unsafe and must not be used as it contains a WebSocket CORS RCE as reported by: 
+https://elliott.diy/blog/supershy
+
+----
 
 <p align="center">
   <img width="480" src="/src/ui/assets/videos/supershy-recording-5.gif">
